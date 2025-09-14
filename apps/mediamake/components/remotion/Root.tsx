@@ -1,33 +1,25 @@
 
 import { Ripple } from './Ripple';
 import { Waveform } from './Waveform';
+import { DataMotion } from './DataMotion';
 
 
 
 export const Root: React.FC = () => {
-    if (process.env.NODE_ENV === 'development') {
-        return (
-            <>
-                <Ripple />
-                <Waveform />
-            </>
-        )
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //     return (
+    //         <>
+    //             <Ripple />
+    //             <Waveform />
+    //             <DataMotion />
+    //         </>
+    //     )
+    // }
     return (
         <>
-            {/* <Composition
-            id="Waveform"
-            componentId="Waveform"
-            type="scene"
-            childrenData={[AudioScene as RenderableComponentData]}
-            fps={30}
-            width={1920}
-            height={1080}
-            duration={audioMetadata.duration}
-            style={{
-                backgroundColor: "black",
-            }}
-        /> */}
+            <Ripple />
+            <DataMotion />
+            <Waveform />
         </>
     )
 }

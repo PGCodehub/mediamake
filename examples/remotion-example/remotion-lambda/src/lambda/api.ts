@@ -1,11 +1,21 @@
-import { deploySite, AwsRegion, GetRenderProgressInput, RenderMediaOnLambdaInput } from "@remotion/lambda";
+import {
+  deploySite,
+  AwsRegion,
+  GetRenderProgressInput,
+  RenderMediaOnLambdaInput,
+} from '@remotion/lambda';
 import {
   getRenderProgress,
   renderMediaOnLambda,
   speculateFunctionName,
   presignUrl as presignUrlClient,
-} from "@remotion/lambda/client";
-import { DEFAULT_COMPOSITION_ID, DEFAULT_OUTPUT_NAME, DEFAULT_REGION, LambdaConfig } from "./constants";
+} from '@remotion/lambda/client';
+import {
+  DEFAULT_COMPOSITION_ID,
+  DEFAULT_OUTPUT_NAME,
+  DEFAULT_REGION,
+  LambdaConfig,
+} from './constants';
 
 /**
  * Note: The `deploy` function is now commented out because this package is designed
@@ -36,7 +46,13 @@ export const presignUrl = async (options: {
   expiresInSeconds: number;
   checkIfObjectExists: boolean;
 }) => {
-  const { region, bucketName, objectKey, expiresInSeconds, checkIfObjectExists } = options;
+  const {
+    region,
+    bucketName,
+    objectKey,
+    expiresInSeconds,
+    checkIfObjectExists,
+  } = options;
   return await presignUrlClient({
     region,
     bucketName,
@@ -46,16 +62,21 @@ export const presignUrl = async (options: {
   });
 };
 
-export const render = async (options: {
-  functionName?: string;
-  diskSizeInMb?: number;
-  memorySizeInMb?: number;
-  timeoutInSeconds?: number;
-  outputName?: string;
-  region?: AwsRegion;
-  codec?: RenderMediaOnLambdaInput["codec"];
-  composition?: string;
-} & Omit<RenderMediaOnLambdaInput, "functionName" | "downloadBehavior" | "codec" | "region" | "composition">) => {
+export const render = async (
+  options: {
+    functionName?: string;
+    diskSizeInMb?: number;
+    memorySizeInMb?: number;
+    timeoutInSeconds?: number;
+    outputName?: string;
+    region?: AwsRegion;
+    codec?: RenderMediaOnLambdaInput['codec'];
+    composition?: string;
+  } & Omit<
+    RenderMediaOnLambdaInput,
+    'functionName' | 'downloadBehavior' | 'codec' | 'region' | 'composition'
+  >
+) => {
   const {
     functionName,
     diskSizeInMb,
@@ -68,33 +89,37 @@ export const render = async (options: {
     ...args
   } = options;
 
-  const remotionFunctionName = functionName || speculateFunctionName({
-    diskSizeInMb: diskSizeInMb || LambdaConfig.diskSizeInMb,
-    memorySizeInMb: memorySizeInMb || LambdaConfig.memorySizeInMb,
-    timeoutInSeconds: timeoutInSeconds || LambdaConfig.timeoutInSeconds,
-  });
+  const remotionFunctionName =
+    functionName ||
+    speculateFunctionName({
+      diskSizeInMb: diskSizeInMb || LambdaConfig.diskSizeInMb,
+      memorySizeInMb: memorySizeInMb || LambdaConfig.memorySizeInMb,
+      timeoutInSeconds: timeoutInSeconds || LambdaConfig.timeoutInSeconds,
+    });
 
   return await renderMediaOnLambda({
     composition: composition || DEFAULT_COMPOSITION_ID,
     functionName: remotionFunctionName,
     downloadBehavior: {
-      type: "download",
+      type: 'download',
       fileName: outputName || DEFAULT_OUTPUT_NAME,
     },
-    codec: codec || "h264",
+    codec: codec || 'h264',
     region: region || DEFAULT_REGION,
     // framesPerLambda: 100,
-    ...args
+    ...args,
   });
 };
 
-export const getProgress = async (options: {
-  diskSizeInMb?: number;
-  memorySizeInMb?: number;
-  timeoutInSeconds?: number;
-  functionName?: string;
-  region?: AwsRegion;
-} & Omit<GetRenderProgressInput, "functionName" | "region">) => {
+export const getProgress = async (
+  options: {
+    diskSizeInMb?: number;
+    memorySizeInMb?: number;
+    timeoutInSeconds?: number;
+    functionName?: string;
+    region?: AwsRegion;
+  } & Omit<GetRenderProgressInput, 'functionName' | 'region'>
+) => {
   const {
     diskSizeInMb,
     memorySizeInMb,
@@ -104,15 +129,17 @@ export const getProgress = async (options: {
     ...args
   } = options;
 
-  const remotionFunctionName = functionName || speculateFunctionName({
-    diskSizeInMb: diskSizeInMb || LambdaConfig.diskSizeInMb,
-    memorySizeInMb: memorySizeInMb || LambdaConfig.memorySizeInMb,
-    timeoutInSeconds: timeoutInSeconds || LambdaConfig.timeoutInSeconds,
-  });
+  const remotionFunctionName =
+    functionName ||
+    speculateFunctionName({
+      diskSizeInMb: diskSizeInMb || LambdaConfig.diskSizeInMb,
+      memorySizeInMb: memorySizeInMb || LambdaConfig.memorySizeInMb,
+      timeoutInSeconds: timeoutInSeconds || LambdaConfig.timeoutInSeconds,
+    });
 
   return await getRenderProgress({
     functionName: remotionFunctionName,
     region: region || DEFAULT_REGION,
-    ...args
+    ...args,
   });
-}; 
+};

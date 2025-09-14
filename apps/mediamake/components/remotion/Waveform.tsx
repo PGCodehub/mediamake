@@ -271,7 +271,10 @@ export const AudioScene = {
     ],
 };
 
+
+
 export const Waveform: React.FC = () => {
+    console.log('Waveform', [AudioScene]);
     return (
         <Composition
             id="Waveform"

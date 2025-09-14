@@ -18,4 +18,5 @@ export {
   Composition,
   type InputCompositionProps,
   CompositionLayout,
+  calculateCompositionLayoutMetadata,
 } from './components/Composition';

@@ -56,6 +56,39 @@ export const CompositionLayout = ({ childrenData, style, config }: InputComposit
     );
 };
 
+export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<InputCompositionProps> = async ({ props, defaultProps, abortSignal, isRendering }) => {
+
+    let calculatedDuration: number | undefined = undefined;
+    if (props.config?.fitDurationTo?.length > 0) {
+        calculatedDuration = await calculateDuration(props.childrenData, {
+            fitDurationTo: props.config.fitDurationTo,
+        });
+    }
+
+    const duration = calculatedDuration ?? props.config.duration ?? defaultProps.config.duration;
+    const fps = props.config.fps ?? defaultProps.config.fps;
+    const durationInFrames = Math.round(duration * fps);
+
+    const updatedProps = await setDurationsInContext(props);
+
+    return {
+        // Change the metadata
+        durationInFrames: durationInFrames,
+        // or transform some props
+        props: updatedProps,
+        //   // or add per-composition default codec
+        //   defaultCodec: 'h264',
+        //   // or add per-composition default video image format
+        //   defaultVideoImageFormat: 'png',
+        //   // or add per-composition default pixel format
+        //   defaultPixelFormat: 'yuv420p',
+        width: props.config?.width || defaultProps.config.width,
+        height: props.config?.height || defaultProps.config.height,
+        fps,
+        duration,
+    };
+};
+
 export const Composition = ({
     id,
     childrenData,
@@ -63,38 +96,7 @@ export const Composition = ({
     style
 }: CompositionProps) => {
 
-    const calculateMetadata: CalculateMetadataFunction<InputCompositionProps> = async ({ props, defaultProps, abortSignal, isRendering }) => {
 
-        let calculatedDuration: number | undefined = undefined;
-        if (props.config?.fitDurationTo?.length > 0) {
-            calculatedDuration = await calculateDuration(childrenData, {
-                fitDurationTo: props.config.fitDurationTo,
-            });
-        }
-
-        const duration = calculatedDuration ?? props.config.duration ?? defaultProps.config.duration;
-        const fps = props.config.fps ?? defaultProps.config.fps;
-        const durationInFrames = Math.round(duration * fps);
-
-        const updatedProps = await setDurationsInContext(props);
-
-        return {
-            // Change the metadata
-            durationInFrames: durationInFrames,
-            // or transform some props
-            props: updatedProps,
-            //   // or add per-composition default codec
-            //   defaultCodec: 'h264',
-            //   // or add per-composition default video image format
-            //   defaultVideoImageFormat: 'png',
-            //   // or add per-composition default pixel format
-            //   defaultPixelFormat: 'yuv420p',
-            width: props.config?.width || defaultProps.config.width,
-            height: props.config?.height || defaultProps.config.height,
-            fps,
-            duration,
-        };
-    };
 
     return <RemotionComposition
         id={id}
@@ -102,6 +104,6 @@ export const Composition = ({
         durationInFrames={Math.round(config.duration * config.fps)}
         fps={config.fps}
         defaultProps={{ childrenData, style, config: config }}
-        calculateMetadata={calculateMetadata}
+        calculateMetadata={calculateCompositionLayoutMetadata}
     />
 }
