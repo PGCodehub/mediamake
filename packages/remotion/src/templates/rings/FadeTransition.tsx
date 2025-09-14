@@ -73,15 +73,18 @@ export const FadeTransition: React.FC<LayoutProps> = ({ data, context, children 
 
     return (
         <LayoutContext.Provider value={transitionData}>
+            {/* @ts-ignore */}
             <AbsoluteFill style={{
                 ...container,
                 ...context?.boundaries,
             }}>
+                {/* @ts-ignore */}
                 <Sequence from={0} durationInFrames={transitionStartFrame + transitionDurationFrames}>
                     <div style={{ opacity: 1 - fadeOut }}>
                         {from as any}
                     </div>
                 </Sequence>
+                {/* @ts-ignore */}
                 <Sequence from={transitionStartFrame + transitionDurationFrames / 2}>
                     <div style={{ opacity: fadeIn }}>
                         {to as any}

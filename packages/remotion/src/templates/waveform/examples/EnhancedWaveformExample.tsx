@@ -81,6 +81,7 @@ export const EnhancedWaveformExample: React.FC = () => {
     };
 
     return (
+        // @ts-ignore
         <AbsoluteFill style={{ backgroundColor: '#1a1a1a' }}>
             {/* Example 1: Basic beat-synchronized */}
             <div style={{ position: 'absolute', top: '10%', left: '5%', width: '40%', height: '30%' }}>

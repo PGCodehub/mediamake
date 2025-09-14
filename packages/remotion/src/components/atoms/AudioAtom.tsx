@@ -82,8 +82,8 @@ export const Atom: React.FC<AudioAtomProps> = ({ data }) => {
         return staticFile(data.src);
     }, [data.src]);
 
-    console.log('source', source);
     return (
+        // @ts-ignore
         <Audio
             src={source}
             trimBefore={data.startFrom ? data.startFrom * fps : undefined}

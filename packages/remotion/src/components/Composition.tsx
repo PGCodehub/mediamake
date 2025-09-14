@@ -1,29 +1,47 @@
 import React from 'react';
-import { AbsoluteFill, Composition as RemotionComposition, useVideoConfig, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Composition as RemotionComposition, useVideoConfig, useCurrentFrame, CalculateMetadataFunction } from 'remotion';
 import { BaseRenderableData, RenderableComponentData } from '../core/types';
 import { ComponentRenderer } from './base/ComponentRenderer';
 import { CompositionProvider } from '../core/context/CompositionContext';
+import { Input, ALL_FORMATS, UrlSource, BlobSource, FilePathSource } from 'mediabunny';
+import { calculateDuration, findMatchingComponents, setDurationsInContext } from '../core/context/timing';
+import { parseMedia } from '@remotion/media-parser';
+import { nodeReader } from '@remotion/media-parser/node';
+
 
 interface CompositionProps extends BaseRenderableData {
     id: string;
-    width: number;
-    height: number;
-    duration: number;
-    fps: number;
     style?: React.CSSProperties;
+    config: {
+        width: number;
+        height: number;
+        fps: number;
+        duration: number;
+        fitDurationTo?: string | string[];
+    }
 }
 
-const CompositionLayout = ({ childrenData, style, duration }: {
+
+export type InputCompositionProps = {
     childrenData?: RenderableComponentData[],
     style?: React.CSSProperties,
-    duration: number
-}) => {
+    config?: {
+        width?: number;
+        height?: number;
+        fps?: number;
+        duration?: number;
+        fitDurationTo?: string;
+    }
+}
+
+
+export const CompositionLayout = ({ childrenData, style, config }: InputCompositionProps) => {
 
     return (
         <CompositionProvider
             value={{
                 root: childrenData,
-                duration,
+                duration: config.duration,
             }}
         >
             <AbsoluteFill style={style}>
@@ -41,20 +59,49 @@ const CompositionLayout = ({ childrenData, style, duration }: {
 export const Composition = ({
     id,
     childrenData,
-    width,
-    height,
-    duration,
-    fps,
+    config,
     style
 }: CompositionProps) => {
+
+    const calculateMetadata: CalculateMetadataFunction<InputCompositionProps> = async ({ props, defaultProps, abortSignal, isRendering }) => {
+
+        let calculatedDuration: number | undefined = undefined;
+        if (props.config?.fitDurationTo?.length > 0) {
+            calculatedDuration = await calculateDuration(childrenData, {
+                fitDurationTo: props.config.fitDurationTo,
+            });
+        }
+
+        const duration = calculatedDuration ?? props.config.duration ?? defaultProps.config.duration;
+        const fps = props.config.fps ?? defaultProps.config.fps;
+        const durationInFrames = Math.round(duration * fps);
+
+        const updatedProps = await setDurationsInContext(props);
+
+        return {
+            // Change the metadata
+            durationInFrames: durationInFrames,
+            // or transform some props
+            props: updatedProps,
+            //   // or add per-composition default codec
+            //   defaultCodec: 'h264',
+            //   // or add per-composition default video image format
+            //   defaultVideoImageFormat: 'png',
+            //   // or add per-composition default pixel format
+            //   defaultPixelFormat: 'yuv420p',
+            width: props.config?.width || defaultProps.config.width,
+            height: props.config?.height || defaultProps.config.height,
+            fps,
+            duration,
+        };
+    };
 
     return <RemotionComposition
         id={id}
         component={CompositionLayout}
-        durationInFrames={Math.round(duration * fps)}
-        fps={fps}
-        width={width}
-        height={height}
-        defaultProps={{ childrenData, style, duration }}
+        durationInFrames={Math.round(config.duration * config.fps)}
+        fps={config.fps}
+        defaultProps={{ childrenData, style, config: config }}
+        calculateMetadata={calculateMetadata}
     />
 }

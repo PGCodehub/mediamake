@@ -14,4 +14,8 @@ export * from './utils';
 export * from './templates';
 
 // Main composition component
-export { Composition } from './components/Composition';
+export {
+  Composition,
+  type InputCompositionProps,
+  CompositionLayout,
+} from './components/Composition';

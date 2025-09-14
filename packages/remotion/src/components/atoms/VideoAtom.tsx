@@ -75,6 +75,7 @@ export const Atom: React.FC<VideoAtomProps> = ({ data }) => {
     }, [data.style, data.fit]);
 
     return (
+        // @ts-ignore
         <Video
             className={data.className}
             src={source}

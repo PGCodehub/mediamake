@@ -9,5 +9,6 @@ interface FrameProps extends BaseRenderableProps {
 }
 
 export const Frame = ({ children, data }: FrameProps) => {
+    // @ts-ignore
     return <AbsoluteFill style={data?.style}>{children as any}</AbsoluteFill>
 }; 

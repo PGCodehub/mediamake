@@ -30,6 +30,7 @@ export type CalculatedTiming = {
   durationInFrames?: number;
   start?: number;
   duration?: number;
+  fitDurationTo?: string[] | string;
 };
 
 export type Hierarchy = {

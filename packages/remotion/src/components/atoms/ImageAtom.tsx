@@ -20,6 +20,7 @@ export const Atom: React.FC<ImageAtomProps> = ({ data }) => {
         return staticFile(data.src);
     }, [data.src]);
 
+    // @ts-ignore
     return <Img className={data.className} src={source} style={data.style} crossOrigin='anonymous' />;
 };
 

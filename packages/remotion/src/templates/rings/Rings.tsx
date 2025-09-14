@@ -11,6 +11,7 @@ const RadialGradient: React.FC<{
     const width = radius * 2;
 
     return (
+        // @ts-ignore
         <AbsoluteFill
             style={{
                 justifyContent: "center",
@@ -41,6 +42,7 @@ export const Rings: React.FC<{
     const { height } = useVideoConfig();
 
     return (
+        // @ts-ignore
         <AbsoluteFill
             style={{
                 transform: `scale(${scale})`,

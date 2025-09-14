@@ -6,4 +6,6 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
+  skipNodeModulesBundle: true,
+  external: ['@remotion/google-fonts'],
 });

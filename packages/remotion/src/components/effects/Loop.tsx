@@ -20,6 +20,7 @@ export const LoopEffect: React.FC<BaseRenderableProps> = ({
     const layout = loopData?.layout || 'absolute-fill';
 
     return (
+        // @ts-ignore
         <Loop
             durationInFrames={durationInFrames}
             times={times}

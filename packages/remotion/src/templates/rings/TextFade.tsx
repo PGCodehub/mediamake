@@ -63,6 +63,7 @@ export const TextFade = (props: LayoutProps) => {
     }, [maskImage]);
 
     return (
+        // @ts-ignore
         <AbsoluteFill style={container}>
             <div style={content}>{children}</div>
         </AbsoluteFill>

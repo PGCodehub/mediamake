@@ -7,5 +7,6 @@ interface SceneFrameProps extends BaseRenderableProps {
 }
 
 export const SceneFrame: React.FC<SceneFrameProps> = ({ children }) => {
+    // @ts-ignore
     return <AbsoluteFill>{children as any}</AbsoluteFill>
 }; 

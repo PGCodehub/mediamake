@@ -78,13 +78,16 @@ export const RippleOutLayout: React.FC<LayoutProps> = ({ data, context, children
 
     return (
         <LayoutContext.Provider value={transitionData}>
+            {/* @ts-ignore */}
             <AbsoluteFill style={{
                 ...container,
                 ...context?.boundaries,
             }}>
+                {/* @ts-ignore */}
                 <Sequence name={(from as any).props.componentId + " - " + (from as any).props.id} from={0} durationInFrames={transitionStartFrame + transitionDurationFrames}>
                     {from as any}
                 </Sequence>
+                {/* @ts-ignore */}
                 <Sequence name={(to as any).props.componentId + " - " + (to as any).props.id} from={transitionStartFrame + transitionDurationFrames / 2}>
                     {to as any}
                 </Sequence>

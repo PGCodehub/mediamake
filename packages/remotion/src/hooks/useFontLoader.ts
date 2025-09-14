@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   loadGoogleFont,
-  loadMultipleFonts,
+  loadMultipleFonts as loadMultipleFontsUtil,
   isFontLoaded,
   getLoadedFontFamily,
   FontLoadingOptions,
@@ -114,7 +114,7 @@ export const useFontLoader = (options: UseFontLoaderOptions = {}) => {
       }));
 
       try {
-        const fontMap = await loadMultipleFonts(fontsToLoad);
+        const fontMap = await loadMultipleFontsUtil(fontsToLoad);
 
         // Update state with new fonts using proper keys
         const newFontsMap = new Map<string, string>();

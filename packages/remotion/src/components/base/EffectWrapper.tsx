@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ComponentType } from 'react';
 import { getComponent } from '../../core/registry';
 import { BaseEffect, InternalRenderableContext } from '../../core/types';
 
@@ -8,7 +8,7 @@ interface EffectWrapperProps {
     context: InternalRenderableContext;
 }
 
-export const EffectWrapper: React.FC<EffectWrapperProps> = ({
+export const EffectWrapper: ComponentType<EffectWrapperProps> = ({
     effects,
     children,
     context
