@@ -1,11 +1,11 @@
 "use client"
 
-import { Player } from "@remotion/player"
-import { RenderButton } from "../render-button"
 import { calculateCompositionLayoutMetadata, CompositionLayout, InputCompositionProps, RenderableComponentData } from "@microfox/remotion";
-import { AudioScene } from "../remotion/Waveform";
+import { Player } from "@remotion/player";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { CalculateMetadataFunction } from "remotion";
+import { AudioScene } from "../remotion/Waveform";
+import { RenderButton } from "./render-button";
 
 const container: React.CSSProperties = {
     margin: "auto",
@@ -34,8 +34,8 @@ export const MediaMakePlayer: React.FC = () => {
         config: {
             duration: 400,
             fps: 30,
-            width: 1080,
-            height: 1920,
+            width: 1920,
+            height: 1080,
             fitDurationTo: 'Audio-xyz',
         },
         style: { backgroundColor: "black", }
@@ -57,12 +57,14 @@ export const MediaMakePlayer: React.FC = () => {
     }, [inputProps]);
 
     if (!calculatedMetadata) {
-        return <div>Loading...</div>;
+        return <div className="flex justify-center items-center w-full h-full">
+            <Loader2 className="w-full h-6 animate-spin" />
+        </div>;
     }
 
     return (
         <div className="relative flex flex-row justify-center items-stretch w-full h-full gap-10">
-            <div className="w-1/3 h-full bg-white rounded-lg border border-neutral-200 ml-10 overflow-hidden">
+            <div className="min-w-1/3 h-full bg-white rounded-lg border border-neutral-200 ml-10 overflow-hidden">
                 <div className="rounded-lg ">
                     <h1 className="p-4 text-xl font-bold">Input Properties</h1>
                     <pre className="text-xs h-[80vh] overflow-y-auto bg-neutral-100 rounded-lg p-4">
@@ -82,9 +84,11 @@ export const MediaMakePlayer: React.FC = () => {
                 controls
                 loop
             />
-            <div className="absolute top-4 right-4">
-                <RenderButton />
-            </div>
+            {process.env.NODE_ENV === "development" && (
+                <div className="absolute top-4 right-4">
+                    <RenderButton />
+                </div>
+            )}
         </div>
     )
 }

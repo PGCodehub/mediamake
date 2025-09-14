@@ -18,98 +18,84 @@ import {
     Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import useSWR from "swr";
-
-interface RenderRequest {
-    id: string;
-    fileName: string;
-    codec: string;
-    composition: string;
-    status: "pending" | "rendering" | "completed" | "failed";
-    createdAt: string;
-    progress?: number;
-    error?: string;
-    downloadUrl?: string;
-    fileSize?: number;
-    inputProps?: any;
-}
+import { useEffect, useState } from "react";
+import { getRenderRequest, updateRenderRequest, type RenderRequest } from "@/lib/render-history";
 
 interface HistoryContentProps {
     selectedRender: string | null;
 }
 
-// Mock data fetcher - replace with actual API call
-const fetcher = async (url: string): Promise<RenderRequest[]> => {
-    return [
-        {
-            id: "1",
-            fileName: "video-1.mp4",
-            codec: "h264",
-            composition: "CompositionLayout",
-            status: "completed",
-            createdAt: "2024-01-15T10:30:00Z",
-            downloadUrl: "https://example.com/video-1.mp4",
-            fileSize: 15728640,
-            inputProps: {
-                childrenData: [],
-                duration: 400,
-                style: { backgroundColor: "black" }
-            }
-        },
-        {
-            id: "2",
-            fileName: "video-2.mp4",
-            codec: "h265",
-            composition: "CompositionLayout",
-            status: "rendering",
-            createdAt: "2024-01-15T11:00:00Z",
-            progress: 0.65,
-            inputProps: {
-                childrenData: [],
-                duration: 300,
-                style: { backgroundColor: "blue" }
-            }
-        },
-        {
-            id: "3",
-            fileName: "video-3.mp4",
-            codec: "h264",
-            composition: "CompositionLayout",
-            status: "failed",
-            createdAt: "2024-01-15T11:30:00Z",
-            error: "Invalid input props provided",
-            inputProps: {
-                childrenData: [],
-                duration: 200,
-                style: { backgroundColor: "red" }
-            }
-        },
-        {
-            id: "4",
-            fileName: "video-4.mp4",
-            codec: "h264",
-            composition: "CompositionLayout",
-            status: "pending",
-            createdAt: "2024-01-15T12:00:00Z",
-            inputProps: {
-                childrenData: [],
-                duration: 500,
-                style: { backgroundColor: "green" }
-            }
-        }
-    ];
+// Progress fetcher for checking render status
+const fetchProgress = async (bucketName: string, renderId: string) => {
+    const response = await fetch(`/api/remotion/progress?bucketName=${bucketName}&id=${renderId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch progress');
+    }
+    return response.json();
 };
 
 export function HistoryContent({ selectedRender }: HistoryContentProps) {
-    const { data: renderRequests, error, isLoading, mutate } = useSWR<RenderRequest[]>(
-        "/api/remotion/history",
-        fetcher,
-        {
-            refreshInterval: 5000, // Refresh every 5 seconds for progress updates
-        }
-    );
+    const [selectedRequest, setSelectedRequest] = useState<RenderRequest | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const selectedRequest = renderRequests?.find(req => req.id === selectedRender);
+    // Load selected request from localStorage
+    useEffect(() => {
+        if (selectedRender) {
+            const request = getRenderRequest(selectedRender);
+            setSelectedRequest(request);
+            setError(request ? null : 'Request not found');
+        } else {
+            setSelectedRequest(null);
+            setError(null);
+        }
+    }, [selectedRender]);
+
+    // Check progress for the selected rendering request
+    useEffect(() => {
+        if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId) {
+            return;
+        }
+
+        const checkProgress = async () => {
+            try {
+                const progressData = await fetchProgress(selectedRequest.bucketName!, selectedRequest.renderId!);
+
+                if (progressData.type === 'done') {
+                    updateRenderRequest(selectedRequest.id, {
+                        status: 'completed',
+                        downloadUrl: progressData.url,
+                        fileSize: progressData.size,
+                        progress: 1
+                    });
+                    // Reload the request
+                    const updatedRequest = getRenderRequest(selectedRequest.id);
+                    setSelectedRequest(updatedRequest);
+                } else if (progressData.type === 'error') {
+                    updateRenderRequest(selectedRequest.id, {
+                        status: 'failed',
+                        error: progressData.message,
+                        progress: 0
+                    });
+                    // Reload the request
+                    const updatedRequest = getRenderRequest(selectedRequest.id);
+                    setSelectedRequest(updatedRequest);
+                } else if (progressData.type === 'progress') {
+                    updateRenderRequest(selectedRequest.id, {
+                        progress: progressData.progress
+                    });
+                    // Reload the request
+                    const updatedRequest = getRenderRequest(selectedRequest.id);
+                    setSelectedRequest(updatedRequest);
+                }
+            } catch (error) {
+                console.error('Failed to check progress:', error);
+            }
+        };
+
+        const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
+        return () => clearInterval(interval);
+    }, [selectedRequest]);
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -162,7 +148,11 @@ export function HistoryContent({ selectedRender }: HistoryContentProps) {
     };
 
     const handleRefresh = () => {
-        mutate();
+        if (selectedRender) {
+            const request = getRenderRequest(selectedRender);
+            setSelectedRequest(request);
+            setError(request ? null : 'Request not found');
+        }
     };
 
     if (!selectedRender) {
@@ -179,18 +169,6 @@ export function HistoryContent({ selectedRender }: HistoryContentProps) {
         );
     }
 
-    if (isLoading) {
-        return (
-            <div className="flex-1 p-6">
-                <div className="space-y-4">
-                    <div className="h-8 bg-muted animate-pulse rounded w-1/3" />
-                    <div className="h-32 bg-muted animate-pulse rounded" />
-                    <div className="h-24 bg-muted animate-pulse rounded" />
-                </div>
-            </div>
-        );
-    }
-
     if (error || !selectedRequest) {
         return (
             <div className="flex-1 flex items-center justify-center">
@@ -198,7 +176,7 @@ export function HistoryContent({ selectedRender }: HistoryContentProps) {
                     <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
                     <h3 className="text-lg font-semibold mb-2">Error Loading Request</h3>
                     <p className="text-muted-foreground mb-4">
-                        Failed to load render request details
+                        {error || 'Failed to load render request details'}
                     </p>
                     <Button onClick={handleRefresh} variant="outline">
                         <RefreshCw className="h-4 w-4 mr-2" />

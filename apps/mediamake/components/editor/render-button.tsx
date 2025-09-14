@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Play, Video } from "lucide-react";
 import { useState } from "react";
-import { RenderModal } from "@/components/render-modal";
+import { RenderModal } from "@/components/editor/render-modal";
 
 interface RenderButtonProps {
     className?: string;

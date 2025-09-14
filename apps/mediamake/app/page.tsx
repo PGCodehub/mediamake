@@ -15,7 +15,7 @@ import { z } from "zod";
 // import { Spacing } from "../components/Spacing";
 import { CompositionLayout, RenderableComponentData, Waveform } from "@microfox/remotion";
 import { AudioScene } from "../components/remotion/Waveform";
-import { RenderButton } from "../components/render-button";
+import { RenderButton } from "../components/editor/render-button";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { MediaMakePlayer } from "@/components/editor/player";

@@ -14,77 +14,84 @@ import {
     Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import useSWR from "swr";
-
-interface RenderRequest {
-    id: string;
-    fileName: string;
-    codec: string;
-    composition: string;
-    status: "pending" | "rendering" | "completed" | "failed";
-    createdAt: string;
-    progress?: number;
-    error?: string;
-    downloadUrl?: string;
-    fileSize?: number;
-}
+import { useEffect, useState } from "react";
+import { getRenderHistory, updateRenderRequest, type RenderRequest } from "@/lib/render-history";
 
 interface HistorySidebarProps {
     selectedRender: string | null;
     onSelectRender: (renderId: string) => void;
 }
 
-// Mock data fetcher - replace with actual API call
-const fetcher = async (url: string): Promise<RenderRequest[]> => {
-    // This would be replaced with actual API call
-    return [
-        {
-            id: "1",
-            fileName: "video-1.mp4",
-            codec: "h264",
-            composition: "CompositionLayout",
-            status: "completed",
-            createdAt: "2024-01-15T10:30:00Z",
-            downloadUrl: "https://example.com/video-1.mp4",
-            fileSize: 15728640
-        },
-        {
-            id: "2",
-            fileName: "video-2.mp4",
-            codec: "h265",
-            composition: "CompositionLayout",
-            status: "rendering",
-            createdAt: "2024-01-15T11:00:00Z",
-            progress: 65
-        },
-        {
-            id: "3",
-            fileName: "video-3.mp4",
-            codec: "h264",
-            composition: "CompositionLayout",
-            status: "failed",
-            createdAt: "2024-01-15T11:30:00Z",
-            error: "Invalid input props provided"
-        },
-        {
-            id: "4",
-            fileName: "video-4.mp4",
-            codec: "h264",
-            composition: "CompositionLayout",
-            status: "pending",
-            createdAt: "2024-01-15T12:00:00Z"
-        }
-    ];
+// Progress fetcher for checking render status
+const fetchProgress = async (bucketName: string, renderId: string) => {
+    const response = await fetch(`/api/remotion/progress?bucketName=${bucketName}&id=${renderId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch progress');
+    }
+    return response.json();
 };
 
 export function HistorySidebar({ selectedRender, onSelectRender }: HistorySidebarProps) {
-    const { data: renderRequests, error, isLoading } = useSWR<RenderRequest[]>(
-        "/api/remotion/history",
-        fetcher,
-        {
-            refreshInterval: 5000, // Refresh every 5 seconds for progress updates
-        }
-    );
+    const [renderRequests, setRenderRequests] = useState<RenderRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Load render history from localStorage
+    useEffect(() => {
+        const loadHistory = () => {
+            const history = getRenderHistory();
+            setRenderRequests(history);
+            setIsLoading(false);
+        };
+
+        loadHistory();
+    }, []);
+
+    // Check progress for rendering requests
+    useEffect(() => {
+        const checkProgress = async () => {
+            const renderingRequests = renderRequests.filter(req =>
+                req.status === "rendering" && req.bucketName && req.renderId
+            );
+
+            if (renderingRequests.length === 0) return;
+
+            const progressPromises = renderingRequests.map(async (request) => {
+                try {
+                    const progressData = await fetchProgress(request.bucketName!, request.renderId!);
+
+                    if (progressData.type === 'done') {
+                        updateRenderRequest(request.id, {
+                            status: 'completed',
+                            downloadUrl: progressData.url,
+                            fileSize: progressData.size,
+                            progress: 1
+                        });
+                    } else if (progressData.type === 'error') {
+                        updateRenderRequest(request.id, {
+                            status: 'failed',
+                            error: progressData.message,
+                            progress: 0
+                        });
+                    } else if (progressData.type === 'progress') {
+                        updateRenderRequest(request.id, {
+                            progress: progressData.progress
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Failed to check progress for ${request.id}:`, error);
+                }
+            });
+
+            await Promise.all(progressPromises);
+
+            // Reload history after updates
+            const updatedHistory = getRenderHistory();
+            setRenderRequests(updatedHistory);
+        };
+
+        const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
+        return () => clearInterval(interval);
+    }, [renderRequests]);
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -140,12 +147,14 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
         );
     }
 
-    if (error) {
+    if (isLoading) {
         return (
             <div className="w-80 border-r bg-background p-4">
                 <h2 className="text-lg font-semibold mb-4">Render History</h2>
-                <div className="text-center text-muted-foreground">
-                    Failed to load render history
+                <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="h-20 bg-muted animate-pulse rounded" />
+                    ))}
                 </div>
             </div>
         );
@@ -180,7 +189,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {getStatusBadge(request.status)}
-                                    {request.status === "rendering" && request.progress && (
+                                    {request.status === "rendering" && request.progress !== undefined && (
                                         <span className="text-xs text-muted-foreground">
                                             {Math.round(request.progress * 100)}%
                                         </span>
@@ -212,7 +221,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                                     )}
                                 </div>
 
-                                {request.status === "rendering" && request.progress && (
+                                {request.status === "rendering" && request.progress !== undefined && (
                                     <div className="mt-2">
                                         <div className="w-full bg-secondary rounded-full h-1.5">
                                             <div

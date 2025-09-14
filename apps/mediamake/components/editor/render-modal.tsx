@@ -22,6 +22,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { addRenderRequest } from "@/lib/render-history";
+import { InputCompositionProps } from "@microfox/remotion";
 
 interface RenderModalProps {
     isOpen: boolean;
@@ -41,12 +43,18 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
     const [settings, setSettings] = useState<RenderSettings>({
         fileName: "video.mp4",
         codec: "h264",
-        composition: "CompositionLayout",
+        composition: "DataMotion",
         inputProps: JSON.stringify({
             childrenData: [],
-            duration: 400,
+            config: {
+                duration: 400,
+                fps: 30,
+                width: 1920,
+                height: 1080,
+                fitDurationTo: 'Audio-xyz',
+            },
             style: { backgroundColor: "black" }
-        }, null, 2)
+        } as InputCompositionProps, null, 2)
     });
 
     const handleSettingChange = (key: keyof RenderSettings, value: string) => {
@@ -88,6 +96,22 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
             }
 
             const result = await response.json();
+
+            // Save render request to localStorage
+            const renderRequest = {
+                id: result.renderId || `render-${Date.now()}`,
+                fileName: settings.fileName,
+                codec: settings.codec,
+                composition: settings.composition,
+                status: "rendering" as const,
+                createdAt: new Date().toISOString(),
+                progress: 0,
+                inputProps: parsedInputProps,
+                bucketName: result.bucketName,
+                renderId: result.renderId
+            };
+
+            addRenderRequest(renderRequest);
 
             toast.success("Render started successfully!");
             onClose();

@@ -64,13 +64,10 @@ const mockRenderRequests = [
 
 export const GET = async (req: NextRequest) => {
   try {
-    // In a real implementation, you would:
-    // 1. Query your database for render requests
-    // 2. Update progress for rendering requests
-    // 3. Return the data
-
-    // For now, return mock data
-    return NextResponse.json(mockRenderRequests);
+    // Since we're now using localStorage for render history,
+    // this endpoint is no longer needed for the main functionality.
+    // Return empty array as fallback.
+    return NextResponse.json([]);
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch render history' },
