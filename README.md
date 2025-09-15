@@ -28,6 +28,15 @@ A comprehensive platform that combines:
 - **Uploader**: Git workflow-based code publishing
 - **Registry System**: Component and project management
 
+JSON => REMOTION => VIDEO
+<img width="1510" height="767" alt="image" src="https://github.com/user-attachments/assets/8742dd70-8e7e-4261-a552-c670acc69a43" />
+
+Render History With Billing Details
+<img width="1500" height="770" alt="image" src="https://github.com/user-attachments/assets/62714a8d-90f3-4071-b2e8-1cad33c0881b" />
+
+
+
+
 ### 3. @microfox/remotion
 
 A wrapper library around Remotion that provides:
