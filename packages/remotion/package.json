@@ -31,7 +31,7 @@
     "mediabunny": "^1.15.1",
     "react": "19.1.1",
     "remotion": "4.0.347",
-    "zod": "^3.24.3"
+    "zod": "^4.1.8"
   },
   "peerDependencies": {
     "@remotion/google-fonts": "4.0.347"
@@ -40,6 +40,7 @@
     "@eslint/eslintrc": "^3",
     "@eslint/js": "latest",
     "@remotion/eslint-plugin": "4.0.347",
+    "@remotion/google-fonts": "^4.0.347",
     "@swc/core": "^1.13.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

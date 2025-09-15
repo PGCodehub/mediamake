@@ -15,25 +15,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { getRenderHistory, updateRenderRequest, type RenderRequest } from "@/lib/render-history";
+import { getRenderHistory, type RenderRequest } from "@/lib/render-history";
+import { useProgress } from "@/hooks/use-progress";
 
 interface HistorySidebarProps {
     selectedRender: string | null;
     onSelectRender: (renderId: string) => void;
 }
 
-// Progress fetcher for checking render status
-const fetchProgress = async (bucketName: string, renderId: string) => {
-    const response = await fetch(`/api/remotion/progress?bucketName=${bucketName}&id=${renderId}`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch progress');
-    }
-    return response.json();
-};
-
 export function HistorySidebar({ selectedRender, onSelectRender }: HistorySidebarProps) {
     const [renderRequests, setRenderRequests] = useState<RenderRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { fetchAndUpdateProgress } = useProgress();
 
     // Load render history from localStorage
     useEffect(() => {
@@ -57,25 +50,12 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
 
             const progressPromises = renderingRequests.map(async (request) => {
                 try {
-                    const progressData = await fetchProgress(request.bucketName!, request.renderId!);
-
-                    if (progressData.type === 'done') {
-                        updateRenderRequest(request.id, {
-                            status: 'completed',
-                            downloadUrl: progressData.url,
-                            fileSize: progressData.size,
-                            progress: 1
-                        });
-                    } else if (progressData.type === 'error') {
-                        updateRenderRequest(request.id, {
-                            status: 'failed',
-                            error: progressData.message,
-                            progress: 0
-                        });
-                    } else if (progressData.type === 'progress') {
-                        updateRenderRequest(request.id, {
-                            progress: progressData.progress
-                        });
+                    console.log(`[Sidebar] Checking progress for ${request.id}`);
+                    const result = await fetchAndUpdateProgress(request);
+                    if (result.success) {
+                        console.log(`[Sidebar] Progress updated for ${request.id}`);
+                    } else {
+                        console.error(`[Sidebar] Failed to update progress for ${request.id}:`, result.error);
                     }
                 } catch (error) {
                     console.error(`Failed to check progress for ${request.id}:`, error);
@@ -91,7 +71,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
 
         const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
         return () => clearInterval(interval);
-    }, [renderRequests]);
+    }, [renderRequests, fetchAndUpdateProgress]);
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -169,7 +149,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                 </p>
             </div>
 
-            <ScrollArea className="h-[calc(100vh-8rem)]">
+            <ScrollArea className="h-[calc(100vh-8rem)] overflow-y-auto">
                 <div className="p-4 space-y-3">
                     {renderRequests?.map((request) => (
                         <Card
@@ -197,7 +177,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="pt-0">
+                            {selectedRender === request.id && <CardContent className="pt-0">
                                 <div className="space-y-1 text-xs text-muted-foreground">
                                     <div className="flex justify-between">
                                         <span>Codec:</span>
@@ -231,7 +211,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                                         </div>
                                     </div>
                                 )}
-                            </CardContent>
+                            </CardContent>}
                         </Card>
                     ))}
 

@@ -7,7 +7,7 @@ type WebSearchParams = z.infer<typeof WebSearchParamsSchema>;
 const aiRouter = new AiRouter<any, any>();
 
 export const fastResearchAgent = aiRouter
-  .agent('/', async (ctx) => {
+  .agent('/', async ctx => {
     const { query, queries, type, country, count, freshness } =
       ctx.request.params;
 
@@ -83,7 +83,7 @@ export const fastResearchAgent = aiRouter
           freshness: true,
         }).shape,
       )
-      .refine((data) => !!data.query || !!data.queries?.length, {
+      .refine(data => !!data.query || !!data.queries?.length, {
         message: 'Either a single query or a list of queries must be provided.',
         path: ['query'],
       }),

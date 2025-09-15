@@ -12,6 +12,7 @@ import {
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
+  IconKey,
   IconListDetails,
   IconReport,
   IconSearch,
@@ -51,6 +52,11 @@ const data = {
       url: "/history",
       icon: IconListDetails,
     },
+    {
+      title: "API Keys",
+      url: "/api-keys",
+      icon: IconKey,
+    }
     // {
     //   title: "Analytics",
     //   url: "#",

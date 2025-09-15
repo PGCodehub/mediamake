@@ -1,5 +1,7 @@
 # MediaMake
 
+> **⚠️ Work in Progress:** This project is currently under development. Please contact [karcreativeworks](https://github.com/karcreativeworks) if you want access, have requests, or wish to contribute.
+
 A comprehensive AI-driven video generation tools & libraries built on top of Remotion, designed to create professional videos & edits through data-driven components and automated workflows.
 
 ## Overview

@@ -24,8 +24,8 @@ export type ChatMessage = {
 };
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  url: process.env.UPSTASH_REDIS_REST_URL ?? 'https://ignore',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'ignore',
 });
 
 export const sessionStore = new CrudHash<ChatSession>(redis, 'chat_sessions');
@@ -73,10 +73,10 @@ export const chatRestoreUpstash: AiMiddleware<{
       //   oldMessages = oldMessages.slice(0, -5);
       // }
       const isNewMessageInStore = oldMessages.find(
-        (message) => message.id === newMessage.id,
+        message => message.id === newMessage.id,
       );
       if (isNewMessageInStore) {
-        props.request.messages = oldMessages.map((message) =>
+        props.request.messages = oldMessages.map(message =>
           message.id === newMessage.id ? newMessage : message,
         );
       } else {

@@ -19,6 +19,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ interface RenderSettings {
     codec: string;
     composition: string;
     inputProps: string;
+    isDownloadable: boolean;
 }
 
 export function RenderModal({ isOpen, onClose }: RenderModalProps) {
@@ -54,10 +56,11 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
                 fitDurationTo: 'Audio-xyz',
             },
             style: { backgroundColor: "black" }
-        } as InputCompositionProps, null, 2)
+        } as InputCompositionProps, null, 2),
+        isDownloadable: false
     });
 
-    const handleSettingChange = (key: keyof RenderSettings, value: string) => {
+    const handleSettingChange = (key: keyof RenderSettings, value: string | boolean) => {
         setSettings(prev => ({
             ...prev,
             [key]: value
@@ -85,8 +88,9 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
                 body: JSON.stringify({
                     id: settings.composition,
                     inputProps: parsedInputProps,
-                    fileName: settings.fileName,
+                    fileName: settings.isDownloadable ? settings.fileName : undefined,
                     codec: settings.codec,
+                    isDownloadable: settings.isDownloadable,
                 }),
             });
 
@@ -108,7 +112,8 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
                 progress: 0,
                 inputProps: parsedInputProps,
                 bucketName: result.bucketName,
-                renderId: result.renderId
+                renderId: result.renderId,
+                isDownloadable: settings.isDownloadable
             };
 
             addRenderRequest(renderRequest);
@@ -139,17 +144,35 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
 
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="fileName" className="text-right">
-                            File Name
+                        <Label htmlFor="isDownloadable" className="text-right">
+                            Downloadable
                         </Label>
-                        <Input
-                            id="fileName"
-                            value={settings.fileName}
-                            onChange={(e) => handleSettingChange("fileName", e.target.value)}
-                            className="col-span-3"
-                            placeholder="video.mp4"
-                        />
+                        <div className="col-span-3 flex items-center space-x-2">
+                            <Switch
+                                id="isDownloadable"
+                                checked={settings.isDownloadable}
+                                onCheckedChange={(checked) => handleSettingChange("isDownloadable", checked)}
+                            />
+                            <Label htmlFor="isDownloadable" className="text-sm text-muted-foreground">
+                                Enable file download ( Not recommended )
+                            </Label>
+                        </div>
                     </div>
+
+                    {settings.isDownloadable && (
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="fileName" className="text-right">
+                                File Name
+                            </Label>
+                            <Input
+                                id="fileName"
+                                value={settings.fileName}
+                                onChange={(e) => handleSettingChange("fileName", e.target.value)}
+                                className="col-span-3"
+                                placeholder="video.mp4"
+                            />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="codec" className="text-right">
@@ -184,7 +207,7 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-start gap-4">
+                    <div className="grid grid-cols-4 items-start gap-4 max-h-[200px] overflow-y-auto">
                         <Label htmlFor="inputProps" className="text-right pt-2">
                             Input Props
                         </Label>

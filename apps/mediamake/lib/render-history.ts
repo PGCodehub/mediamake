@@ -1,3 +1,5 @@
+import { InputCompositionProps } from '@microfox/remotion';
+
 export interface RenderRequest {
   id: string;
   fileName: string;
@@ -9,9 +11,96 @@ export interface RenderRequest {
   error?: string;
   downloadUrl?: string;
   fileSize?: number;
-  inputProps?: any;
+  inputProps?: InputCompositionProps;
   bucketName?: string;
   renderId?: string;
+  isDownloadable?: boolean;
+  progressData?: {
+    type: string;
+    url?: string;
+    size?: number;
+    renderInfo?: {
+      framesRendered?: number;
+      bucket?: string;
+      renderSize?: number;
+      chunks?: number;
+      costs?: {
+        accruedSoFar?: number;
+        displayCost?: string;
+        currency?: string;
+        disclaimer?: string;
+      };
+      currentTime?: number;
+      done?: boolean;
+      encodingStatus?: {
+        framesEncoded?: number;
+        combinedFrames?: number;
+        timeToCombine?: number;
+      };
+      errors?: any[];
+      fatalErrorEncountered?: boolean;
+      lambdasInvoked?: number;
+      outputFile?: string;
+      renderId?: string;
+      timeToFinish?: number;
+      timeToFinishChunks?: number;
+      timeToRenderFrames?: number;
+      overallProgress?: number;
+      retriesInfo?: any[];
+      outKey?: string;
+      outBucket?: string;
+      mostExpensiveFrameRanges?: Array<{
+        timeInMilliseconds: number;
+        chunk: number;
+        frameRange: [number, number];
+      }>;
+      timeToEncode?: number;
+      outputSizeInBytes?: number;
+      type?: string;
+      estimatedBillingDurationInMilliseconds?: number;
+      timeToCombine?: number;
+      combinedFrames?: number;
+      renderMetadata?: {
+        startedDate?: number;
+        totalChunks?: number;
+        estimatedTotalLambdaInvokations?: number;
+        estimatedRenderLambdaInvokations?: number;
+        compositionId?: string;
+        siteId?: string;
+        codec?: string;
+        type?: string;
+        imageFormat?: string;
+        inputProps?: any;
+        lambdaVersion?: string;
+        framesPerLambda?: number;
+        memorySizeInMb?: number;
+        region?: string;
+        renderId?: string;
+        privacy?: string;
+        everyNthFrame?: number;
+        frameRange?: [number, number];
+        audioCodec?: string | null;
+        deleteAfter?: string | null;
+        numberOfGifLoops?: number | null;
+        downloadBehavior?: any;
+        audioBitrate?: number | null;
+        muted?: boolean;
+        metadata?: any;
+        functionName?: string;
+        dimensions?: {
+          width: number;
+          height: number;
+        };
+        rendererFunctionName?: string;
+        scale?: number;
+      };
+      timeoutTimestamp?: number;
+      compositionValidated?: number;
+      functionLaunched?: number;
+      serveUrlOpened?: number;
+      artifacts?: any[];
+    };
+  };
 }
 
 const STORAGE_KEY = 'remotion-render-history';
@@ -57,18 +146,32 @@ export const updateRenderRequest = (
   id: string,
   updates: Partial<RenderRequest>,
 ): void => {
+  console.log('updateRenderRequest called with:', { id, updates });
   const history = getRenderHistory();
   const index = history.findIndex(req => req.id === id);
 
   if (index >= 0) {
+    const oldRequest = history[index];
     history[index] = { ...history[index], ...updates };
+    console.log('Updated request in localStorage:', {
+      old: oldRequest,
+      new: history[index],
+      updates,
+    });
     saveRenderHistory(history);
+  } else {
+    console.warn('Request not found for update:', id);
   }
 };
 
 export const getRenderRequest = (id: string): RenderRequest | null => {
   const history = getRenderHistory();
-  return history.find(req => req.id === id) || null;
+  const request = history.find(req => req.id === id) || null;
+  console.log('getRenderRequest called for ID:', id, 'Found:', request);
+  if (request) {
+    console.log('Request progressData:', request.progressData);
+  }
+  return request;
 };
 
 export const clearRenderHistory = (): void => {

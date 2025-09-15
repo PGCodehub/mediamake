@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
-
 // Mock data - replace with actual database queries
 const mockRenderRequests = [
   {

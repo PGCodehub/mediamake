@@ -6,6 +6,7 @@ import {
 import dotenv from 'dotenv';
 import path from 'path';
 import { DISK, RAM, REGION, SITE_NAME, TIMEOUT } from './config.mjs';
+import { webpackOverride } from './components/remotion/webpack-override.mjs';
 
 console.log('Selected region:', process.env.REMOTION_AWS_REGION || REGION);
 dotenv.config();
@@ -65,6 +66,7 @@ const { siteName } = await deploySite({
   entryPoint: path.join(process.cwd(), 'components', 'remotion', 'index.ts'),
   siteName: SITE_NAME,
   region: process.env.REMOTION_AWS_REGION || REGION,
+  options: { webpackOverride: webpackOverride },
 });
 
 console.log(siteName);

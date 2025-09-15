@@ -4,12 +4,15 @@ import {
   speculateFunctionName,
 } from '@remotion/lambda/client';
 import { DISK, RAM, REGION, SITE_NAME, TIMEOUT } from '../../../../config.mjs';
-import { RenderRequest } from '../helper';
 import { NextRequest, NextResponse } from 'next/server';
+import { Redis } from '@upstash/redis';
+import { CrudHash } from '@microfox/db-upstash';
+import { RenderRequest } from '@/lib/render-history';
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { id, inputProps, fileName, codec } = await req.json();
+    const { id, inputProps, isDownloadable, fileName, codec } =
+      await req.json();
 
     if (
       !process.env.AWS_ACCESS_KEY_ID &&
@@ -48,18 +51,44 @@ export const POST = async (req: NextRequest) => {
         timeoutInSeconds: TIMEOUT,
       }), //remotion-render-4-0-347-mem3000mb-disk10240mb-240sec
       region: (process.env.REMOTION_AWS_REGION || REGION) as AwsRegion,
-      serveUrl: SITE_NAME, // https://remotionlambda-useast2-xjv1ee2a1g.s3.eu-east-2.amazonaws.com/sites/mediamake
+      serveUrl: SITE_NAME, // https://remotionlambda-useast2-xjv1ee2a1g.s3.us-east-2.amazonaws.com/sites/mediamake
       composition: id,
       inputProps: inputProps,
-      framesPerLambda: 10,
+      //framesPerLambda: null,
       downloadBehavior: {
-        type: 'download',
-        fileName: fileName || 'video.mp4',
+        type: isDownloadable ? 'download' : 'play-in-browser',
+        fileName: isDownloadable ? fileName || 'video.mp4' : null,
       },
       //   metadata: {
 
       //   }
     });
+
+    if (req.headers.get('x-client-id')) {
+      const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL ?? 'https://ignore',
+        token: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'ignore',
+      });
+      const renderHistoryStore = new CrudHash<RenderRequest>(
+        redis,
+        'render_history',
+      );
+      await renderHistoryStore.set(
+        req.headers.get('x-client-id') + '-' + result.renderId,
+        {
+          id: req.headers.get('x-client-id') + '-' + result.renderId,
+          fileName: fileName,
+          codec: codec,
+          composition: id,
+          status: 'rendering',
+          createdAt: new Date().toISOString(),
+          inputProps: inputProps,
+          bucketName: result.bucketName,
+          renderId: result.renderId,
+          isDownloadable: isDownloadable,
+        },
+      );
+    }
     return NextResponse.json(result);
   } catch (err) {
     console.error(err);

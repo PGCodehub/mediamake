@@ -1,10 +1,10 @@
 import { AiRouter } from '@microfox/ai-router';
-import z from 'zod';
+import z from 'zod/v4';
 
 const aiRouter = new AiRouter<any, any>();
 
 export const deepResearchAgent = aiRouter
-  .agent('/', async (ctx) => {
+  .agent('/', async ctx => {
     const { query } = ctx.request.params;
     console.log('query', query);
   })
