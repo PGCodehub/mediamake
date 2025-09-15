@@ -1,11 +1,14 @@
 {
   "name": "@microfox/remotion-render-lambda",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A TypeScript SDK for Remotion Render Lambda.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "files": ["dist/**", "CHANGELOG.md"],
+  "files": [
+    "dist/**",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch",
@@ -42,5 +45,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["remotion-render-lambda", "typescript", "api", "sdk"]
+  "keywords": [
+    "remotion-render-lambda",
+    "typescript",
+    "api",
+    "sdk"
+  ]
 }
