@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Img, staticFile } from 'remotion';
 import { BaseRenderableProps } from '../../core/types';
 import { ComponentConfig } from '../../core/types';
+import { useAnimatedStyles } from '../effects';
 
 interface ImageAtomProps extends BaseRenderableProps {
     data: {
@@ -11,8 +12,9 @@ interface ImageAtomProps extends BaseRenderableProps {
     };
 }
 
-export const Atom: React.FC<ImageAtomProps> = ({ data }) => {
+export const Atom: React.FC<ImageAtomProps> = ({ data, id }) => {
 
+    const overrideStyles = useAnimatedStyles(id);
     const source = useMemo(() => {
         if (data.src.startsWith('http')) {
             return data.src;
@@ -20,8 +22,10 @@ export const Atom: React.FC<ImageAtomProps> = ({ data }) => {
         return staticFile(data.src);
     }, [data.src]);
 
+    const enhancedStyle = useMemo(() => ({ ...data.style, ...overrideStyles }), [data.style, overrideStyles]);
+
     // @ts-ignore
-    return <Img className={data.className} src={source} style={data.style} crossOrigin='anonymous' />;
+    return <Img className={data.className} src={source} style={enhancedStyle} crossOrigin='anonymous' maxRetries={4} />;
 };
 
 // Static config for ImageAtom

@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { google } from '@ai-sdk/google';
 import { AiRouter } from '@microfox/ai-router';
 import {
@@ -10,20 +12,22 @@ import dedent from 'dedent';
 import { braveResearchAgent } from './agents/braveResearch';
 import { summarizeAgent } from './agents/summarize';
 import { systemAgent } from './agents/system';
+import { transcriptionMetaAgent } from './agents/words/transcriptionMetaAgent';
 import { contextLimiter } from './middlewares/contextLimiter';
 import { onlyTextParts } from './middlewares/onlyTextParts';
 import { chatRestoreLocal } from '../api/studio/chat/sessions/chatSessionLocal';
 
-const aiRouter = new AiRouter<any, any, any, any>();
-// aiRouter.setLogger(console);
+const aiRouter = new AiRouter();
+//aiRouter.setLogger(console);
 
 const aiMainRouter = aiRouter
   .agent('/system', systemAgent)
   .agent('/summarize', summarizeAgent)
   .agent('/research', braveResearchAgent)
+  .agent('/transcription-meta', transcriptionMetaAgent)
   .use('/', contextLimiter(5))
   .use('/', onlyTextParts(100))
-  .agent('/', async (props) => {
+  .agent('/', async props => {
     // Ai decides what to do based on the last message & user intent.
     props.response.writeMessageMetadata({
       loader: 'Deciding...',
@@ -35,6 +39,7 @@ const aiMainRouter = aiRouter
           You are a helpful assistant that can use the following tools to help the user
           Use the summary tool to summarise the research.
           If you do research or websearch, always follow it up with calling the summary tool.
+          Use the transcription metadata tool to analyze sentence-split transcripts for lyricography.
         `,
       messages: convertToModelMessages(
         props.state.onlyTextMessages || props.request.messages,
@@ -42,21 +47,22 @@ const aiMainRouter = aiRouter
       tools: {
         ...props.next.agentAsTool('/research'),
         ...props.next.agentAsTool('/summarize'),
+        ...props.next.agentAsTool('/transcription-meta'),
       },
       toolChoice: 'auto',
       stopWhen: [
         stepCountIs(10),
         ({ steps }) =>
-          steps.some((step) =>
+          steps.some(step =>
             step.toolResults.some(
-              (tool) => tool.toolName === 'summarizeResearch',
+              tool => tool.toolName === 'summarizeResearch',
             ),
           ),
       ],
-      onError: (error) => {
+      onError: error => {
         console.error('ORCHESTRATION ERROR', error);
       },
-      onFinish: (result) => {
+      onFinish: result => {
         console.log('ORCHESTRATION USAGE', result.totalUsage);
       },
     });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AssemblyAI } from 'assemblyai';
+import { captionMutator } from '@microfox/datamotion';
 
 // --- AssemblyAI Schemas ---
 const AssemblyAIWordSchema = z.object({
@@ -18,49 +19,97 @@ const AssemblyAIUtteranceSchema = z.object({
 });
 
 // --- Transcription Schemas ---
-const WordSchema = z.object({
-  word: z.string(),
-  startTime: z.number(),
-  endTime: z.number(),
+export const TranscriptionWordSchema = z.object({
+  text: z.string(),
+  start: z.number(),
+  absoluteStart: z.number().optional(),
+  end: z.number(),
+  absoluteEnd: z.number().optional(),
+  duration: z.number(),
+  confidence: z.number(),
 });
 
-const CaptionSchema = z.object({
+export type TranscriptionWord = z.infer<typeof TranscriptionWordSchema>;
+
+export const TranscriptionSentenceSchema = z.object({
   id: z.string(),
   text: z.string(),
-  startTime: z.number(),
-  endTime: z.number(),
-  words: z.array(WordSchema),
+  start: z.number(),
+  absoluteStart: z.number().optional(),
+  end: z.number(),
+  absoluteEnd: z.number().optional(),
+  duration: z.number(),
+  words: z.array(TranscriptionWordSchema),
 });
+
+export type TranscriptionSentence = z.infer<typeof TranscriptionSentenceSchema>;
 
 // --- Request/Response Schemas ---
 const TranscriptionRequestSchema = z.object({
-  audioUrl: z.string().url('Invalid audio URL'),
-  apiKey: z.string().optional(),
+  audioUrl: z.string().startsWith('https://'),
   language: z.string().optional(),
 });
 
 const TranscriptionResponseSchema = z.object({
+  id: z.string(),
+  language_code: z.string(),
   success: z.boolean(),
-  captions: z.array(CaptionSchema),
+  captions: z.array(TranscriptionSentenceSchema),
   error: z.string().optional(),
 });
 
 // --- Types ---
 type AssemblyAIWord = z.infer<typeof AssemblyAIWordSchema>;
 type AssemblyAIUtterance = z.infer<typeof AssemblyAIUtteranceSchema>;
-type Word = z.infer<typeof WordSchema>;
-type Caption = z.infer<typeof CaptionSchema>;
+type Word = z.infer<typeof TranscriptionWordSchema>;
+type Caption = z.infer<typeof TranscriptionSentenceSchema>;
 type TranscriptionRequest = z.infer<typeof TranscriptionRequestSchema>;
 
+export const generateCaptions = (utterances: AssemblyAIUtterance[]) => {
+  let captions: Caption[] = utterances.map(
+    (utterance: AssemblyAIUtterance, index: number): Caption => {
+      const words: Word[] = utterance.words.map((word: AssemblyAIWord) => ({
+        text: word.text,
+        start: (word.start - utterance.start) / 1000,
+        absoluteStart: word.start / 1000,
+        end: (word.end - utterance.start) / 1000,
+        absoluteEnd: word.end / 1000,
+        duration: (word.end - word.start) / 1000,
+        confidence: word.confidence,
+      }));
+
+      return {
+        id: `caption-${index}`,
+        text: utterance.text,
+        start: utterance.start / 1000,
+        absoluteStart: utterance.start / 1000,
+        end: utterance.end / 1000,
+        absoluteEnd: utterance.end / 1000,
+        duration: (utterance.end - utterance.start) / 1000,
+        words: words,
+      };
+    },
+  );
+  if (captions.length === 1 && captions[0].words.length > 10) {
+    captions = captionMutator(captions, {
+      maxCharactersPerSentence: 50,
+      maxSentenceDuration: 2,
+      minSentenceDuration: 0.5,
+      splitStrategy: 'smart',
+    });
+  }
+  return captions;
+};
 /**
  * Transcribes an audio file using AssemblyAI.
  */
 async function transcribeAudio(
   audioUrl: string,
-  apiKey: string,
   language?: string,
-): Promise<Caption[]> {
-  const assemblyAIKey = apiKey || process.env.ASSEMBLYAI_API_KEY;
+): Promise<
+  Partial<{ captions: Caption[]; id: string; language_code: string }>
+> {
+  const assemblyAIKey = process.env.ASSEMBLYAI_API_KEY ?? '';
 
   if (!assemblyAIKey) {
     throw new Error('AssemblyAI API key is required.');
@@ -96,26 +145,14 @@ async function transcribeAudio(
 
     console.log('Successfully received transcription from AssemblyAI');
 
-    const captions: Caption[] = transcript.utterances.map(
-      (utterance: AssemblyAIUtterance, index: number): Caption => {
-        const words: Word[] = utterance.words.map((word: AssemblyAIWord) => ({
-          word: word.text,
-          startTime: word.start / 1000,
-          endTime: word.end / 1000,
-        }));
-
-        return {
-          id: `caption-${index}`,
-          text: utterance.text,
-          startTime: utterance.start / 1000,
-          endTime: utterance.end / 1000,
-          words: words,
-        };
-      },
-    );
+    const captions = generateCaptions(transcript.utterances);
 
     // Validate the output with Zod before returning
-    return z.array(CaptionSchema).parse(captions);
+    return {
+      id: transcript.id,
+      language_code: transcript.language_code,
+      captions: z.array(TranscriptionSentenceSchema).parse(captions),
+    };
   } catch (error) {
     console.error('An error occurred during AssemblyAI transcription:', error);
     throw new Error('Failed to transcribe audio with AssemblyAI.');
@@ -128,14 +165,19 @@ export const POST = async (req: NextRequest) => {
     const body = await req.json();
     const validatedRequest = TranscriptionRequestSchema.parse(body);
 
-    const { audioUrl, apiKey, language } = validatedRequest;
+    const { audioUrl, language } = validatedRequest;
 
     // Perform transcription
-    const captions = await transcribeAudio(audioUrl, apiKey || '', language);
+    const { captions, id, language_code } = await transcribeAudio(
+      audioUrl,
+      language,
+    );
 
     // Return successful response
     const response = TranscriptionResponseSchema.parse({
       success: true,
+      id,
+      language_code,
       captions,
     });
 
@@ -166,4 +208,41 @@ export const POST = async (req: NextRequest) => {
       { status: 500 },
     );
   }
+};
+
+export const GET = async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+
+  const assemblyAIKey = process.env.ASSEMBLYAI_API_KEY ?? '';
+  const client = new AssemblyAI({ apiKey: assemblyAIKey });
+
+  if (!id) {
+    const allTranscripts = await client.transcripts.list();
+    return NextResponse.json({ transcripts: allTranscripts }, { status: 200 });
+  }
+
+  const transcript = await client.transcripts.get(id);
+
+  if (!transcript) {
+    return NextResponse.json(
+      { error: 'Transcript not found.' },
+      { status: 404 },
+    );
+  }
+  if (!transcript.utterances) {
+    return NextResponse.json(
+      { error: 'Utterance data is missing from the AssemblyAI response.' },
+      { status: 400 },
+    );
+  }
+
+  const captions = generateCaptions(transcript.utterances);
+  return NextResponse.json({
+    id,
+    language_code: transcript.language_code,
+    success: true,
+    captions,
+    audio_url: transcript.audio_url,
+  });
 };

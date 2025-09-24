@@ -14,6 +14,8 @@ export interface RenderRequest {
   inputProps?: InputCompositionProps;
   bucketName?: string;
   renderId?: string;
+  renderType?: 'video' | 'audio' | 'still';
+  audioCodec?: string;
   isDownloadable?: boolean;
   progressData?: {
     type: string;

@@ -43,16 +43,15 @@ export async function POST(req: NextRequest) {
   });
 
   const { messages, ...restOfBody } = body;
-  const lastMessage = body.messages?.[body.messages.length - 1] as UIMessage<{
-    revalidatePath?: string;
-  }>;
-  //const revalidatePath = lastMessage?.metadata?.revalidatePath;
 
   return await aiMainRouter.toAwaitResponse(agentPath, {
     request: {
       ...body,
-      params,
-      //loadedRevalidatePath: agentPath,
+      messages: messages ?? [],
+      params: {
+        ...params,
+        ...restOfBody,
+      },
     },
   });
 }

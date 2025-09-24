@@ -5,14 +5,17 @@ import { CrudHash } from '@microfox/db-upstash';
 
 // This function can be marked `async` if using `await` inside
 export default async function middleware(request: NextRequest) {
-  console.log('middleware', request.nextUrl.pathname);
   if (process.env.NODE_ENV === 'development') {
     return NextResponse.next();
   }
 
   const { pathname } = request.nextUrl;
-  // Only allow api/remotion routes
-  if (!pathname.startsWith('/api/remotion')) {
+  // Only allow api/remotion, api/transcribe & api/transcriptions routes
+  if (
+    !pathname.startsWith('/api/remotion') &&
+    !pathname.startsWith('/api/transcribe') &&
+    !pathname.startsWith('/api/transcriptions')
+  ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -32,6 +35,7 @@ export default async function middleware(request: NextRequest) {
     token: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'ignore',
   });
   const apiKeyStore = new CrudHash<ApiKeyInfo>(redis, 'apiKeys');
+
   const apiKeyInfo = await apiKeyStore.get(bearer);
   if (!apiKeyInfo) {
     return NextResponse.json(

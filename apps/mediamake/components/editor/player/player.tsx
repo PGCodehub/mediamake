@@ -1,0 +1,170 @@
+"use client"
+
+import { calculateCompositionLayoutMetadata, CompositionLayout, InputCompositionProps, RenderableComponentData } from "@microfox/remotion";
+import { Player } from "@remotion/player";
+import { Loader2, Copy, Check, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import AudioScene from "../../remotion/test.json";
+import { RenderButton } from "./render-button";
+import { JsonEditor } from "./json-editor";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { RenderProvider, RenderSettings, useRender } from "./render-provider";
+
+const container: React.CSSProperties = {
+    margin: "auto",
+    marginBottom: 20,
+    width: "100%",
+};
+
+const outer: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    maxHeight: "80vh",
+    maxWidth: "70vw",
+};
+
+const player: React.CSSProperties = {
+    backgroundColor: "#00000030",
+    maxHeight: "80vh",
+    position: "relative",
+};
+
+export const MediaMakePlayerPlain: React.FC = () => {
+
+    const { updateSetting } = useRender();
+    const defaultInputProps: InputCompositionProps = {
+        childrenData: AudioScene.childrenData as RenderableComponentData[],
+        config: AudioScene.config,
+        style: { ...AudioScene.style }
+    };
+
+    const [inputProps, setInputProps] = useState<InputCompositionProps>(defaultInputProps);
+    const [calculatedMetadata, setCalculatedMetadata] = useState<Awaited<ReturnType<typeof calculateCompositionLayoutMetadata>> | null>(null);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        const calculateMetadata = async () => {
+            const metadata = await calculateCompositionLayoutMetadata({
+                defaultProps: {},
+                props: inputProps,
+                abortSignal: new AbortController().signal,
+                compositionId: 'DataMotion',
+                isRendering: false,
+            });
+            setCalculatedMetadata(metadata);
+        };
+        calculateMetadata();
+        updateSetting('inputProps', JSON.stringify(inputProps, null, 2));
+    }, [inputProps]);
+
+    const copyProps = async () => {
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(inputProps, null, 2));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy props:', err);
+        }
+    };
+
+    const resetProps = () => {
+        setInputProps(defaultInputProps);
+    };
+
+    const handleInputPropsChange = (newProps: InputCompositionProps) => {
+        setInputProps(newProps);
+    };
+
+    if (!calculatedMetadata) {
+        return <div className="flex justify-center items-center w-full h-full">
+            <Loader2 className="w-full h-6 animate-spin" />
+        </div>;
+    }
+
+    return (
+        <div className="relative flex flex-row justify-center items-stretch w-full h-full gap-10">
+            <div className="min-w-1/3 h-full bg-white rounded-lg border border-neutral-200 ml-10 overflow-hidden relative">
+                <div className="rounded-lg h-full flex flex-col">
+                    <div className="flex items-center justify-between p-4 border-b">
+                        <h1 className="text-xl font-bold">Input Properties</h1>
+                        <div className="flex gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={resetProps}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        <RotateCcw className="w-3 h-3" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Reset to default</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={copyProps}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <Check className="w-3 h-3 text-green-600" />
+                                                Copied!
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-3 h-3" />
+                                                Copy
+                                            </>
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Copy props to clipboard</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </div>
+                    <div className="flex-1 p-4">
+                        <JsonEditor
+                            value={inputProps}
+                            onChange={handleInputPropsChange}
+                            height="calc(80vh - 120px)"
+                            className="h-full"
+                        />
+                    </div>
+                </div>
+            </div>
+            <Player
+                component={CompositionLayout}
+                inputProps={calculatedMetadata.props}
+                durationInFrames={calculatedMetadata?.durationInFrames ?? 20}
+                fps={calculatedMetadata?.fps ?? 30}
+                compositionHeight={calculatedMetadata?.height ?? 1920}
+                compositionWidth={calculatedMetadata?.width ?? 1920}
+                style={player}
+                className="w-fit h-full"
+                controls
+                loop
+            />
+            {process.env.NODE_ENV === "development" && (
+                <div className="absolute top-4 right-4">
+                    <RenderButton />
+                </div>
+            )}
+        </div>
+    )
+}
+
+export const MediaMakePlayer = () => {
+    return (
+        <RenderProvider>
+            <MediaMakePlayerPlain />
+        </RenderProvider>
+    )
+}

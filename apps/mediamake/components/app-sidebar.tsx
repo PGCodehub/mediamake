@@ -8,6 +8,7 @@ import {
   IconDatabase,
   IconFileAi,
   IconFileDescription,
+  IconFileText,
   IconFileWord,
   IconFolder,
   IconHelp,
@@ -34,6 +35,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { StudioConfig } from "@/microfox.config"
+import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon } from "lucide-react"
 
 const data = {
   user: {
@@ -45,17 +47,27 @@ const data = {
     {
       title: "Player",
       url: "/",
-      icon: IconDashboard,
+      icon: <LayoutDashboardIcon />,
     },
     {
       title: "History",
       url: "/history",
-      icon: IconListDetails,
+      icon: <ListIcon />,
     },
     {
       title: "API Keys",
       url: "/api-keys",
-      icon: IconKey,
+      icon: <KeyIcon />,
+    },
+    {
+      title: "Transcriber",
+      url: "/transcriber",
+      icon: <AudioLinesIcon />,
+    },
+    {
+      title: "Presets",
+      url: "/presets",
+      icon: <MagnetIcon />,
     }
     // {
     //   title: "Analytics",

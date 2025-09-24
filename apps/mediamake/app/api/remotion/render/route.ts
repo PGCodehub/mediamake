@@ -5,14 +5,19 @@ import {
 } from '@remotion/lambda/client';
 import { DISK, RAM, REGION, SITE_NAME, TIMEOUT } from '../../../../config.mjs';
 import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
-import { CrudHash } from '@microfox/db-upstash';
-import { RenderRequest } from '@/lib/render-history';
+import { renderRequestDB } from '@/lib/render-mongodb';
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { id, inputProps, isDownloadable, fileName, codec } =
-      await req.json();
+    const {
+      id,
+      inputProps,
+      isDownloadable,
+      fileName,
+      codec,
+      audioCodec,
+      renderType, // Added for unified interface
+    } = await req.json();
 
     if (
       !process.env.AWS_ACCESS_KEY_ID &&
@@ -34,6 +39,8 @@ export const POST = async (req: NextRequest) => {
     console.log(process.env.REMOTION_AWS_REGION || REGION);
     console.log('Composition is', id);
     console.log('Codec is', codec);
+    console.log('Audio Codec is', audioCodec);
+    console.log('Render Type is', renderType);
     console.log(
       'Function name is',
       speculateFunctionName({
@@ -44,7 +51,7 @@ export const POST = async (req: NextRequest) => {
     );
 
     const result = await renderMediaOnLambda({
-      codec: codec || 'h264',
+      codec: codec ?? 'h264',
       functionName: speculateFunctionName({
         diskSizeInMb: DISK,
         memorySizeInMb: RAM,
@@ -52,8 +59,9 @@ export const POST = async (req: NextRequest) => {
       }), //remotion-render-4-0-347-mem3000mb-disk10240mb-240sec
       region: (process.env.REMOTION_AWS_REGION || REGION) as AwsRegion,
       serveUrl: SITE_NAME, // https://remotionlambda-useast2-xjv1ee2a1g.s3.us-east-2.amazonaws.com/sites/mediamake
-      composition: id,
+      composition: id ?? 'DataMotion',
       inputProps: inputProps,
+      audioCodec: audioCodec ?? 'aac',
       //framesPerLambda: null,
       downloadBehavior: {
         type: isDownloadable ? 'download' : 'play-in-browser',
@@ -64,30 +72,20 @@ export const POST = async (req: NextRequest) => {
       //   }
     });
 
-    if (req.headers.get('x-client-id')) {
-      const redis = new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL ?? 'https://ignore',
-        token: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'ignore',
+    const clientId = req.headers.get('x-client-id');
+    if (clientId) {
+      await renderRequestDB.create({
+        clientId,
+        renderId: result.renderId,
+        fileName: fileName || 'video.mp4',
+        codec: codec || 'h264',
+        composition: id ?? 'DataMotion',
+        status: 'rendering',
+        inputProps: inputProps,
+        bucketName: result.bucketName,
+        isDownloadable: isDownloadable,
+        renderType: renderType || 'video',
       });
-      const renderHistoryStore = new CrudHash<RenderRequest>(
-        redis,
-        'render_history',
-      );
-      await renderHistoryStore.set(
-        req.headers.get('x-client-id') + '-' + result.renderId,
-        {
-          id: req.headers.get('x-client-id') + '-' + result.renderId,
-          fileName: fileName,
-          codec: codec,
-          composition: id,
-          status: 'rendering',
-          createdAt: new Date().toISOString(),
-          inputProps: inputProps,
-          bucketName: result.bucketName,
-          renderId: result.renderId,
-          isDownloadable: isDownloadable,
-        },
-      );
     }
     return NextResponse.json(result);
   } catch (err) {

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { staticFile, Video, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BaseRenderableProps, ComponentConfig } from '../../core/types';
 import { z } from 'zod';
+import { useAnimatedStyles } from '../effects';
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -46,8 +47,9 @@ interface VideoAtomProps extends BaseRenderableProps {
  * @param data - Video configuration object containing all playback and styling settings
  * @returns Remotion Video component with applied configurations
  */
-export const Atom: React.FC<VideoAtomProps> = ({ data }) => {
+export const Atom: React.FC<VideoAtomProps> = ({ data, id }) => {
     const { fps } = useVideoConfig();
+    const overrideStyles = useAnimatedStyles(id);
     const frame = useCurrentFrame();
 
     // Calculate video source with proper handling for local vs remote files
@@ -71,8 +73,8 @@ export const Atom: React.FC<VideoAtomProps> = ({ data }) => {
     const combinedStyle = useMemo(() => {
         const baseStyle = data.style || {};
         const objectFit = data.fit ? { objectFit: data.fit } : {};
-        return { ...baseStyle, ...objectFit };
-    }, [data.style, data.fit]);
+        return { ...baseStyle, ...objectFit, ...overrideStyles };
+    }, [data.style, data.fit, overrideStyles]);
 
     return (
         // @ts-ignore

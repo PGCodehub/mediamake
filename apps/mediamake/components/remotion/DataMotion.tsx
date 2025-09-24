@@ -1,5 +1,8 @@
 'use client';
 import { Composition } from "@microfox/remotion";
+import TestJson from './test.json';
+import TestingLyricalsJson from './testing-lyricals.json';
+import { RenderableComponentData } from "@microfox/datamotion";
 
 
 export const DataMotion: React.FC = () => {
@@ -20,4 +23,19 @@ export const DataMotion: React.FC = () => {
             }}
         />
     );
-}; 
+};
+
+export const ExampleDataMotion: React.FC = () => {
+    return (
+        <Composition
+            id="ExampleDataMotion"
+            componentId="DataMotion"
+            type="scene"
+            childrenData={TestJson.childrenData as RenderableComponentData[]}
+            config={TestJson.config}
+            style={{
+                backgroundColor: "black",
+            }}
+        />
+    );
+};

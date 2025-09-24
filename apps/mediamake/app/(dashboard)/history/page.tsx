@@ -6,8 +6,8 @@ import {
     SidebarInset,
     SidebarProvider,
 } from "@/components/ui/sidebar";
-import { HistorySidebar } from "@/components/editor/history-sidebar";
-import { HistoryContent } from "@/components/editor/history-content";
+import { HistorySidebar } from "@/components/editor/history/history-sidebar";
+import { HistoryContent } from "@/components/editor/history/history-content";
 import { useState } from "react";
 
 export default function HistoryPage() {

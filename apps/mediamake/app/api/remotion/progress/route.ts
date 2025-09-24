@@ -5,9 +5,7 @@ import {
 } from '@remotion/lambda/client';
 import { DISK, RAM, REGION, TIMEOUT } from '../../../../config.mjs';
 import { NextRequest, NextResponse } from 'next/server';
-import { CrudHash } from '@microfox/db-upstash';
-import { RenderRequest } from '@/lib/render-history';
-import { Redis } from '@upstash/redis';
+import { renderRequestDB } from '@/lib/render-mongodb';
 
 export const GET = async (req: NextRequest) => {
   try {
@@ -35,30 +33,22 @@ export const GET = async (req: NextRequest) => {
       renderId: id,
     });
 
-    if (req.headers.get('x-client-id')) {
-      const redis = new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL ?? 'https://ignore',
-        token: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'ignore',
-      });
-      const renderHistoryStore = new CrudHash<RenderRequest>(
-        redis,
-        'render_history',
+    const clientId = req.headers.get('x-client-id');
+    if (clientId) {
+      await renderRequestDB.update(
+        renderProgress.renderId,
+        {
+          progressData: renderProgress,
+          status: renderProgress.fatalErrorEncountered
+            ? 'failed'
+            : renderProgress.done
+              ? 'completed'
+              : 'rendering',
+          downloadUrl: renderProgress.outputFile as string,
+          fileSize: renderProgress.outputSizeInBytes as number,
+        },
+        clientId,
       );
-      if (req.headers.get('x-client-id')) {
-        await renderHistoryStore.update(
-          req.headers.get('x-client-id') + '-' + renderProgress.renderId,
-          {
-            progressData: renderProgress,
-            status: renderProgress.fatalErrorEncountered
-              ? 'failed'
-              : renderProgress.done
-                ? 'completed'
-                : 'rendering',
-            downloadUrl: renderProgress.outputFile as string,
-            fileSize: renderProgress.outputSizeInBytes as number,
-          },
-        );
-      }
     }
 
     if (renderProgress.fatalErrorEncountered) {

@@ -6,8 +6,8 @@ import {
     SidebarInset,
     SidebarProvider,
 } from "@/components/ui/sidebar";
-import { ApiKeysSidebar } from "@/components/editor/api-keys-sidebar";
-import { ApiKeysContent } from "@/components/editor/api-keys-content";
+import { ApiKeysSidebar } from "@/components/editor/apikeys/api-keys-sidebar";
+import { ApiKeysContent } from "@/components/editor/apikeys/api-keys-content";
 import { useState } from "react";
 
 export default function ApiKeysPage() {

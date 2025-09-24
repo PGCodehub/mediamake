@@ -102,8 +102,11 @@ export const useWaveformData = (
     if (posterize && posterize > 1) {
       return Math.round(frame / posterize) * posterize;
     }
+    if (dataOffsetInSeconds != 0) {
+      return frame + Math.round(dataOffsetInSeconds * fps);
+    }
     return frame;
-  }, [frame, posterize]);
+  }, [frame, posterize, dataOffsetInSeconds]);
 
   // Generate waveform data
   const waveformData = useMemo(() => {
@@ -116,7 +119,7 @@ export const useWaveformData = (
         audioData,
         numberOfSamples: validatedNumberOfSamples,
         windowInSeconds,
-        dataOffsetInSeconds,
+        dataOffsetInSeconds: 0,
         normalize,
       });
 

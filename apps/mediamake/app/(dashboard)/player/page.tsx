@@ -4,7 +4,7 @@ import type { NextPage } from "next";
 // import { RenderControls } from "../components/RenderControls";
 // import { Tips } from "../components/Tips/Tips";
 // import { Spacing } from "../components/Spacing";
-import { MediaMakePlayer } from "@/components/editor/player";
+import { MediaMakePlayer } from "@/components/editor/player/player";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset } from "@/components/ui/sidebar";
 
