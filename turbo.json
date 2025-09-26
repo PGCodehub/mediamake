@@ -1,12 +1,32 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "NODE_ENV",
+    "GOOGLE_GENERATIVE_AI_API_KEY",
+    "REMOTION_AWS_ACCESS_KEY_ID",
+    "REMOTION_AWS_SECRET_ACCESS_KEY",
+    "REMOTION_AWS_REGION",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
+    "ASSEMBLYAI_API_KEY",
+    "MONGODB_URI",
+    "ASSEMBLYAI_API_KEY",
+    "GOOGLE_GENERATIVE_AI_API_KEY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**"
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": [
+        "NODE_ENV",
+        "GOOGLE_GENERATIVE_AI_API_KEY",
+        "REMOTION_AWS_ACCESS_KEY_ID",
+        "REMOTION_AWS_SECRET_ACCESS_KEY",
+        "REMOTION_AWS_REGION",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "ASSEMBLYAI_API_KEY",
+        "MONGODB_URI"
       ]
     },
     "lint": {
@@ -16,7 +36,13 @@
       "dependsOn": ["^build", "build"]
     },
     "test": {
-      "dependsOn": ["^build", "build"]
+      "dependsOn": ["^build", "build"],
+      "env": [
+        "NODE_ENV",
+        "GOOGLE_GENERATIVE_AI_API_KEY",
+        "ASSEMBLYAI_API_KEY",
+        "MONGODB_URI"
+      ]
     },
     "clean": {
       "dependsOn": ["^clean"]

@@ -3,9 +3,9 @@
   "name": "microfox",
   "scripts": {
     "prebuild": "npm install --force",
-    "build": "turbo build",
-    "build:watch": "turbo build -- --watch",
-    "build:mediamake": "turbo build --filter=mediamake",
+    "build": "turbo build --env-mode=loose",
+    "build:watch": "turbo build --env-mode=loose -- --watch",
+    "build:mediamake": "turbo build --env-mode=loose --filter=mediamake",
     "changeset": "changeset",
     "clean": "turbo clean",
     "dev": "turbo dev",
