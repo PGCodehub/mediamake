@@ -1,3 +1,50 @@
+# Rendering via API
+
+https://mediamake-mediamake.vercel.app/api/remotion/render/preset => triggers render
+example inputData ( will provide detailed api in future, on how you can have different mp4 etc.. )
+
+## Headers
+
+```
+`Authorization`: `Bearer <APIKEY>`
+```
+
+## Method
+
+POST Request
+
+## Body
+
+```
+{"presets":[{
+"presetId": "video-stitch-sequence",
+"presetType": "predefined",
+"presetInputData":  {
+    "aspectRatio": "16:9", // use 9:16 for vertical
+    "videoUrls": [
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+    ]
+  }
+}]}
+```
+
+## Progress CHeckign via API
+
+https://mediamake-mediamake.vercel.app/api/remotion/progress?id={id}&bucketName={bucketName}
+id & bucketName you will get in the first request.
+
+## Method
+
+GET Request
+
+## Headers
+
+```
+`Authorization`: `Bearer <APIKEY>`
+```
+
 # Example of Output Progress Data
 
 ```
