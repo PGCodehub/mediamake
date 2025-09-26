@@ -6,4 +6,11 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
+  // Use esbuild instead of rollup to avoid native binary issues
+  esbuildOptions: (options) => {
+    options.platform = 'node';
+  },
+  // Disable rollup optimizations that require native binaries
+  minify: false,
+  treeshake: false,
 });
