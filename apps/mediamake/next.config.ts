@@ -8,15 +8,6 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-  // Optimize for serverless environments
-  experimental: {
-    serverComponentsExternalPackages: [
-      '@remotion/bundler',
-      '@remotion/renderer',
-    ],
-  },
-  // Disable static optimization for API routes that use native binaries
-  output: 'standalone',
   webpack: (config, { isServer }) => {
     // Exclude TypeScript declaration files from webpack processing
     config.module.rules.push({
@@ -34,12 +25,6 @@ const nextConfig: NextConfig = {
       generator: {
         emit: false,
       },
-    });
-
-    // Handle native binaries in serverless environments
-    config.module.rules.push({
-      test: /\.node$/,
-      use: 'node-loader',
     });
 
     // Exclude problematic files from bundling
