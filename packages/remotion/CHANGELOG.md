@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+### Patch Changes
+
+- 5624da8: Triggered by issue #9: release @microfox/remotion
+
 ## 1.0.1
 
 ### Patch Changes
