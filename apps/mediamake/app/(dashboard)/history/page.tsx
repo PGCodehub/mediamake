@@ -9,9 +9,11 @@ import {
 import { HistorySidebar } from "@/components/editor/history/history-sidebar";
 import { HistoryContent } from "@/components/editor/history/history-content";
 import { useState } from "react";
+import { RenderRequest } from "@/lib/render-history";
 
 export default function HistoryPage() {
     const [selectedRender, setSelectedRender] = useState<string | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<RenderRequest | null>(null);
 
     return (
         <SidebarInset>
@@ -22,9 +24,15 @@ export default function HistoryPage() {
                         <div className="flex h-[calc(100vh-8rem)]">
                             <HistorySidebar
                                 selectedRender={selectedRender}
-                                onSelectRender={setSelectedRender}
+                                onSelectRender={(renderId, renderRequest) => {
+                                    setSelectedRender(renderId);
+                                    setSelectedRequest(renderRequest || null);
+                                }}
                             />
-                            <HistoryContent selectedRender={selectedRender} />
+                            <HistoryContent
+                                selectedRender={selectedRender}
+                                selectedRequest={selectedRequest}
+                            />
                         </div>
                     </div>
                 </div>

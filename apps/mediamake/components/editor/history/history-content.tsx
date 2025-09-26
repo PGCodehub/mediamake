@@ -29,33 +29,44 @@ import Link from "next/link";
 
 interface HistoryContentProps {
     selectedRender: string | null;
+    selectedRequest?: RenderRequest | null;
 }
 
-export function HistoryContent({ selectedRender }: HistoryContentProps) {
+export function HistoryContent({ selectedRender, selectedRequest: propSelectedRequest }: HistoryContentProps) {
     const [selectedRequest, setSelectedRequest] = useState<RenderRequest | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { isRefreshing, fetchAndUpdateProgress, refreshRequest } = useProgress();
 
-    // Load selected request from localStorage
+    // Load selected request from localStorage or use passed request
     useEffect(() => {
         if (selectedRender) {
             console.log('Loading request for ID:', selectedRender);
-            const request = getRenderRequest(selectedRender);
-            console.log('Loaded request from localStorage:', request);
-            console.log('Request progressData:', request?.progressData);
-            setSelectedRequest(request);
-            setError(request ? null : 'Request not found');
+
+            // If we have a passed request (from API), use it directly
+            if (propSelectedRequest) {
+                console.log('Using passed request from API:', propSelectedRequest);
+                setSelectedRequest(propSelectedRequest);
+                setError(null);
+            } else {
+                // Otherwise, try to get from localStorage
+                const request = getRenderRequest(selectedRender);
+                console.log('Loaded request from localStorage:', request);
+                console.log('Request progressData:', request?.progressData);
+                setSelectedRequest(request);
+                setError(request ? null : 'Request not found');
+            }
         } else {
             setSelectedRequest(null);
             setError(null);
         }
-    }, [selectedRender]);
+    }, [selectedRender, propSelectedRequest]);
 
-    // Check progress for the selected rendering request
+    // Check progress for the selected rendering request (only for localStorage requests)
     useEffect(() => {
         console.log('selectedRequest', selectedRequest);
-        if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId) {
+        // Don't check progress for API-based requests (they're already completed)
+        if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId || propSelectedRequest) {
             return;
         }
 

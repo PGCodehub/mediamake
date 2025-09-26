@@ -5,42 +5,89 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Clock,
     CheckCircle,
     XCircle,
     Download,
     AlertCircle,
-    Play
+    Play,
+    Key,
+    RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { getRenderHistory, type RenderRequest } from "@/lib/render-history";
 import { useProgress } from "@/hooks/use-progress";
+import useLocalState from "@/components/studio/context/hooks/useLocalState";
 
 interface HistorySidebarProps {
     selectedRender: string | null;
-    onSelectRender: (renderId: string) => void;
+    onSelectRender: (renderId: string, renderRequest?: RenderRequest) => void;
 }
 
 export function HistorySidebar({ selectedRender, onSelectRender }: HistorySidebarProps) {
     const [renderRequests, setRenderRequests] = useState<RenderRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [apiKey, setApiKey] = useLocalState("apiKey", "");
+    const [isApiLoading, setIsApiLoading] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [useApiHistory, setUseApiHistory] = useState(false);
     const { fetchAndUpdateProgress } = useProgress();
 
-    // Load render history from localStorage
-    useEffect(() => {
-        const loadHistory = () => {
+    // Fetch render history from API
+    const fetchApiHistory = async (key: string) => {
+        setIsApiLoading(true);
+        setApiError(null);
+
+        try {
+            const response = await fetch('/api/remotion/history', {
+                headers: {
+                    'x-client-id': key,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setRenderRequests(data);
+            setUseApiHistory(true);
+        } catch (error) {
+            console.error('Failed to fetch API history:', error);
+            setApiError(error instanceof Error ? error.message : 'Failed to fetch history');
+            // Fallback to localStorage on API error
             const history = getRenderHistory();
             setRenderRequests(history);
-            setIsLoading(false);
+            setUseApiHistory(false);
+        } finally {
+            setIsApiLoading(false);
+        }
+    };
+
+    // Load render history from localStorage or API
+    useEffect(() => {
+        const loadHistory = () => {
+            if (apiKey.trim().length > 0) {
+                fetchApiHistory(apiKey);
+            } else {
+                const history = getRenderHistory();
+                setRenderRequests(history);
+                setUseApiHistory(false);
+                setIsLoading(false);
+            }
         };
 
         loadHistory();
-    }, []);
+    }, [apiKey]);
 
-    // Check progress for rendering requests
+    // Check progress for rendering requests (only for localStorage history)
     useEffect(() => {
+        if (useApiHistory) return; // Don't check progress for API history
+
         const checkProgress = async () => {
             const renderingRequests = renderRequests.filter(req =>
                 req.status === "rendering" && req.bucketName && req.renderId
@@ -71,7 +118,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
 
         const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
         return () => clearInterval(interval);
-    }, [renderRequests, fetchAndUpdateProgress]);
+    }, [renderRequests, fetchAndUpdateProgress, useApiHistory]);
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -114,20 +161,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
         return new Date(dateString).toLocaleString();
     };
 
-    if (isLoading) {
-        return (
-            <div className="w-80 border-r bg-background p-4">
-                <h2 className="text-lg font-semibold mb-4">Render History</h2>
-                <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="h-20 bg-muted animate-pulse rounded" />
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    if (isLoading) {
+    if (isLoading || isApiLoading) {
         return (
             <div className="w-80 border-r bg-background p-4">
                 <h2 className="text-lg font-semibold mb-4">Render History</h2>
@@ -142,14 +176,50 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
 
     return (
         <div className="w-80 border-r bg-background">
-            <div className="p-4 border-b">
-                <h2 className="text-lg font-semibold">Render History</h2>
-                <p className="text-sm text-muted-foreground">
-                    {renderRequests?.length || 0} render requests
-                </p>
+            <div className="p-4 border-b space-y-4">
+                <div>
+                    <h2 className="text-lg font-semibold">Render History</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {renderRequests?.length || 0} render requests
+                        {useApiHistory && " (from API)"}
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="api-key" className="text-xs font-medium">
+                        API Key (optional)
+                    </Label>
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Key className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                            <Input
+                                id="api-key"
+                                type="password"
+                                placeholder="Enter your API key"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                className="pl-8 text-xs"
+                            />
+                        </div>
+                        {apiKey && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => fetchApiHistory(apiKey)}
+                                disabled={isApiLoading}
+                                className="px-2"
+                            >
+                                <RefreshCw className={cn("h-3 w-3", isApiLoading && "animate-spin")} />
+                            </Button>
+                        )}
+                    </div>
+                    {apiError && (
+                        <p className="text-xs text-destructive">{apiError}</p>
+                    )}
+                </div>
             </div>
 
-            <ScrollArea className="h-[calc(100vh-8rem)] overflow-y-auto">
+            <ScrollArea className="h-[calc(100vh-12rem)] overflow-y-auto">
                 <div className="p-4 space-y-3">
                     {renderRequests?.map((request) => (
                         <Card
@@ -158,7 +228,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                                 "cursor-pointer transition-colors hover:bg-muted/50",
                                 selectedRender === request.id && "ring-2 ring-primary"
                             )}
-                            onClick={() => onSelectRender(request.id)}
+                            onClick={() => onSelectRender(request.id, useApiHistory ? request : undefined)}
                         >
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">

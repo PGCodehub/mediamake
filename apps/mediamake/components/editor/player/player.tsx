@@ -4,12 +4,64 @@ import { calculateCompositionLayoutMetadata, CompositionLayout, InputComposition
 import { Player } from "@remotion/player";
 import { Loader2, Copy, Check, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
-import AudioScene from "../../remotion/test.json";
 import { RenderButton } from "./render-button";
 import { JsonEditor } from "./json-editor";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RenderProvider, RenderSettings, useRender } from "./render-provider";
+
+const AudioScene = {
+    "childrenData": [
+        {
+            "id": "video-scene",
+            "componentId": "BaseLayout",
+            "type": "scene",
+            "data": {},
+            "childrenData": [
+                {
+                    "id": "video-0",
+                    "componentId": "VideoAtom",
+                    "type": "atom",
+                    "data": {
+                        "src": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                        "className": "w-full h-auto object-cover bg-black",
+                        "fit": "cover"
+                    }
+                },
+                {
+                    "id": "video-1",
+                    "componentId": "VideoAtom",
+                    "type": "atom",
+                    "data": {
+                        "src": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                        "className": "w-full h-auto object-cover bg-black",
+                        "fit": "cover"
+                    }
+                },
+                {
+                    "id": "video-2",
+                    "componentId": "VideoAtom",
+                    "type": "atom",
+                    "data": {
+                        "src": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                        "className": "w-full h-auto object-cover bg-black",
+                        "fit": "cover"
+                    }
+                }
+            ]
+        }
+    ],
+    "config": {
+        "fps": 30,
+        "width": 1920,
+        "height": 1080,
+        "duration": 20,
+        "fitDurationTo": "video-scene"
+    },
+    "style": {
+        "backgroundColor": "black"
+    }
+}
 
 const container: React.CSSProperties = {
     margin: "auto",

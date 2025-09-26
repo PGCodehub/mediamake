@@ -1,12 +1,9 @@
-'use client';
-
 import {
   findMatchingComponents,
   InputCompositionProps,
   RenderableContext,
 } from '@microfox/remotion';
 import { replaceMatchingComponent } from '@microfox/datamotion';
-import { preset } from 'swr/_internal';
 
 // Helper function to clean function string by removing imports and type annotations
 export const cleanFunctionString = (func: Function): string => {
