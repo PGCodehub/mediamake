@@ -8,6 +8,15 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  // Optimize for serverless environments
+  experimental: {
+    serverComponentsExternalPackages: [
+      '@remotion/bundler',
+      '@remotion/renderer',
+    ],
+  },
+  // Disable static optimization for API routes that use native binaries
+  output: 'standalone',
   webpack: (config, { isServer }) => {
     // Exclude TypeScript declaration files from webpack processing
     config.module.rules.push({
@@ -20,11 +29,17 @@ const nextConfig: NextConfig = {
 
     // Handle esbuild and other problematic modules by excluding them
     config.module.rules.push({
-      test: /node_modules\/(@remotion\/bundler|esbuild|terser-webpack-plugin)/,
+      test: /node_modules\/(@remotion\/bundler|esbuild|terser-webpack-plugin|rollup)/,
       type: 'asset/resource',
       generator: {
         emit: false,
       },
+    });
+
+    // Handle native binaries in serverless environments
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'node-loader',
     });
 
     // Exclude problematic files from bundling
@@ -34,6 +49,8 @@ const nextConfig: NextConfig = {
         '@remotion/bundler': 'commonjs @remotion/bundler',
         '@remotion/renderer': 'commonjs @remotion/renderer',
         esbuild: 'commonjs esbuild',
+        rollup: 'commonjs rollup',
+        '@rollup/rollup-linux-x64-gnu': 'commonjs @rollup/rollup-linux-x64-gnu',
       });
     }
 
@@ -49,6 +66,8 @@ const nextConfig: NextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       esbuild: false,
+      rollup: false,
+      '@rollup/rollup-linux-x64-gnu': false,
     };
 
     return config;
