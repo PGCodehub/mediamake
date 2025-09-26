@@ -31,6 +31,7 @@
     "@remotion/media-utils": "4.0.347",
     "@remotion/paths": "^4.0.347",
     "mediabunny": "^1.15.1",
+    "@remotion/google-fonts": "4.0.347",
     "react": "19.1.1",
     "remotion": "4.0.347",
     "zod": "^4.1.8"
@@ -42,7 +43,6 @@
     "@eslint/eslintrc": "^3",
     "@eslint/js": "latest",
     "@remotion/eslint-plugin": "4.0.347",
-    "@remotion/google-fonts": "^4.0.347",
     "@swc/core": "^1.13.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

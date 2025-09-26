@@ -5,8 +5,7 @@ import { StudioConfig } from '@/microfox.config';
 import { UIMessage } from 'ai';
 import { NextRequest } from 'next/server';
 
-export const maxDuration =
-  process.env.NODE_ENV === 'production' ? 300 : 300_1000;
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
