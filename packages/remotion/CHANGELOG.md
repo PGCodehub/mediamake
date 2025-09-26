@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+### Patch Changes
+
+- b7b8bdf: Changes from PR #6: upgrades
+
 ## 1.0.2
 
 ### Patch Changes
