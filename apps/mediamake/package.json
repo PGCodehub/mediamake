@@ -24,7 +24,7 @@
     "@microfox/brave": "^1.2.3",
     "@microfox/datamotion": "*",
     "@microfox/db-upstash": "^1.2.0",
-    "@microfox/remotion": "*",
+    "@microfox/remotion": "^1.2.0",
     "@microfox/s3-space": "^1.1.1",
     "@microfox/tool-kit": "^1.2.0",
     "@microfox/types": "^1.1.0",
