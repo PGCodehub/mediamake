@@ -19,6 +19,9 @@ packages/*/build-report.md
 packages/*/doc-report.md
 packages/*/codegen-report.md
 
+apps/**/public/assets/*
+apps/**/out/**
+
 # SLS
 env.json
 .build
@@ -30,3 +33,6 @@ env.json
 /examples/remotion/public/*
 /examples/remotion/out
 /examples/remotion/public
+
+/karcreativeworks
+/karcreativeworks/*

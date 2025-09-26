@@ -1,5 +1,5 @@
 import { AiRouter } from '@microfox/ai-router';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { deepResearchAgent } from './deep';
 import { fastResearchAgent } from './fast';
 import { generateObject } from 'ai';
@@ -10,7 +10,7 @@ const aiRouter = new AiRouter();
 export const braveResearchAgent = aiRouter
   .agent('/deep', deepResearchAgent)
   .agent('/fast', fastResearchAgent)
-  .agent('/', async (ctx) => {
+  .agent('/', async ctx => {
     //return deepResearch(ctx);
     ctx.response.writeMessageMetadata({
       loader: 'Researching...',
@@ -60,10 +60,10 @@ export const braveResearchAgent = aiRouter
     description: 'Research the web for information with brave search',
     inputSchema: z.object({
       query: z.string().describe('The query to search for'),
-    }),
+    }) as any,
     outputSchema: z.object({
       status: z.string().describe('The status of the research'),
-    }),
+    }) as any,
     metadata: {
       icon: 'https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/brave.svg',
       title: 'Brave Research',

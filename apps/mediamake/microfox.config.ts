@@ -1,7 +1,7 @@
 export const StudioConfig = {
-  appName: 'mediamake',
+  appName: 'Media Make',
   appDescription:
-    'MediaMake is an opensource app for creating & rendering videos with datamotion which is built on top of remotion.',
+    'MediaMake is an opensource project for creating & rendering videos with AIrouter & datamotion which is built on top of remotion.',
   projectInfo: {
     framework: 'next-js',
   },

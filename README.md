@@ -1,5 +1,7 @@
 # MediaMake
 
+> **⚠️ Work in Progress:** This project is currently under development. Please contact [karcreativeworks](https://github.com/karcreativeworks) if you want access, have requests, or wish to contribute.
+
 A comprehensive AI-driven video generation tools & libraries built on top of Remotion, designed to create professional videos & edits through data-driven components and automated workflows.
 
 ## Overview
@@ -25,6 +27,15 @@ A comprehensive platform that combines:
 - **Editor Component**: Visual editing interface (exportable as react package in future for react based AI agent builders)
 - **Uploader**: Git workflow-based code publishing
 - **Registry System**: Component and project management
+
+JSON => REMOTION => VIDEO
+<img width="1510" height="767" alt="image" src="https://github.com/user-attachments/assets/8742dd70-8e7e-4261-a552-c670acc69a43" />
+
+Render History With Billing Details
+<img width="1500" height="770" alt="image" src="https://github.com/user-attachments/assets/62714a8d-90f3-4071-b2e8-1cad33c0881b" />
+
+
+
 
 ### 3. @microfox/remotion
 

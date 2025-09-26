@@ -17,6 +17,11 @@
 /.next/
 /out/
 
+# Assets folder - ignore all assets
+/public/assets/
+public/assets/
+**/public/assets/
+
 # production
 /build
 

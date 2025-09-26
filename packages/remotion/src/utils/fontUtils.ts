@@ -7,9 +7,23 @@
 // For example: "WaterBrush" becomes "waterbrush", "Open Sans" becomes "open-sans"
 // Use isFontAvailable() to check if a font is supported before loading
 
-import { getAvailableFonts } from '@remotion/google-fonts';
+// Dynamic import to avoid bundling issues with peer dependencies
+let availableFonts: any[] = [];
 
-const availableFonts = getAvailableFonts();
+const getAvailableFonts = async () => {
+  if (availableFonts.length === 0) {
+    try {
+      const { getAvailableFonts: getFonts } = await import(
+        '@remotion/google-fonts'
+      );
+      availableFonts = getFonts();
+    } catch (error) {
+      console.warn('Failed to load @remotion/google-fonts:', error);
+      availableFonts = [];
+    }
+  }
+  return availableFonts;
+};
 
 export interface FontConfig {
   family: string;
@@ -53,16 +67,11 @@ export const loadGoogleFont = async (
   }
 
   try {
-    // Normalize font family name for import path
-    // Convert spaces to hyphens and ensure proper casing
+    // Get available fonts dynamically
+    const fonts = await getAvailableFonts();
 
-    console.log('availableFonts', availableFonts);
-    // Dynamic import of the specific font package
-    const thisFont = availableFonts.find(
-      (font) => font.importName === fontFamily
-    );
-
-    console.log('thisFont', thisFont);
+    // Find the font in available fonts
+    const thisFont = fonts.find((font) => font.importName === fontFamily);
 
     if (thisFont?.load) {
       const fontPackage = await thisFont.load();
@@ -71,8 +80,6 @@ export const loadGoogleFont = async (
         subsets: options.subsets || ['latin'],
         weights: options.weights || ['400'],
       });
-
-      console.log('loadedFontFamily', allFontStuff.fontFamily);
 
       await allFontStuff.waitUntilDone();
 
@@ -223,6 +230,17 @@ export const isFontAvailable = async (fontFamily: string): Promise<boolean> => {
   }
 
   try {
+    // First check if the font is in the available fonts list
+    const fonts = await getAvailableFonts();
+    const isInAvailableFonts = fonts.some(
+      (font) => font.importName === fontFamily
+    );
+
+    if (isInAvailableFonts) {
+      return true;
+    }
+
+    // Fallback: try direct import for fonts not in the list
     const normalizedFontName = fontFamily
       .trim()
       .replace(/\s+/g, '-')

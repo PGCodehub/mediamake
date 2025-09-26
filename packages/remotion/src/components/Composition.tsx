@@ -7,6 +7,7 @@ import { Input, ALL_FORMATS, UrlSource, BlobSource, FilePathSource } from 'media
 import { calculateDuration, findMatchingComponents, setDurationsInContext } from '../core/context/timing';
 import { parseMedia } from '@remotion/media-parser';
 import { nodeReader } from '@remotion/media-parser/node';
+import z from 'zod';
 
 
 interface CompositionProps extends BaseRenderableData {
@@ -58,10 +59,12 @@ export const CompositionLayout = ({ childrenData, style, config }: InputComposit
 
 export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<InputCompositionProps> = async ({ props, defaultProps, abortSignal, isRendering }) => {
 
+    const updatedProps = await setDurationsInContext(props);
     let calculatedDuration: number | undefined = undefined;
+
     if (props.config?.fitDurationTo?.length > 0) {
-        calculatedDuration = await calculateDuration(props.childrenData, {
-            fitDurationTo: props.config.fitDurationTo,
+        calculatedDuration = await calculateDuration(updatedProps.childrenData, {
+            fitDurationTo: updatedProps.config.fitDurationTo,
         });
     }
 
@@ -69,7 +72,6 @@ export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<Input
     const fps = props.config.fps ?? defaultProps.config.fps;
     const durationInFrames = Math.round(duration * fps);
 
-    const updatedProps = await setDurationsInContext(props);
 
     return {
         // Change the metadata
@@ -105,5 +107,6 @@ export const Composition = ({
         fps={config.fps}
         defaultProps={{ childrenData, style, config: config }}
         calculateMetadata={calculateCompositionLayoutMetadata}
+        schema={z.object({}).loose()}
     />
 }

@@ -4,12 +4,20 @@ import {
   speculateFunctionName,
 } from '@remotion/lambda/client';
 import { DISK, RAM, REGION, SITE_NAME, TIMEOUT } from '../../../../config.mjs';
-import { RenderRequest } from '../helper';
 import { NextRequest, NextResponse } from 'next/server';
+import { renderRequestDB } from '@/lib/render-mongodb';
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { id, inputProps, fileName, codec } = await req.json();
+    const {
+      id,
+      inputProps,
+      isDownloadable,
+      fileName,
+      codec,
+      audioCodec,
+      renderType, // Added for unified interface
+    } = await req.json();
 
     if (
       !process.env.AWS_ACCESS_KEY_ID &&
@@ -31,6 +39,8 @@ export const POST = async (req: NextRequest) => {
     console.log(process.env.REMOTION_AWS_REGION || REGION);
     console.log('Composition is', id);
     console.log('Codec is', codec);
+    console.log('Audio Codec is', audioCodec);
+    console.log('Render Type is', renderType);
     console.log(
       'Function name is',
       speculateFunctionName({
@@ -41,25 +51,42 @@ export const POST = async (req: NextRequest) => {
     );
 
     const result = await renderMediaOnLambda({
-      codec: codec || 'h264',
+      codec: codec ?? 'h264',
       functionName: speculateFunctionName({
         diskSizeInMb: DISK,
         memorySizeInMb: RAM,
         timeoutInSeconds: TIMEOUT,
       }), //remotion-render-4-0-347-mem3000mb-disk10240mb-240sec
       region: (process.env.REMOTION_AWS_REGION || REGION) as AwsRegion,
-      serveUrl: SITE_NAME, // https://remotionlambda-useast2-xjv1ee2a1g.s3.eu-east-2.amazonaws.com/sites/mediamake
-      composition: id,
+      serveUrl: SITE_NAME, // https://remotionlambda-useast2-xjv1ee2a1g.s3.us-east-2.amazonaws.com/sites/mediamake
+      composition: id ?? 'DataMotion',
       inputProps: inputProps,
-      framesPerLambda: 10,
+      audioCodec: audioCodec ?? 'aac',
+      //framesPerLambda: null,
       downloadBehavior: {
-        type: 'download',
-        fileName: fileName || 'video.mp4',
+        type: isDownloadable ? 'download' : 'play-in-browser',
+        fileName: isDownloadable ? fileName || 'video.mp4' : null,
       },
       //   metadata: {
 
       //   }
     });
+
+    const clientId = req.headers.get('x-client-id');
+    if (clientId) {
+      await renderRequestDB.create({
+        clientId,
+        renderId: result.renderId,
+        fileName: fileName || 'video.mp4',
+        codec: codec || 'h264',
+        composition: id ?? 'DataMotion',
+        status: 'rendering',
+        inputProps: inputProps,
+        bucketName: result.bucketName,
+        isDownloadable: isDownloadable,
+        renderType: renderType || 'video',
+      });
+    }
     return NextResponse.json(result);
   } catch (err) {
     console.error(err);

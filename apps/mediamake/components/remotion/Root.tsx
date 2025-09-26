@@ -1,7 +1,7 @@
 
 import { Ripple } from './Ripple';
 import { Waveform } from './Waveform';
-import { DataMotion } from './DataMotion';
+import { DataMotion, ExampleDataMotion } from './DataMotion';
 
 
 
@@ -19,6 +19,7 @@ export const Root: React.FC = () => {
         <>
             <Ripple />
             <DataMotion />
+            <ExampleDataMotion />
             <Waveform />
         </>
     )

@@ -41,10 +41,10 @@ const MyComposition = () => (
 ### Advanced Usage with Loading States
 
 ```typescript
-import { TextAtomWithFonts } from '@microfox/remotion';
+import { TextAtom } from '@microfox/remotion';
 
 const MyComposition = () => (
-  <TextAtomWithFonts
+  <TextAtom
     data={{
       text: "Dynamic Font Example",
       font: {
@@ -364,7 +364,7 @@ const MultipleWeightsExample = () => (
 
 ```typescript
 const AdvancedExample = () => (
-  <TextAtomWithFonts
+  <TextAtom
     data={{
       text: "Advanced Font Example",
       font: {

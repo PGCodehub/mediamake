@@ -1,0 +1,415 @@
+/* Medium-style Tiptap Editor */
+.ProseMirror {
+  outline: none;
+  padding: 10;
+  min-height: 500px;
+  background: white;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.7;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Sentence highlighting - Minimal style */
+.sentence-item {
+  position: relative;
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 0;
+  margin-left: 2rem; /* Space for floating dot */
+}
+
+.sentence-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Minimal floating dot for current sentence */
+.current-sentence {
+  position: relative;
+}
+.current-sentence::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: -4px;
+  width: 2px;
+  background-color: #3b82f6;
+}
+
+/* Word highlighting - Minimal underline style */
+.word-highlight {
+  position: relative;
+  padding: 0.125rem 0.125rem;
+  border-radius: 0.25rem;
+  /* border: 1px solid #dcdcdc; */
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.current-word {
+  /* user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text; */
+}
+
+.word-highlight:hover {
+  /* background-color: rgba(0, 0, 0, 0.05); */
+}
+
+/* Minimal underline for current word */
+.current-word::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #3b82f6;
+  opacity: 0.8;
+}
+
+/* Timeline indicators */
+.timeline-indicator {
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #6b7280;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.timeline-indicator.active {
+  background-color: #f59e0b;
+  transform: translateY(-50%) scale(1.2);
+}
+
+.timeline-indicator.current {
+  background-color: #3b82f6;
+  transform: translateY(-50%) scale(1.2);
+}
+
+/* Toolbar styling */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 1.5rem;
+  background-color: #d1d5db;
+  margin: 0 0.5rem;
+}
+
+/* Button states */
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.375rem;
+  background-color: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-button:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.toolbar-button.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.toolbar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Content styling */
+.ProseMirror p {
+  margin: 0 0;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
+  margin: 1rem 0 0.5rem 0;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.ProseMirror h1 {
+  font-size: 1.875rem;
+}
+.ProseMirror h2 {
+  font-size: 1.5rem;
+}
+.ProseMirror h3 {
+  font-size: 1.25rem;
+}
+.ProseMirror h4 {
+  font-size: 1.125rem;
+}
+.ProseMirror h5 {
+  font-size: 1rem;
+}
+.ProseMirror h6 {
+  font-size: 0.875rem;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.ProseMirror blockquote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 4px solid #e5e7eb;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+}
+
+.ProseMirror pre {
+  background-color: #1f2937;
+  color: #f9fafb;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+}
+
+/* Table styling */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.ProseMirror th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+/* Selection styling */
+.ProseMirror .selectedCell {
+  background-color: #dbeafe;
+}
+
+/* Placeholder styling */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Focus styling */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Custom scrollbar */
+.ProseMirror::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ProseMirror::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.ProseMirror::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.ProseMirror::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-group {
+    justify-content: center;
+  }
+
+  .ProseMirror {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Animation for smooth transitions */
+.sentence-item,
+.word-highlight,
+.timeline-indicator {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .ProseMirror {
+    background-color: #1f2937;
+    color: #f9fafb;
+    border-color: #374151;
+  }
+
+  .ProseMirror:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  }
+
+  .sentence-item:hover {
+    background-color: #374151;
+  }
+
+  .sentence-item.active {
+    background-color: #451a03;
+    border-left-color: #f59e0b;
+  }
+
+  .sentence-item.current {
+    background-color: #1e3a8a;
+    border-left-color: #3b82f6;
+  }
+
+  .word-highlight:hover {
+    background-color: #374151;
+  }
+
+  .word-highlight.active {
+    background-color: #451a03;
+    color: #fbbf24;
+  }
+
+  .word-highlight.current {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+  }
+
+  .editor-toolbar {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .toolbar-button {
+    color: #9ca3af;
+  }
+
+  .toolbar-button:hover {
+    background-color: #4b5563;
+    color: #d1d5db;
+  }
+
+  .toolbar-button.active {
+    background-color: #3b82f6;
+    color: white;
+  }
+
+  .toolbar-separator {
+    background-color: #4b5563;
+  }
+
+  .ProseMirror blockquote {
+    border-left-color: #4b5563;
+    color: #9ca3af;
+  }
+
+  .ProseMirror code {
+    background-color: #374151;
+    color: #f9fafb;
+  }
+
+  .ProseMirror pre {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+
+  .ProseMirror th {
+    background-color: #374151;
+  }
+
+  .ProseMirror th,
+  .ProseMirror td {
+    border-color: #4b5563;
+  }
+}

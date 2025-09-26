@@ -1,6 +1,7 @@
-import React, { Children, ComponentType, ReactNode } from 'react';
+import React, { Children, ComponentType, ReactNode, useMemo } from 'react';
 import { AbsoluteFill } from 'remotion';
 import { BaseRenderableProps, ComponentConfig } from '../../core/types';
+import { useAnimatedStyles } from '../effects';
 
 interface BaseLayoutProps extends BaseRenderableProps {
     children?: ReactNode;
@@ -11,15 +12,14 @@ export const Layout: ComponentType<BaseLayoutProps> = ({ id, children, data, con
         containerProps: {},
         childrenProps: [],
     };
+    const overrideStyles = useAnimatedStyles(id);
     const childrenArray = Children.toArray(children);
 
+    const enhancedStyle = useMemo(() => ({ ...context?.boundaries, ...containerProps.style, ...overrideStyles }), [context?.boundaries, containerProps.style, overrideStyles]);
     return (
         // @ts-ignore
         <AbsoluteFill
-            {...containerProps} style={{
-                ...context?.boundaries,
-                ...containerProps.style,
-            }}>
+            {...containerProps} style={enhancedStyle}>
             {childrenArray.map((child, index) => (
                 <div
                     key={index}

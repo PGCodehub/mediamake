@@ -68,9 +68,10 @@
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
     "@remotion/google-fonts": "4.0.347",
-    "glob": "^11.0.1",
-    "zod": "^3.24.3",
-    "zod-to-json-schema": "^3.24.6"
+    "@tiptap/extension-bubble-menu": "^3.4.4",
+    "@types/diff": "^7.0.2",
+    "diff": "^8.0.2",
+    "glob": "^11.0.1"
   },
   "type": "module"
 }

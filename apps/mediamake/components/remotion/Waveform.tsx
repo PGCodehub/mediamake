@@ -1,4 +1,4 @@
-import { Composition, PanEffectData, RenderableComponentData, TextAtomDataWithFonts, WaveformCircleDataProps, WaveformConfig, WaveformHistogramDataProps, WaveformHistogramRangedDataProps, WaveformLineDataProps, WaveformPresets, ZoomEffectData } from "@microfox/remotion";
+import { Composition, PanEffectData, RenderableComponentData, TextAtomData, WaveformCircleDataProps, WaveformConfig, WaveformHistogramDataProps, WaveformHistogramRangedDataProps, WaveformLineDataProps, WaveformPresets, ZoomEffectData } from "@microfox/remotion";
 
 const audioMetadata = {
     // turntogold - https://cdn1.suno.ai/db192e72-b371-4462-b7b8-78278c550450.webm
@@ -8,23 +8,25 @@ const audioMetadata = {
     // whiteboard funeral - https://cdn1.suno.ai/593e02b7-c238-4594-9e48-9f7334d70532.webm
     //src: "https://cdn1.suno.ai/5008ce4f-e7f6-41d6-818c-08ea0813d75e.webm",
     //src: "titans.mp3",
-    src: "https://cdn1.suno.ai/75c0d53b-4437-43a7-a9ea-fae4716286b0.webm",
+    src: "https://cdn1.suno.ai/f0d20500-7fe7-43fc-a94b-86dd79a3b2c5.m4a",
+    // src: "https://cdn1.suno.ai/f415fd3a-5bff-4cb5-95fb-4f78535b74d3.webm",
+    // src: "https://cdn1.suno.ai/971632f8-8dca-4661-9b1d-ec5aec00442b.webm",
     //src: "https://cdn1.suno.ai/8ffa96ca-d37b-48dc-b8b2-74f263dad10c.webm",
     //src: "https://cdn1.suno.ai/eeae767e-20df-490b-9476-08abfa484c41.webm",
     volume: 2,
 }
 
 const imageMetadata = {
-    src: "standing.png",//"https://cdn.midjourney.com/cffd1fdb-3a43-47f7-b7d3-c0e795094d78/0_1.png",
+    src: "wild3.png",//"https://cdn.midjourney.com/cffd1fdb-3a43-47f7-b7d3-c0e795094d78/0_1.png",
     //src: "https://cdn.midjourney.com/02465c52-e547-402e-a55f-9805dab2886f/0_0.png",
     primaryColor: '#FFF',
     secondaryColor: '#FDCE99',
-    text: 'Titans',
-    textMarginBottom: 180,
+    text: '',
+    textMarginBottom: 130,
     textColor: '#FFF',
     textSize: 250,
     textFont: "ProtestRevolution",//"Roboto", ProtestRevolution, StoryScript, BebasNeue, Caveat
-    subtext: "The Dream",
+    subtext: "A Fistful of Funk",
     subtextMarginBottom: 50,
     subtextSize: 20,
     channelText: "Get into Zone",
@@ -171,7 +173,7 @@ export const AudioScene = {
             type: 'atom',
             data: {
                 src: audioMetadata.src,
-                volume: 2
+                volume: audioMetadata.volume,
             }
         },
         {
@@ -206,7 +208,7 @@ export const AudioScene = {
         },
         {
             id: 'text-xyz',
-            componentId: "TextAtomWithFonts",
+            componentId: "TextAtom",
             type: 'atom',
             data: {
                 text: imageMetadata.text,
@@ -222,15 +224,15 @@ export const AudioScene = {
                 font: {
                     family: imageMetadata.textFont,
                 }
-            } as TextAtomDataWithFonts
+            } as TextAtomData
         },
         {
             id: 'text-xyz-boxed',
-            componentId: "TextAtomWithFonts",
+            componentId: "TextAtom",
             type: 'atom',
             data: {
                 text: imageMetadata.subtext,
-                className: 'bg-black/30 px-12 py-4 rounded-xl backdrop-blur-sm',
+                // className: 'bg-black/30 px-12 py-4 rounded-xl backdrop-blur-sm',
                 style: {
                     fontSize: imageMetadata.subtextSize,
                     color: "#FFF",
@@ -244,11 +246,11 @@ export const AudioScene = {
                     family: 'Inter',
                     weights: ['100', '400', '700'],
                 }
-            } as TextAtomDataWithFonts
+            } as TextAtomData
         },
         {
             id: 'text-xyz-3',
-            componentId: "TextAtomWithFonts",
+            componentId: "TextAtom",
             type: 'atom',
             data: {
                 text: imageMetadata.channelText,
@@ -266,7 +268,7 @@ export const AudioScene = {
                     family: 'Inter',
                     weights: ['100', '400', '700'],
                 }
-            } as TextAtomDataWithFonts
+            } as TextAtomData
         }
     ],
 };

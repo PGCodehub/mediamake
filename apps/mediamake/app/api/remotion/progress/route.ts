@@ -5,8 +5,7 @@ import {
 } from '@remotion/lambda/client';
 import { DISK, RAM, REGION, TIMEOUT } from '../../../../config.mjs';
 import { NextRequest, NextResponse } from 'next/server';
-
-export const runtime = 'edge';
+import { renderRequestDB } from '@/lib/render-mongodb';
 
 export const GET = async (req: NextRequest) => {
   try {
@@ -14,6 +13,8 @@ export const GET = async (req: NextRequest) => {
     const bucketName = searchParams.get('bucketName');
     const id = searchParams.get('id');
 
+    console.log('bucketName', bucketName);
+    console.log('id', id);
     if (!bucketName || !id) {
       return NextResponse.json(
         { error: 'Missing bucketName or id parameters' },
@@ -31,6 +32,24 @@ export const GET = async (req: NextRequest) => {
       region: REGION as AwsRegion,
       renderId: id,
     });
+
+    const clientId = req.headers.get('x-client-id');
+    if (clientId) {
+      await renderRequestDB.update(
+        renderProgress.renderId,
+        {
+          progressData: renderProgress,
+          status: renderProgress.fatalErrorEncountered
+            ? 'failed'
+            : renderProgress.done
+              ? 'completed'
+              : 'rendering',
+          downloadUrl: renderProgress.outputFile as string,
+          fileSize: renderProgress.outputSizeInBytes as number,
+        },
+        clientId,
+      );
+    }
 
     if (renderProgress.fatalErrorEncountered) {
       return NextResponse.json({
@@ -55,6 +74,7 @@ export const GET = async (req: NextRequest) => {
       renderInfo: renderProgress,
     });
   } catch (error) {
+    console.error('Failed to get render progress:', error);
     return NextResponse.json(
       { error: 'Failed to get render progress' },
       { status: 500 },

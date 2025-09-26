@@ -173,10 +173,22 @@ export const ComponentRenderer: React.FC<BaseRenderableData> = ({
                     <Sequence layout='none' name={componentId + " - " + id} from={newTiming.startInFrames} durationInFrames={newTiming.durationInFrames}>
                         {effects && effects.length > 0 ? (
                             <EffectWrapper effects={effects} context={newContext}>
-                                <ComponentClass {...props} />
+                                <ComponentClass {...{
+                                    ...props, context: {
+                                        timing: {
+                                            durationInFrames: newTiming.durationInFrames
+                                        }
+                                    }
+                                }} />
                             </EffectWrapper>
                         ) : (
-                            <ComponentClass {...props} />
+                            <ComponentClass {...{
+                                ...props, context: {
+                                    timing: {
+                                        durationInFrames: newTiming.durationInFrames
+                                    }
+                                }
+                            }} />
                         )}
                     </Sequence>
                 </RenderContext.Provider>

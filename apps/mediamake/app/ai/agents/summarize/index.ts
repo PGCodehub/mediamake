@@ -10,7 +10,7 @@ import { downsizeResearchData } from './helpers';
 const aiRouter = new AiRouter();
 
 export const summarizeAgent = aiRouter
-  .agent('/', async (ctx) => {
+  .agent('/', async ctx => {
     ctx.response.writeMessageMetadata({
       loader: 'Summarizing...',
     });
@@ -69,13 +69,16 @@ export const summarizeAgent = aiRouter
       Summarise the following information: ${downsizeResearchData(researchData, 10000)}`,
       // Cheap Mode => Increase this to adjust longer Sumamries
       maxOutputTokens: 3000,
-      onFinish: (output) => {
+      onFinish: output => {
         console.log('SUMMARY USAGE', output.totalUsage);
       },
     });
 
     ctx.response.merge(
-      textStream.toUIMessageStream({ sendFinish: false, sendStart: false }),
+      textStream.toUIMessageStream({
+        sendFinish: false,
+        sendStart: false,
+      }) as any,
     );
 
     await textStream.text;
@@ -94,10 +97,10 @@ export const summarizeAgent = aiRouter
           'The intention of the summarisation - What to summarize, look for, extract, etc.',
         ),
       //summaryStyle: z.string().describe('The style of the summary - What format to use, what to include, what to exclude, etc.'),
-    }),
+    }) as any,
     outputSchema: z.object({
       status: z.string().describe('The status of the summary'),
-    }),
+    }) as any,
     metadata: {
       icon: '🔍',
       title: 'Summarizer',

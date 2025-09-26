@@ -1,6 +1,7 @@
-import { ALL_FORMATS, Input, UrlSource } from 'mediabunny';
+import { ALL_FORMATS, FilePathSource, Input, UrlSource } from 'mediabunny';
 import { RenderableComponentData } from '../types';
 import { InputCompositionProps } from '../../components/Composition';
+import { parseMedia } from '@remotion/media-parser';
 
 export const findMatchingComponents = (
   childrenData: RenderableComponentData[],
@@ -26,6 +27,52 @@ export const findMatchingComponents = (
   return matches;
 };
 
+export const calculateComponentDuration = async (
+  component: Pick<RenderableComponentData, 'data' | 'componentId'>
+): Promise<number | undefined> => {
+  const src = component.data.src;
+  if (src.startsWith('http')) {
+    const audioInput = new Input({
+      formats: ALL_FORMATS,
+      source: new UrlSource(src),
+    });
+    const audioDuration = await audioInput.computeDuration();
+    if (component.data.startFrom || component.data.endAt) {
+      return (
+        audioDuration -
+        (component.data.startFrom || 0) -
+        (component.data.endAt ? audioDuration - (component.data.endAt || 0) : 0)
+      );
+    }
+    return audioDuration;
+  } else {
+    // NOT SUPPORTED
+    // if (matchingComponents[0].componentId === "VideoAtom") {
+    //     const { slowDurationInSeconds, dimensions } = await parseMedia({
+    //         src: src,
+    //         fields: {
+    //             slowDurationInSeconds: true,
+    //             dimensions: true,
+    //         },
+    //     });
+    // }
+    // try {
+    //   console.log(process.cwd() + '../../public/' + src);
+    //   cobst file = fs.readFileSync(process.cwd() + '../../public/' + src);
+    //   const source = new FilePathSource(process.cwd() + '../../public/' + src);
+    //   console.log(source);
+    //   const audioInput = new Input({
+    //     formats: ALL_FORMATS,
+    //     source: source,
+    //   });
+    //   const calculatedDuration = await audioInput.computeDuration();
+    //   return calculatedDuration;
+    // } catch (error) {
+    //   console.error('Error calculating duration', error);
+    //   return undefined;
+    // }
+  }
+};
 export const calculateDuration = async (
   childrenData: RenderableComponentData[],
   config: {
@@ -56,29 +103,15 @@ export const calculateDuration = async (
       (matchingComponents[0].componentId === 'AudioAtom' ||
         matchingComponents[0].componentId === 'VideoAtom')
     ) {
-      const src = matchingComponents[0].data.src;
-      if (src.startsWith('http')) {
-        const audioInput = new Input({
-          formats: ALL_FORMATS,
-          source: new UrlSource(src),
-        });
-        calculatedDuration = await audioInput.computeDuration();
-      } else {
-        // if (matchingComponents[0].componentId === "VideoAtom") {
-        //     const { slowDurationInSeconds, dimensions } = await parseMedia({
-        //         src: src,
-        //         fields: {
-        //             slowDurationInSeconds: true,
-        //             dimensions: true,
-        //         },
-        //     });
-        // }
-        // const audioInput = new Input({
-        //     formats: ALL_FORMATS,
-        //     source: new FilePathSource("/Users/subhakartikkireddy/Desktop/CODE/THEMOONDEVS/microfox-ai/mediamake/apps/mediamake/public/" + src),
-        // });
-        // calculatedDuration = await audioInput.computeDuration();
-      }
+      calculatedDuration = await calculateComponentDuration(
+        matchingComponents[0]
+      );
+    }
+    if (
+      matchingComponents[0].type === 'scene' &&
+      matchingComponents[0].context?.timing?.duration
+    ) {
+      calculatedDuration = matchingComponents[0].context.timing.duration;
     }
   }
   return calculatedDuration;
@@ -86,15 +119,22 @@ export const calculateDuration = async (
 
 export const setDurationsInContext = async (root: InputCompositionProps) => {
   const iterateRecursively = async (
-    components: RenderableComponentData[]
+    components: RenderableComponentData[],
+    onlyScene: boolean = false
   ): Promise<RenderableComponentData[]> => {
     const updatedComponents: RenderableComponentData[] = [];
 
     for (const component of components) {
       let updatedComponent = { ...component };
 
-      // Check if this component's ID matches any target ID
-      if (component.context?.timing?.fitDurationTo?.length > 0) {
+      // Check if this component's ID matches any target ID ( if fitDurationTo exists )
+      if (
+        component.context?.timing?.fitDurationTo?.length > 0 &&
+        !onlyScene &&
+        component.context?.timing?.fitDurationTo != component.id &&
+        component.context?.timing?.fitDurationTo != 'this' &&
+        component.context?.timing?.fitDurationTo != 'fill'
+      ) {
         const duration = await calculateDuration(component.childrenData, {
           fitDurationTo: component.context?.timing?.fitDurationTo,
         });
@@ -119,13 +159,63 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
         );
       }
 
+      if (
+        component.type === 'scene' &&
+        ((component.context?.timing?.fitDurationTo?.length > 0 &&
+          (component.context?.timing?.fitDurationTo == component.id ||
+            component.context?.timing?.fitDurationTo == 'this')) ||
+          !component.context?.timing?.duration) &&
+        onlyScene
+      ) {
+        const duration =
+          updatedComponent.childrenData.reduce(
+            (acc, child) => acc + (child.context?.timing?.duration ?? 0),
+            0
+          ) ?? 10;
+        updatedComponent.context = {
+          ...(updatedComponent.context || {}),
+          timing: {
+            ...(updatedComponent.context?.timing || {}),
+            duration: duration,
+          },
+        };
+      }
+
+      if (
+        component.type === 'atom' &&
+        !component.context?.timing?.duration &&
+        !onlyScene
+      ) {
+        if (
+          component.componentId === 'VideoAtom' ||
+          component.componentId === 'AudioAtom'
+        ) {
+          const duration = await calculateComponentDuration(component);
+          if (!component.context?.timing?.fitDurationTo) {
+            updatedComponent.context = {
+              ...(updatedComponent.context || {}),
+              timing: {
+                ...(updatedComponent.context?.timing || {}),
+                duration: duration,
+              },
+            };
+          } else if (component.context?.timing?.fitDurationTo) {
+            updatedComponent.data = {
+              ...updatedComponent.data,
+              srcDuration: duration,
+            };
+          }
+        }
+      }
+
       updatedComponents.push(updatedComponent);
     }
 
     return updatedComponents;
   };
 
-  const updatedChildrenData = await iterateRecursively(root.childrenData);
+  let updatedChildrenData = await iterateRecursively(root.childrenData, false);
+  updatedChildrenData = await iterateRecursively(updatedChildrenData, true);
 
   return {
     ...root,

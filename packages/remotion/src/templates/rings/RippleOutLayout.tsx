@@ -3,14 +3,9 @@ import { spring, useCurrentFrame, useVideoConfig, Sequence, AbsoluteFill, Series
 import { z } from 'zod';
 import { LayoutProps, LayoutContext } from '../../core/types/transition.types';
 import { buildLayoutHook } from '../../hooks/buildTransitionHook';
-import { loadFont, fontFamily } from "@remotion/google-fonts/Inter";
 import { useRenderContext } from '../../components/base/ComponentRenderer';
 import { ComponentConfig } from '../../core/types';
-
-loadFont("normal", {
-    subsets: ["latin"],
-    weights: ["400", "700"],
-});
+import { loadGoogleFont } from '../../utils/fontUtils';
 
 // Define the Zod schema for this transition's data
 const RippleOutTransitionSchema = z.object({
@@ -51,6 +46,14 @@ export const RippleOutLayout: React.FC<LayoutProps> = ({ data, context, children
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
     const { hierarchy } = useRenderContext();
+
+    // Load Inter font dynamically
+    React.useEffect(() => {
+        loadGoogleFont('Inter', {
+            subsets: ['latin'],
+            weights: ['400', '700'],
+        }).catch(console.warn);
+    }, []);
 
     const transitionStartFrame = transitionStart * fps;
     const transitionDurationFrames = transitionDuration * fps;

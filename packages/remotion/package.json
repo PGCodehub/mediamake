@@ -1,6 +1,6 @@
 {
   "name": "@microfox/remotion",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "A recursive composition system for Remotion with unified component architecture",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -26,12 +26,13 @@
     }
   },
   "dependencies": {
+    "@remotion/media": "^4.0.353",
     "@remotion/media-parser": "^4.0.347",
     "@remotion/media-utils": "4.0.347",
     "mediabunny": "^1.15.1",
     "react": "19.1.1",
     "remotion": "4.0.347",
-    "zod": "^4.1.11"
+    "zod": "^4.1.8"
   },
   "peerDependencies": {
     "@remotion/google-fonts": "4.0.347"
@@ -40,6 +41,7 @@
     "@eslint/eslintrc": "^3",
     "@eslint/js": "latest",
     "@remotion/eslint-plugin": "4.0.347",
+    "@remotion/google-fonts": "^4.0.347",
     "@swc/core": "^1.13.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
