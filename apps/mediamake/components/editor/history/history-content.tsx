@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { getRenderRequest, type RenderRequest } from "@/lib/render-history";
+import { type RenderRequest } from "@/lib/render-history";
 import { CostDisplay } from "./cost-display";
 import { ProgressDetails } from "./progress-details";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,43 +30,33 @@ import Link from "next/link";
 interface HistoryContentProps {
     selectedRender: string | null;
     selectedRequest?: RenderRequest | null;
+    onRefreshApiRequest?: (renderId: string, updatedRequest: RenderRequest) => void;
 }
 
-export function HistoryContent({ selectedRender, selectedRequest: propSelectedRequest }: HistoryContentProps) {
+export function HistoryContent({ selectedRender, selectedRequest: propSelectedRequest, onRefreshApiRequest }: HistoryContentProps) {
     const [selectedRequest, setSelectedRequest] = useState<RenderRequest | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { isRefreshing, fetchAndUpdateProgress, refreshRequest } = useProgress();
+    const { isRefreshing, fetchAndUpdateProgress } = useProgress();
 
-    // Load selected request from localStorage or use passed request
+    // Load selected request from API
     useEffect(() => {
-        if (selectedRender) {
-            console.log('Loading request for ID:', selectedRender);
-
-            // If we have a passed request (from API), use it directly
-            if (propSelectedRequest) {
-                console.log('Using passed request from API:', propSelectedRequest);
-                setSelectedRequest(propSelectedRequest);
-                setError(null);
-            } else {
-                // Otherwise, try to get from localStorage
-                const request = getRenderRequest(selectedRender);
-                console.log('Loaded request from localStorage:', request);
-                console.log('Request progressData:', request?.progressData);
-                setSelectedRequest(request);
-                setError(request ? null : 'Request not found');
-            }
+        if (selectedRender && propSelectedRequest) {
+            console.log('Using passed request from API:', propSelectedRequest);
+            setSelectedRequest(propSelectedRequest);
+            setError(null);
+        } else if (selectedRender && !propSelectedRequest) {
+            setError('Request not found');
         } else {
             setSelectedRequest(null);
             setError(null);
         }
     }, [selectedRender, propSelectedRequest]);
 
-    // Check progress for the selected rendering request (only for localStorage requests)
+    // Check progress for the selected rendering request
     useEffect(() => {
         console.log('selectedRequest', selectedRequest);
-        // Don't check progress for API-based requests (they're already completed)
-        if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId || propSelectedRequest) {
+        if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId) {
             return;
         }
 
@@ -74,12 +64,16 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
             const result = await fetchAndUpdateProgress(selectedRequest);
             if (result.success && result.updatedRequest) {
                 setSelectedRequest(result.updatedRequest);
+                // Also notify the parent component of the update
+                if (onRefreshApiRequest) {
+                    onRefreshApiRequest(selectedRequest.id, result.updatedRequest);
+                }
             }
         };
 
         const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
         return () => clearInterval(interval);
-    }, [selectedRequest, fetchAndUpdateProgress]);
+    }, [selectedRequest, fetchAndUpdateProgress, onRefreshApiRequest]);
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -132,32 +126,25 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     };
 
     const handleRefresh = async () => {
-        if (!selectedRender) return;
+        if (!selectedRender || !propSelectedRequest) return;
 
         console.log('Refreshing request for ID:', selectedRender);
 
-        // First, reload from localStorage to get the latest state
-        const request = getRenderRequest(selectedRender);
-        console.log('Refreshed request from localStorage:', request);
-
-        if (!request) {
-            setError('Request not found');
-            return;
-        }
-
-        setSelectedRequest(request);
+        // For API requests, use fetchAndUpdateProgress directly
+        console.log('Refreshing API-based request');
         setError(null);
 
-        // Always fetch fresh data from API for refresh, regardless of status
-        const result = await refreshRequest(selectedRender);
-
+        const result = await fetchAndUpdateProgress(propSelectedRequest);
         if (result.success && result.updatedRequest) {
             console.log('Refresh successful, updating with fresh data:', result.updatedRequest);
             setSelectedRequest(result.updatedRequest);
+            // Also notify the parent component of the update
+            if (onRefreshApiRequest) {
+                onRefreshApiRequest(selectedRender, result.updatedRequest);
+            }
         } else if (result.error) {
             console.error('Refresh failed:', result.error);
-            // Don't set error state for refresh failures, just log them
-            // The user can still see the cached data
+            setError('Failed to refresh request');
         }
     };
 

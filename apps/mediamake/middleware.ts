@@ -5,7 +5,18 @@ import { CrudHash } from '@microfox/db-upstash';
 
 // This function can be marked `async` if using `await` inside
 export default async function middleware(request: NextRequest) {
-  if (process.env.NODE_ENV === 'development') {
+  // Check for api key validity
+  const apiKey = request.headers.get('Authorization');
+  const bearer = apiKey?.split(' ')[1];
+
+  if (process.env.NODE_ENV === 'development' && !bearer) {
+    // In development, use the API key from environment variables
+    const devApiKey = process.env.DEV_API_KEY;
+    if (devApiKey) {
+      const response = NextResponse.next();
+      response.headers.set('x-client-id', devApiKey);
+      return response;
+    }
     return NextResponse.next();
   }
 
@@ -18,10 +29,6 @@ export default async function middleware(request: NextRequest) {
   ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  // Check for api key validity
-  const apiKey = request.headers.get('Authorization');
-  const bearer = apiKey?.split(' ')[1];
 
   if (!bearer) {
     return NextResponse.json(

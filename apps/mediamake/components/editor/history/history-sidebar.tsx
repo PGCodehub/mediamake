@@ -19,33 +19,33 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { getRenderHistory, type RenderRequest } from "@/lib/render-history";
-import { useProgress } from "@/hooks/use-progress";
+import { type RenderRequest } from "@/lib/render-history";
 import useLocalState from "@/components/studio/context/hooks/useLocalState";
+import { toast } from "sonner";
 
 interface HistorySidebarProps {
     selectedRender: string | null;
     onSelectRender: (renderId: string, renderRequest?: RenderRequest) => void;
+    onRefreshApiRequest?: (renderId: string, updatedRequest: RenderRequest) => void;
 }
 
-export function HistorySidebar({ selectedRender, onSelectRender }: HistorySidebarProps) {
+export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiRequest }: HistorySidebarProps) {
     const [renderRequests, setRenderRequests] = useState<RenderRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [apiKey, setApiKey] = useLocalState("apiKey", "");
     const [isApiLoading, setIsApiLoading] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
-    const [useApiHistory, setUseApiHistory] = useState(false);
-    const { fetchAndUpdateProgress } = useProgress();
 
     // Fetch render history from API
     const fetchApiHistory = async (key: string) => {
         setIsApiLoading(true);
         setApiError(null);
 
+
         try {
             const response = await fetch('/api/remotion/history', {
                 headers: {
-                    'x-client-id': key,
+                    "Authorization": `Bearer ${key}`,
                 },
             });
 
@@ -55,70 +55,61 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
 
             const data = await response.json();
             setRenderRequests(data);
-            setUseApiHistory(true);
         } catch (error) {
             console.error('Failed to fetch API history:', error);
             setApiError(error instanceof Error ? error.message : 'Failed to fetch history');
-            // Fallback to localStorage on API error
-            const history = getRenderHistory();
-            setRenderRequests(history);
-            setUseApiHistory(false);
         } finally {
             setIsApiLoading(false);
         }
     };
 
-    // Load render history from localStorage or API
-    useEffect(() => {
-        const loadHistory = () => {
-            if (apiKey.trim().length > 0) {
-                fetchApiHistory(apiKey);
-            } else {
-                const history = getRenderHistory();
-                setRenderRequests(history);
-                setUseApiHistory(false);
-                setIsLoading(false);
-            }
-        };
+    // Refresh a single API request
+    const refreshApiRequest = async (renderId: string): Promise<RenderRequest | null> => {
+        if (!apiKey.trim()) return null;
 
-        loadHistory();
-    }, [apiKey]);
-
-    // Check progress for rendering requests (only for localStorage history)
-    useEffect(() => {
-        if (useApiHistory) return; // Don't check progress for API history
-
-        const checkProgress = async () => {
-            const renderingRequests = renderRequests.filter(req =>
-                req.status === "rendering" && req.bucketName && req.renderId
-            );
-
-            if (renderingRequests.length === 0) return;
-
-            const progressPromises = renderingRequests.map(async (request) => {
-                try {
-                    console.log(`[Sidebar] Checking progress for ${request.id}`);
-                    const result = await fetchAndUpdateProgress(request);
-                    if (result.success) {
-                        console.log(`[Sidebar] Progress updated for ${request.id}`);
-                    } else {
-                        console.error(`[Sidebar] Failed to update progress for ${request.id}:`, result.error);
-                    }
-                } catch (error) {
-                    console.error(`Failed to check progress for ${request.id}:`, error);
-                }
+        try {
+            const response = await fetch('/api/remotion/history', {
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                },
             });
 
-            await Promise.all(progressPromises);
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
 
-            // Reload history after updates
-            const updatedHistory = getRenderHistory();
-            setRenderRequests(updatedHistory);
-        };
+            const data = await response.json();
+            const updatedRequest = data.find((req: RenderRequest) => req.id === renderId);
 
-        const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
-        return () => clearInterval(interval);
-    }, [renderRequests, fetchAndUpdateProgress, useApiHistory]);
+            if (updatedRequest) {
+                // Update the request in the current list
+                setRenderRequests(prev =>
+                    prev.map(req => req.id === renderId ? updatedRequest : req)
+                );
+
+                // Notify parent component of the updated request
+                if (onRefreshApiRequest) {
+                    onRefreshApiRequest(renderId, updatedRequest);
+                }
+            }
+
+            return updatedRequest || null;
+        } catch (error) {
+            console.error('Failed to refresh API request:', error);
+            return null;
+        }
+    };
+
+    // Load render history from API
+    useEffect(() => {
+        if (apiKey.trim().length > 0) {
+            fetchApiHistory(apiKey);
+        } else {
+            toast.error("Please enter an API key");
+            setIsLoading(false);
+        }
+    }, [apiKey]);
+
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -161,7 +152,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
         return new Date(dateString).toLocaleString();
     };
 
-    if (isLoading || isApiLoading) {
+    if (isApiLoading) {
         return (
             <div className="w-80 border-r bg-background p-4">
                 <h2 className="text-lg font-semibold mb-4">Render History</h2>
@@ -181,7 +172,6 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                     <h2 className="text-lg font-semibold">Render History</h2>
                     <p className="text-sm text-muted-foreground">
                         {renderRequests?.length || 0} render requests
-                        {useApiHistory && " (from API)"}
                     </p>
                 </div>
 
@@ -228,7 +218,7 @@ export function HistorySidebar({ selectedRender, onSelectRender }: HistorySideba
                                 "cursor-pointer transition-colors hover:bg-muted/50",
                                 selectedRender === request.id && "ring-2 ring-primary"
                             )}
-                            onClick={() => onSelectRender(request.id, useApiHistory ? request : undefined)}
+                            onClick={() => onSelectRender(request.id, request)}
                         >
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">

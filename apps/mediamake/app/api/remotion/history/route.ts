@@ -30,6 +30,8 @@ export const GET = async (req: NextRequest) => {
       inputProps: doc.inputProps,
       progressData: doc.progressData,
       isDownloadable: doc.isDownloadable,
+      bucketName: doc.bucketName,
+      renderId: doc.renderId,
     }));
 
     return NextResponse.json(formattedHistory);

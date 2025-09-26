@@ -23,7 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { addRenderRequest } from "@/lib/render-history";
+// localStorage functionality removed - render requests are now handled by API
 import { useRender } from "./render-provider";
 
 interface RenderModalProps {
@@ -106,7 +106,7 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
             isDownloadable: settings.isDownloadable
         };
 
-        addRenderRequest(renderRequest);
+        // Render request is now handled by the API directly
 
         toast.success("AWS render started successfully!");
         onClose();

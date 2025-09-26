@@ -1,9 +1,5 @@
 import { useState, useCallback } from 'react';
-import {
-  getRenderRequest,
-  updateRenderRequest,
-  type RenderRequest,
-} from '@/lib/render-history';
+import { type RenderRequest } from '@/lib/render-history';
 
 // Progress fetcher for checking render status
 const fetchProgress = async (bucketName: string, renderId: string) => {
@@ -26,7 +22,11 @@ export const useProgress = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const updateRequestWithProgressData = useCallback(
-    (requestId: string, progressData: any): ProgressUpdateResult => {
+    (
+      requestId: string,
+      progressData: any,
+      currentRequest: RenderRequest,
+    ): ProgressUpdateResult => {
       try {
         console.log('Updating request with progress data:', {
           requestId,
@@ -59,23 +59,16 @@ export const useProgress = () => {
           return { success: false, error: 'Unknown progress data type' };
         }
 
-        updateRenderRequest(requestId, updateData);
-        const updatedRequest = getRenderRequest(requestId);
+        // Create a full RenderRequest object by merging current request with updates
+        const updatedRequest: RenderRequest = {
+          ...currentRequest,
+          ...updateData,
+        };
 
-        if (updatedRequest) {
-          return {
-            success: true,
-            updatedRequest: {
-              ...updatedRequest,
-              progressData: progressData, // Ensure progressData is always included
-            },
-          };
-        } else {
-          return {
-            success: false,
-            error: 'Failed to retrieve updated request',
-          };
-        }
+        return {
+          success: true,
+          updatedRequest: updatedRequest,
+        };
       } catch (error) {
         console.error('Error updating request with progress data:', error);
         return {
@@ -101,7 +94,7 @@ export const useProgress = () => {
         );
         console.log('Progress data received:', progressData);
 
-        return updateRequestWithProgressData(request.id, progressData);
+        return updateRequestWithProgressData(request.id, progressData, request);
       } catch (error) {
         console.error('Failed to fetch progress:', error);
         return {
@@ -114,31 +107,9 @@ export const useProgress = () => {
     [updateRequestWithProgressData],
   );
 
-  const refreshRequest = useCallback(
-    async (requestId: string): Promise<ProgressUpdateResult> => {
-      setIsRefreshing(true);
-
-      try {
-        console.log('Refreshing request:', requestId);
-        const request = getRenderRequest(requestId);
-
-        if (!request) {
-          return { success: false, error: 'Request not found' };
-        }
-
-        // Always fetch fresh data from API for refresh
-        return await fetchAndUpdateProgress(request);
-      } finally {
-        setIsRefreshing(false);
-      }
-    },
-    [fetchAndUpdateProgress],
-  );
-
   return {
     isRefreshing,
     fetchAndUpdateProgress,
-    refreshRequest,
     updateRequestWithProgressData,
   };
 };

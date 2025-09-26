@@ -5,7 +5,7 @@ import {
 } from '@microfox/datamotion';
 
 const findMatchingComponents = (
-  childrenData: any[],
+  childrenData: RenderableComponentData[],
   targetIds: string[],
 ): RenderableComponentData[] => {
   const matches: RenderableComponentData[] = [];

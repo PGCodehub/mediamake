@@ -28,6 +28,11 @@ export default function HistoryPage() {
                                     setSelectedRender(renderId);
                                     setSelectedRequest(renderRequest || null);
                                 }}
+                                onRefreshApiRequest={(renderId, updatedRequest) => {
+                                    if (selectedRender === renderId) {
+                                        setSelectedRequest(updatedRequest);
+                                    }
+                                }}
                             />
                             <HistoryContent
                                 selectedRender={selectedRender}

@@ -6,6 +6,7 @@ import {
 import { DISK, RAM, REGION, TIMEOUT } from '../../../../config.mjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { renderRequestDB } from '@/lib/render-mongodb';
+import { getClientId } from '@/lib/auth-utils';
 
 export const GET = async (req: NextRequest) => {
   try {
@@ -33,7 +34,7 @@ export const GET = async (req: NextRequest) => {
       renderId: id,
     });
 
-    const clientId = req.headers.get('x-client-id');
+    const clientId = getClientId(req);
     if (clientId) {
       await renderRequestDB.update(
         renderProgress.renderId,
