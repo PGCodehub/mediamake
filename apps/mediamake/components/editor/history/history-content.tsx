@@ -26,6 +26,8 @@ import { ProgressDetails } from "./progress-details";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProgress } from "@/hooks/use-progress";
 import Link from "next/link";
+import useLocalState from "@/components/studio/context/hooks/useLocalState";
+import { toast } from "sonner";
 
 interface HistoryContentProps {
     selectedRender: string | null;
@@ -38,6 +40,7 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { isRefreshing, fetchAndUpdateProgress } = useProgress();
+    const [apiKey, setApiKey] = useLocalState("apiKey", "");
 
     // Load selected request from API
     useEffect(() => {
@@ -57,11 +60,17 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     useEffect(() => {
         console.log('selectedRequest', selectedRequest);
         if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId) {
+            toast.error("Selected request is not valid");
+            return;
+        }
+
+        if (!apiKey) {
+            toast.error("API key is not valid");
             return;
         }
 
         const checkProgress = async () => {
-            const result = await fetchAndUpdateProgress(selectedRequest);
+            const result = await fetchAndUpdateProgress(selectedRequest, apiKey);
             if (result.success && result.updatedRequest) {
                 setSelectedRequest(result.updatedRequest);
                 // Also notify the parent component of the update
@@ -126,7 +135,15 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     };
 
     const handleRefresh = async () => {
-        if (!selectedRender || !propSelectedRequest) return;
+        if (!selectedRender || !propSelectedRequest) {
+            toast.error("Selected request is not valid");
+            return;
+        }
+
+        if (!apiKey) {
+            toast.error("API key is not valid");
+            return;
+        }
 
         console.log('Refreshing request for ID:', selectedRender);
 
@@ -134,7 +151,7 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
         console.log('Refreshing API-based request');
         setError(null);
 
-        const result = await fetchAndUpdateProgress(propSelectedRequest);
+        const result = await fetchAndUpdateProgress(propSelectedRequest, apiKey);
         if (result.success && result.updatedRequest) {
             console.log('Refresh successful, updating with fresh data:', result.updatedRequest);
             setSelectedRequest(result.updatedRequest);

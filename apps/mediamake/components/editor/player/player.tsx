@@ -23,7 +23,7 @@ const AudioScene = {
                     "componentId": "VideoAtom",
                     "type": "atom",
                     "data": {
-                        "src": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                        "src": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
                         "className": "w-full h-auto object-cover bg-black",
                         "fit": "cover"
                     }
@@ -33,7 +33,7 @@ const AudioScene = {
                     "componentId": "VideoAtom",
                     "type": "atom",
                     "data": {
-                        "src": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                        "src": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
                         "className": "w-full h-auto object-cover bg-black",
                         "fit": "cover"
                     }
@@ -43,7 +43,7 @@ const AudioScene = {
                     "componentId": "VideoAtom",
                     "type": "atom",
                     "data": {
-                        "src": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                        "src": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
                         "className": "w-full h-auto object-cover bg-black",
                         "fit": "cover"
                     }

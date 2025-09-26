@@ -2,9 +2,18 @@ import { useState, useCallback } from 'react';
 import { type RenderRequest } from '@/lib/render-history';
 
 // Progress fetcher for checking render status
-const fetchProgress = async (bucketName: string, renderId: string) => {
+const fetchProgress = async (
+  bucketName: string,
+  renderId: string,
+  apiKey: string,
+) => {
   const response = await fetch(
     `/api/remotion/progress?bucketName=${bucketName}&id=${renderId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    },
   );
   if (!response.ok) {
     throw new Error('Failed to fetch progress');
@@ -81,7 +90,10 @@ export const useProgress = () => {
   );
 
   const fetchAndUpdateProgress = useCallback(
-    async (request: RenderRequest): Promise<ProgressUpdateResult> => {
+    async (
+      request: RenderRequest,
+      apiKey: string,
+    ): Promise<ProgressUpdateResult> => {
       if (!request.bucketName || !request.renderId) {
         return { success: false, error: 'Missing bucket name or render ID' };
       }
@@ -91,6 +103,7 @@ export const useProgress = () => {
         const progressData = await fetchProgress(
           request.bucketName,
           request.renderId,
+          apiKey,
         );
         console.log('Progress data received:', progressData);
 
