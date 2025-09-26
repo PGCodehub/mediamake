@@ -1,9 +1,32 @@
+import { InputCompositionProps } from '@microfox/remotion';
 import {
-  findMatchingComponents,
-  InputCompositionProps,
-  RenderableContext,
-} from '@microfox/remotion';
-import { replaceMatchingComponent } from '@microfox/datamotion';
+  RenderableComponentData,
+  replaceMatchingComponent,
+} from '@microfox/datamotion';
+
+const findMatchingComponents = (
+  childrenData: any[],
+  targetIds: string[],
+): RenderableComponentData[] => {
+  const matches: RenderableComponentData[] = [];
+
+  const searchRecursively = (components: RenderableComponentData[]) => {
+    for (const component of components) {
+      // Check if this component's ID matches any target ID
+      if (targetIds.includes(component.id)) {
+        matches.push(component);
+      }
+
+      // Recursively search in childrenData if it exists
+      if (component.childrenData && component.childrenData.length > 0) {
+        searchRecursively(component.childrenData);
+      }
+    }
+  };
+
+  searchRecursively(childrenData);
+  return matches;
+};
 
 // Helper function to clean function string by removing imports and type annotations
 export const cleanFunctionString = (func: Function): string => {
