@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { humanCorrectionMutator } from "../../../../packages/datamotion/src/transformers/caption.mutate";
+import { humanCorrectionMutator } from "@microfox/datamotion";
 import { Transcription } from "@/app/types/transcription";
 
 interface Step2TextCorrectionProps {
