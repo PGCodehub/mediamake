@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { staticFile, Video, useCurrentFrame, useVideoConfig } from 'remotion';
+import { experimental_Video as Video } from '@remotion/media';
+import { staticFile, useCurrentFrame, useVideoConfig, OffthreadVideo, Loop, delayRender } from 'remotion';
 import { BaseRenderableProps, ComponentConfig } from '../../core/types';
 import { z } from 'zod';
 import { useAnimatedStyles } from '../effects';
+import { calculateComponentDuration } from '../../core';
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -11,6 +13,7 @@ import { useAnimatedStyles } from '../effects';
 
 export const VideoAtomDataProps = z.object({
     src: z.string(),                    // Video source URL
+    srcDuration: z.number().optional(), // Video duration in seconds
     style: z.record(z.string(), z.any()).optional(), // CSS styles object
     className: z.string().optional(),   // CSS class names
     startFrom: z.number().optional(),   // Start playback from this time (seconds)
@@ -47,7 +50,7 @@ interface VideoAtomProps extends BaseRenderableProps {
  * @param data - Video configuration object containing all playback and styling settings
  * @returns Remotion Video component with applied configurations
  */
-export const Atom: React.FC<VideoAtomProps> = ({ data, id }) => {
+export const Atom: React.FC<VideoAtomProps> = ({ data, id, context }) => {
     const { fps } = useVideoConfig();
     const overrideStyles = useAnimatedStyles(id);
     const frame = useCurrentFrame();
@@ -76,9 +79,26 @@ export const Atom: React.FC<VideoAtomProps> = ({ data, id }) => {
         return { ...baseStyle, ...objectFit, ...overrideStyles };
     }, [data.style, data.fit, overrideStyles]);
 
+    if (data.loop) {
+
+        return (
+            <Loop times={Infinity} durationInFrames={data.srcDuration * fps} layout="none">
+                <OffthreadVideo
+                    className={data.className}
+                    src={source}
+                    style={combinedStyle}
+                    trimBefore={trimBefore}
+                    trimAfter={trimAfter}
+                    playbackRate={data.playbackRate}
+                    volume={data.volume}
+                    muted={data.muted}
+                />
+            </Loop>
+        );
+    }
+
     return (
-        // @ts-ignore
-        <Video
+        <OffthreadVideo
             className={data.className}
             src={source}
             style={combinedStyle}
@@ -87,7 +107,6 @@ export const Atom: React.FC<VideoAtomProps> = ({ data, id }) => {
             playbackRate={data.playbackRate}
             volume={data.volume}
             muted={data.muted}
-            loop={data.loop}
         />
     );
 };

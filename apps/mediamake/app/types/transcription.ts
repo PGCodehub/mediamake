@@ -20,7 +20,7 @@ export interface Caption {
   end: number;
   words: CaptionWord[];
   duration: number;
-  metadata: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export interface Sequence {

@@ -2,6 +2,7 @@
 
 import { InputCompositionProps } from '@microfox/remotion';
 import { ObjectId } from 'mongodb';
+import z from 'zod';
 
 export interface PresetMetadata {
   id: string;
@@ -101,3 +102,29 @@ export interface AppliedPresetsState {
   presets: AppliedPreset[];
   activePresetId: string | null;
 }
+// --- Transcription Schemas ---
+
+export const TranscriptionWordSchema = z.object({
+  text: z.string(),
+  start: z.number(),
+  absoluteStart: z.number().optional(),
+  end: z.number(),
+  absoluteEnd: z.number().optional(),
+  duration: z.number(),
+  confidence: z.number(),
+});
+
+export type TranscriptionWord = z.infer<typeof TranscriptionWordSchema>;
+
+export const TranscriptionSentenceSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  start: z.number(),
+  absoluteStart: z.number().optional(),
+  end: z.number(),
+  absoluteEnd: z.number().optional(),
+  duration: z.number(),
+  words: z.array(TranscriptionWordSchema),
+});
+
+export type TranscriptionSentence = z.infer<typeof TranscriptionSentenceSchema>;

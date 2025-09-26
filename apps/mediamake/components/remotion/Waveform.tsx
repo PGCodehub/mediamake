@@ -1,4 +1,4 @@
-import { Composition, PanEffectData, RenderableComponentData, TextAtomDataWithFonts, WaveformCircleDataProps, WaveformConfig, WaveformHistogramDataProps, WaveformHistogramRangedDataProps, WaveformLineDataProps, WaveformPresets, ZoomEffectData } from "@microfox/remotion";
+import { Composition, PanEffectData, RenderableComponentData, TextAtomData, WaveformCircleDataProps, WaveformConfig, WaveformHistogramDataProps, WaveformHistogramRangedDataProps, WaveformLineDataProps, WaveformPresets, ZoomEffectData } from "@microfox/remotion";
 
 const audioMetadata = {
     // turntogold - https://cdn1.suno.ai/db192e72-b371-4462-b7b8-78278c550450.webm
@@ -224,7 +224,7 @@ export const AudioScene = {
                 font: {
                     family: imageMetadata.textFont,
                 }
-            } as TextAtomDataWithFonts
+            } as TextAtomData
         },
         {
             id: 'text-xyz-boxed',
@@ -246,7 +246,7 @@ export const AudioScene = {
                     family: 'Inter',
                     weights: ['100', '400', '700'],
                 }
-            } as TextAtomDataWithFonts
+            } as TextAtomData
         },
         {
             id: 'text-xyz-3',
@@ -268,7 +268,7 @@ export const AudioScene = {
                     family: 'Inter',
                     weights: ['100', '400', '700'],
                 }
-            } as TextAtomDataWithFonts
+            } as TextAtomData
         }
     ],
 };

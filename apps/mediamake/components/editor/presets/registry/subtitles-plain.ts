@@ -1,18 +1,12 @@
+import { Transcription } from '@/app/types/transcription';
+import { RenderableComponentData } from '@microfox/datamotion';
 import {
-  InputCompositionProps,
   GenericEffectData,
-  GenericEffectPresets,
+  InputCompositionProps,
   TextAtomData,
 } from '@microfox/remotion';
 import z from 'zod';
 import { PresetMetadata } from '../types';
-import {
-  generateId,
-  RenderableComponentData,
-  RenderableContext,
-} from '@microfox/datamotion';
-import { Transcription } from '@/app/types/transcription';
-import { cleanFunctionString } from '../preset-helpers';
 
 const presetParams = z.object({
   inputCaptions: z.array(z.any()),

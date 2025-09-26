@@ -6,8 +6,16 @@ export {
   config as TextAtomConfig,
   type TextAtomData,
 } from './TextAtom';
-export { Atom as VideoAtom, config as VideoAtomConfig } from './VideoAtom';
-export { Atom as AudioAtom, config as AudioAtomConfig } from './AudioAtom';
+export {
+  Atom as VideoAtom,
+  config as VideoAtomConfig,
+  type VideoAtomDataProps,
+} from './VideoAtom';
+export {
+  Atom as AudioAtom,
+  config as AudioAtomConfig,
+  type AudioAtomDataProps,
+} from './AudioAtom';
 
 // Import registerComponent function
 import { registerComponent } from '../../core/registry';

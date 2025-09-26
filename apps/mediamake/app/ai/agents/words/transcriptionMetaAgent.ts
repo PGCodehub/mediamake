@@ -1,5 +1,3 @@
-'use server';
-
 import { AiRouter } from '@microfox/ai-router';
 import { z } from 'zod/v4';
 import { generateObject } from 'ai';

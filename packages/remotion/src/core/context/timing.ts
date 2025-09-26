@@ -1,4 +1,4 @@
-import { ALL_FORMATS, Input, UrlSource } from 'mediabunny';
+import { ALL_FORMATS, FilePathSource, Input, UrlSource } from 'mediabunny';
 import { RenderableComponentData } from '../types';
 import { InputCompositionProps } from '../../components/Composition';
 import { parseMedia } from '@remotion/media-parser';
@@ -28,7 +28,7 @@ export const findMatchingComponents = (
 };
 
 export const calculateComponentDuration = async (
-  component: RenderableComponentData
+  component: Pick<RenderableComponentData, 'data' | 'componentId'>
 ): Promise<number | undefined> => {
   const src = component.data.src;
   if (src.startsWith('http')) {
@@ -46,6 +46,7 @@ export const calculateComponentDuration = async (
     }
     return audioDuration;
   } else {
+    // NOT SUPPORTED
     // if (matchingComponents[0].componentId === "VideoAtom") {
     //     const { slowDurationInSeconds, dimensions } = await parseMedia({
     //         src: src,
@@ -55,11 +56,21 @@ export const calculateComponentDuration = async (
     //         },
     //     });
     // }
-    // const audioInput = new Input({
+    // try {
+    //   console.log(process.cwd() + '../../public/' + src);
+    //   cobst file = fs.readFileSync(process.cwd() + '../../public/' + src);
+    //   const source = new FilePathSource(process.cwd() + '../../public/' + src);
+    //   console.log(source);
+    //   const audioInput = new Input({
     //     formats: ALL_FORMATS,
-    //     source: new FilePathSource("/Users/subhakartikkireddy/Desktop/CODE/THEMOONDEVS/microfox-ai/mediamake/apps/mediamake/public/" + src),
-    // });
-    // calculatedDuration = await audioInput.computeDuration();
+    //     source: source,
+    //   });
+    //   const calculatedDuration = await audioInput.computeDuration();
+    //   return calculatedDuration;
+    // } catch (error) {
+    //   console.error('Error calculating duration', error);
+    //   return undefined;
+    // }
   }
 };
 export const calculateDuration = async (
@@ -116,12 +127,13 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
     for (const component of components) {
       let updatedComponent = { ...component };
 
-      // Check if this component's ID matches any target ID
+      // Check if this component's ID matches any target ID ( if fitDurationTo exists )
       if (
         component.context?.timing?.fitDurationTo?.length > 0 &&
         !onlyScene &&
         component.context?.timing?.fitDurationTo != component.id &&
-        component.context?.timing?.fitDurationTo != 'this'
+        component.context?.timing?.fitDurationTo != 'this' &&
+        component.context?.timing?.fitDurationTo != 'fill'
       ) {
         const duration = await calculateDuration(component.childrenData, {
           fitDurationTo: component.context?.timing?.fitDurationTo,
@@ -172,21 +184,27 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
       if (
         component.type === 'atom' &&
         !component.context?.timing?.duration &&
-        !onlyScene &&
-        !component.context?.timing?.fitDurationTo
+        !onlyScene
       ) {
         if (
           component.componentId === 'VideoAtom' ||
           component.componentId === 'AudioAtom'
         ) {
           const duration = await calculateComponentDuration(component);
-          updatedComponent.context = {
-            ...(updatedComponent.context || {}),
-            timing: {
-              ...(updatedComponent.context?.timing || {}),
-              duration: duration,
-            },
-          };
+          if (!component.context?.timing?.fitDurationTo) {
+            updatedComponent.context = {
+              ...(updatedComponent.context || {}),
+              timing: {
+                ...(updatedComponent.context?.timing || {}),
+                duration: duration,
+              },
+            };
+          } else if (component.context?.timing?.fitDurationTo) {
+            updatedComponent.data = {
+              ...updatedComponent.data,
+              srcDuration: duration,
+            };
+          }
         }
       }
 

@@ -1,7 +1,6 @@
 import { InputCompositionProps } from '@microfox/remotion';
 import z from 'zod';
 import { PresetMetadata } from '../types';
-import { cleanFunctionString } from '../preset-helpers';
 
 const presetParams = z.object({
   width: z.number().describe('Width of the video').default(1920),
@@ -76,7 +75,7 @@ const videoStitchPresetMetadata: PresetMetadata = {
   },
 };
 
-const videoStitchPresetFunction = cleanFunctionString(presetExecution);
+const videoStitchPresetFunction = presetExecution.toString();
 const videoStitchPresetParams = z.toJSONSchema(presetParams);
 
 export const videoStitchPreset = {

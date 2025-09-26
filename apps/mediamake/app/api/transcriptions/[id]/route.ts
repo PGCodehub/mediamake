@@ -119,10 +119,10 @@ export async function PUT(
 // DELETE /api/transcriptions/[id] - Delete a specific transcription
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const clientId = req.headers.get('x-client-id') || undefined;
 
     if (!ObjectId.isValid(id)) {

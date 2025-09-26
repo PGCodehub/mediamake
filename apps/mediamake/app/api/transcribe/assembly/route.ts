@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AssemblyAI } from 'assemblyai';
 import { captionMutator } from '@microfox/datamotion';
+import {
+  TranscriptionSentenceSchema,
+  TranscriptionWordSchema,
+} from '@/components/editor/presets/types';
+import { generateCaptions } from '../helpers';
 
 // --- AssemblyAI Schemas ---
 const AssemblyAIWordSchema = z.object({
@@ -17,32 +22,6 @@ const AssemblyAIUtteranceSchema = z.object({
   end: z.number(),
   words: z.array(AssemblyAIWordSchema),
 });
-
-// --- Transcription Schemas ---
-export const TranscriptionWordSchema = z.object({
-  text: z.string(),
-  start: z.number(),
-  absoluteStart: z.number().optional(),
-  end: z.number(),
-  absoluteEnd: z.number().optional(),
-  duration: z.number(),
-  confidence: z.number(),
-});
-
-export type TranscriptionWord = z.infer<typeof TranscriptionWordSchema>;
-
-export const TranscriptionSentenceSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-  start: z.number(),
-  absoluteStart: z.number().optional(),
-  end: z.number(),
-  absoluteEnd: z.number().optional(),
-  duration: z.number(),
-  words: z.array(TranscriptionWordSchema),
-});
-
-export type TranscriptionSentence = z.infer<typeof TranscriptionSentenceSchema>;
 
 // --- Request/Response Schemas ---
 const TranscriptionRequestSchema = z.object({
@@ -65,41 +44,6 @@ type Word = z.infer<typeof TranscriptionWordSchema>;
 type Caption = z.infer<typeof TranscriptionSentenceSchema>;
 type TranscriptionRequest = z.infer<typeof TranscriptionRequestSchema>;
 
-export const generateCaptions = (utterances: AssemblyAIUtterance[]) => {
-  let captions: Caption[] = utterances.map(
-    (utterance: AssemblyAIUtterance, index: number): Caption => {
-      const words: Word[] = utterance.words.map((word: AssemblyAIWord) => ({
-        text: word.text,
-        start: (word.start - utterance.start) / 1000,
-        absoluteStart: word.start / 1000,
-        end: (word.end - utterance.start) / 1000,
-        absoluteEnd: word.end / 1000,
-        duration: (word.end - word.start) / 1000,
-        confidence: word.confidence,
-      }));
-
-      return {
-        id: `caption-${index}`,
-        text: utterance.text,
-        start: utterance.start / 1000,
-        absoluteStart: utterance.start / 1000,
-        end: utterance.end / 1000,
-        absoluteEnd: utterance.end / 1000,
-        duration: (utterance.end - utterance.start) / 1000,
-        words: words,
-      };
-    },
-  );
-  if (captions.length === 1 && captions[0].words.length > 10) {
-    captions = captionMutator(captions, {
-      maxCharactersPerSentence: 50,
-      maxSentenceDuration: 2,
-      minSentenceDuration: 0.5,
-      splitStrategy: 'smart',
-    });
-  }
-  return captions;
-};
 /**
  * Transcribes an audio file using AssemblyAI.
  */

@@ -1,15 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/mongodb';
 import { Transcription } from '@/app/types/transcription';
-import { generateCaptions } from '@/app/api/transcribe/assembly/route';
+import { getDatabase } from '@/lib/mongodb';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/transcriptions/assembly/[assemblyId] - Get transcription by AssemblyAI ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { assemblyId: string } },
+  { params }: { params: Promise<{ assemblyId: string }> },
 ) {
   try {
-    const { assemblyId } = params;
+    const { assemblyId } = await params;
     const clientId = req.headers.get('x-client-id') || undefined;
 
     if (!assemblyId) {

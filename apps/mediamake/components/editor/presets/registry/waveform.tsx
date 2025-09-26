@@ -1,13 +1,12 @@
-import { RenderableComponentData } from "@microfox/datamotion";
-import { InputCompositionProps, PanEffectData, TextAtomData, WaveformConfig, WaveformHistogramRangedDataProps, ZoomEffectData } from "@microfox/remotion";
-import z from "zod"
+import { AudioAtomDataProps, InputCompositionProps, PanEffectData, TextAtomData, WaveformConfig, WaveformHistogramRangedDataProps, ZoomEffectData } from "@microfox/remotion";
+import z from "zod";
 import { PresetMetadata } from "../types";
-import { cleanFunctionString } from "../preset-helpers";
 
 const presetParams = z.object({
     audio: z.object({
         src: z.string(),
         volume: z.number().optional().describe("0-1"),
+        start: z.number().optional().describe("in seconds"),
     }),
     image: z.object({
         src: z.string(),
@@ -50,7 +49,7 @@ const presetExecution = (params: z.infer<typeof presetParams>): Partial<InputCom
                 amplitude: 2,
                 width: 1920,
                 height: 200,
-                dataOffsetInSeconds: - 0.1,
+                dataOffsetInSeconds: params.audio.start ?? - 0.1,
                 useFrequencyData: false,
             } as WaveformConfig,
             barColor: '#A41117',
@@ -82,7 +81,7 @@ const presetExecution = (params: z.infer<typeof presetParams>): Partial<InputCom
                 amplitude: 1,
                 width: 1920,
                 height: 300,
-                dataOffsetInSeconds: 0,
+                dataOffsetInSeconds: params.audio.start ?? 0,
                 useFrequencyData: true,
             } as WaveformConfig,
             barColor: '#A41117',
@@ -165,7 +164,8 @@ const presetExecution = (params: z.infer<typeof presetParams>): Partial<InputCom
                     data: {
                         src: params.audio.src,
                         volume: params.audio.volume,
-                    }
+                        startFrom: params.audio.start ?? 0,
+                    } as AudioAtomDataProps
                 },
                 {
                     id: 'Image-xyz',
@@ -294,7 +294,7 @@ const waveformPresetMetadata: PresetMetadata = {
     },
 }
 
-const waveformPresetFunction = cleanFunctionString(presetExecution);
+const waveformPresetFunction = presetExecution.toString();
 const waveformPresetParams = z.toJSONSchema(presetParams);
 
 const waveformPreset = {
@@ -303,4 +303,4 @@ const waveformPreset = {
     presetParams: waveformPresetParams,
 }
 
-export { waveformPresetFunction, waveformPresetParams, waveformPresetMetadata, waveformPreset }
+export { waveformPreset, waveformPresetFunction, waveformPresetMetadata, waveformPresetParams };

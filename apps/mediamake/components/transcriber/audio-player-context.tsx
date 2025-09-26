@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useRef, useState, useCallback, ReactNode } from 'react';
 
 interface AudioPlayerContextType {
-    audioRef: React.RefObject<HTMLAudioElement>;
+    audioRef: React.RefObject<HTMLAudioElement | null>;
     isPlaying: boolean;
     currentTime: number;
     duration: number;

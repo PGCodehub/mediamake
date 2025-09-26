@@ -134,9 +134,38 @@ const calculateAnimatedValue = (
             if (typeof currentValue === 'number' && typeof nextValue === 'number') {
                 return interpolate(localProgress, [0, 1], [currentValue, nextValue]);
             } else if (typeof currentValue === 'string' && typeof nextValue === 'string') {
-                // For string values, we'll need more sophisticated interpolation
-                // For now, return the current value
-                return currentValue;
+                // Extract unit and value from both strings
+                const getUnitAndValue = (str: string) => {
+                    // Check for units in order of specificity (longer units first)
+                    const units = ['vmax', 'vmin', 'rem', 'deg', 'bpm', 'vh', 'vw', 'px', 'em', 'ms', 'hz', 'db', 'fr', 's', '%'];
+
+                    for (const unit of units) {
+                        if (str.endsWith(unit)) {
+                            return {
+                                value: parseFloat(str.slice(0, -unit.length)),
+                                unit: unit
+                            };
+                        }
+                    }
+
+                    // If no unit found, treat as number
+                    return {
+                        value: parseFloat(str),
+                        unit: ''
+                    };
+                };
+
+                const current = getUnitAndValue(currentValue);
+                const next = getUnitAndValue(nextValue);
+
+                // Only interpolate if units match
+                if (current.unit === next.unit) {
+                    const interpolatedValue = interpolate(localProgress, [0, 1], [current.value, next.value]);
+                    return current.unit ? `${interpolatedValue}${current.unit}` : interpolatedValue;
+                } else {
+                    // Units don't match, return current value
+                    return currentValue;
+                }
             }
 
             return currentValue; // Fallback
@@ -164,30 +193,33 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
     Object.entries(rangesByKey).forEach(([key, keyRanges]) => {
         const value = calculateAnimatedValue(keyRanges, progress, key);
 
-        // Debug logging for opacity
-        if (key === 'opacity') {
-            console.log(`Opacity animation - Progress: ${progress}, Value: ${value}, Ranges:`, keyRanges);
-        }
-
         // Map common animation keys to CSS properties
         switch (key) {
             case 'scale':
                 styles.transform = `scale(${value})`;
                 break;
             case 'rotate':
-                styles.transform = `${styles.transform || ''} rotate(${value}deg)`.trim();
+                // Handle both number and string values for rotate
+                const rotateValue = typeof value === 'string' && value.includes('deg') ? value : `${value}deg`;
+                styles.transform = `${styles.transform || ''} rotate(${rotateValue})`.trim();
                 break;
             case 'translateX':
-                styles.transform = `${styles.transform || ''} translateX(${value}px)`.trim();
+                // Handle both number and string values for translateX
+                const translateXValue = typeof value === 'string' && (value.includes('px') || value.includes('%') || value.includes('vw') || value.includes('vh')) ? value : `${value}px`;
+                styles.transform = `${styles.transform || ''} translateX(${translateXValue})`.trim();
                 break;
             case 'translateY':
-                styles.transform = `${styles.transform || ''} translateY(${value}px)`.trim();
+                // Handle both number and string values for translateY
+                const translateYValue = typeof value === 'string' && (value.includes('px') || value.includes('%') || value.includes('vw') || value.includes('vh')) ? value : `${value}px`;
+                styles.transform = `${styles.transform || ''} translateY(${translateYValue})`.trim();
                 break;
             case 'opacity':
                 styles.opacity = value;
                 break;
             case 'blur':
-                styles.filter = `blur(${value}px)`;
+                // Handle both number and string values for blur
+                const blurValue = typeof value === 'string' && (value.includes('px') || value.includes('rem') || value.includes('em')) ? value : `${value}px`;
+                styles.filter = `blur(${blurValue})`;
                 break;
             case 'brightness':
                 styles.filter = `${styles.filter || ''} brightness(${value})`.trim();
@@ -197,6 +229,7 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
                 break;
             default:
                 // For custom CSS properties, set them directly
+                // This supports any CSS property including CSS custom properties (CSS variables)
                 (styles as any)[key] = value;
         }
     });
