@@ -10,7 +10,6 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "prebuild": "npm install --force",
     "build": "tsup",
     "build:watch": "tsup --watch",
     "clean": "rm -rf dist",

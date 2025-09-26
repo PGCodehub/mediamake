@@ -8,17 +8,4 @@ export default defineConfig({
   clean: true,
   skipNodeModulesBundle: true,
   external: ['@remotion/google-fonts'],
-  // Force esbuild only, completely disable rollup
-  esbuildOptions: (options) => {
-    options.platform = 'node';
-    options.target = 'node18';
-  },
-  // Disable all rollup features
-  minify: false,
-  treeshake: false,
-  splitting: false,
-  // Use esbuild for everything
-  bundle: true,
-  // Disable rollup completely
-  noExternal: [],
 });
