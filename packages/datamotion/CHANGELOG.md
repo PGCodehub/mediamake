@@ -1,10 +1,17 @@
 # Changelog
 
+## 1.0.1
+
+### Patch Changes
+
+- b7b8bdf: Changes from PR #6: upgrades
+
 All notable changes to this project will be documented in this file.
 
 ## [1.0.0] - 2025-09-16
 
 ### Added
+
 - Initial release
 - Basic SDK structure
 - TypeScript support
@@ -24,4 +31,4 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 - Deprecated feature
---> 
+-->
