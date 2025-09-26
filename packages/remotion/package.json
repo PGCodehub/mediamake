@@ -10,6 +10,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
+    "prebuild": "npm install --force",
     "build": "tsup",
     "build:watch": "tsup --watch",
     "clean": "rm -rf dist",
@@ -29,6 +30,7 @@
     "@remotion/media": "^4.0.353",
     "@remotion/media-parser": "^4.0.347",
     "@remotion/media-utils": "4.0.347",
+    "@remotion/paths": "^4.0.347",
     "mediabunny": "^1.15.1",
     "react": "19.1.1",
     "remotion": "4.0.347",
