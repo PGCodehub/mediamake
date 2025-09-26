@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2
+
+### Patch Changes
+
+- 4ab0a10: update dependencies
+
+## 1.0.1
+
+### Patch Changes
+
+- 14ea00b: Triggered by issue #2: release @microfox/remotion patch
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -11,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Complete recursive composition system** with unified component architecture
 - **Core Components**:
-
   - `Composition` - Main composition component
   - `SimpleComposition` - Simplified composition for quick setup
   - `SceneFrame` and `OverlayFrame` - Frame components
@@ -20,20 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `TextAtom`, `ImageAtom`, `VideoAtom`, `AudioAtom`, `ShapeAtom` - Atom components
 
 - **Core System**:
-
   - `RenderableComponentData` interface for recursive component structure
   - `RenderableContext` for boundary and timing management
   - Component registry system for extensibility
   - Context-driven rendering with automatic boundary calculation
 
 - **Hooks**:
-
   - `useRenderableContext` - Context and boundary management
   - `useComponentRegistry` - Registry management
   - `useBoundaryCalculation` - Boundary calculation utilities
 
 - **Utilities**:
-
   - `createCompositionBuilder` - Programmatic composition creation
   - `createSimpleComposition` - Quick composition setup
   - Context utilities for boundary and timing management
