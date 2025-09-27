@@ -32,7 +32,7 @@ interface HistorySidebarProps {
 export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiRequest }: HistorySidebarProps) {
     const [renderRequests, setRenderRequests] = useState<RenderRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [apiKey, setApiKey] = useLocalState("apiKey", "");
+    const [apiKey, setApiKey] = useLocalState("apiKey", process.env.NEXT_PUBLIC_DEV_API_KEY ?? "");
     const [isApiLoading, setIsApiLoading] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
 

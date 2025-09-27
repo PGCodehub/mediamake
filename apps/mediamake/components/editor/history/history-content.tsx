@@ -40,7 +40,7 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { isRefreshing, fetchAndUpdateProgress } = useProgress();
-    const [apiKey, setApiKey] = useLocalState("apiKey", "");
+    const [apiKey, setApiKey] = useLocalState("apiKey", process.env.NEXT_PUBLIC_DEV_API_KEY ?? "");
 
     // Load selected request from API
     useEffect(() => {
