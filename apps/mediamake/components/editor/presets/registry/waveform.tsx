@@ -33,6 +33,7 @@ const presetParams = z.object({
     secondaryColor: z.string(),
     textColor: z.string().optional(),
     waveformType: z.enum(["fixed", "waves"]),
+    isWaveFormHidden: z.boolean().optional(),
 
 });
 //src: https://cdn1.suno.ai/6aded313-9bd5-4c8b-bb6f-fd5f158642e3.m4a
@@ -137,7 +138,7 @@ const presetExecution = (params: z.infer<typeof presetParams>): Partial<InputCom
                         className: 'inset-0 absolute',
                     },
                     {
-                        className: 'absolute -bottom-1',
+                        className: params.isWaveFormHidden ? 'absolute opacity-0' : 'absolute -bottom-1',
                         style: {
                             background: `linear-gradient(to bottom, transparent 0%,  #000000 100%)`,
                         },

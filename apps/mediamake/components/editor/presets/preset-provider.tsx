@@ -15,6 +15,8 @@ interface PresetContextType {
     removePreset: (presetId: string) => void;
     updatePresetInputData: (presetId: string, inputData: PresetInputData) => void;
     togglePresetExpansion: (presetId: string) => void;
+    refreshPreset: (presetId: string) => void;
+    reorderPresets: (oldIndex: number, newIndex: number) => void;
 
     // Configuration state
     configuration: PresetConfiguration;
@@ -92,6 +94,57 @@ export function PresetProvider({ children }: PresetProviderProps) {
         }));
     }, []);
 
+    const refreshPreset = useCallback((presetId: string) => {
+        setAppliedPresets((prev: AppliedPresetsState) => {
+            const presetToRefresh = prev.presets.find((p: AppliedPreset) => p.id === presetId);
+            if (!presetToRefresh) return prev;
+
+            // For predefined presets, reload from registry
+            if (presetToRefresh.preset.metadata.type === 'predefined') {
+                // Import the registry dynamically to get the latest version
+                import('./registry/presets-registry').then(({ getPresetById }) => {
+                    const refreshedPreset = getPresetById(presetToRefresh.preset.metadata.id);
+                    if (refreshedPreset) {
+                        setAppliedPresets((currentPrev: AppliedPresetsState) => ({
+                            ...currentPrev,
+                            presets: currentPrev.presets.map((p: AppliedPreset) =>
+                                p.id === presetId
+                                    ? {
+                                        ...p,
+                                        preset: {
+                                            ...p.preset,
+                                            presetFunction: refreshedPreset.presetFunction,
+                                            presetParams: refreshedPreset.presetParams
+                                        }
+                                    }
+                                    : p
+                            )
+                        }));
+                    }
+                });
+            }
+
+            // For database presets, we would need to fetch from the database
+            // This would require an API call to get the latest version
+            // For now, we'll just return the current state
+            return prev;
+        });
+    }, []);
+
+    const reorderPresets = useCallback((oldIndex: number, newIndex: number) => {
+        setAppliedPresets((prev: AppliedPresetsState) => ({
+            ...prev,
+            presets: prev.presets.map((preset, index) => {
+                if (index === oldIndex) {
+                    return prev.presets[newIndex];
+                } else if (index === newIndex) {
+                    return prev.presets[oldIndex];
+                }
+                return preset;
+            })
+        }));
+    }, []);
+
     const generateOutput = useCallback(() => {
         // This will be implemented by the parent component that uses the provider
         // The provider just manages the state, the actual generation logic should be passed in
@@ -105,6 +158,8 @@ export function PresetProvider({ children }: PresetProviderProps) {
         removePreset,
         updatePresetInputData,
         togglePresetExpansion,
+        refreshPreset,
+        reorderPresets,
         configuration,
         setConfiguration,
         generatedOutput,

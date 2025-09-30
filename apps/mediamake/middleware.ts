@@ -7,25 +7,27 @@ import { CrudHash } from '@microfox/db-upstash';
 export default async function middleware(request: NextRequest) {
   // Check for api key validity
   const apiKey = request.headers.get('Authorization');
-  const bearer = apiKey?.split(' ')[1];
+  let bearer = apiKey?.split(' ')[1];
 
   if (process.env.NODE_ENV === 'development' && !bearer) {
     // In development, use the API key from environment variables
     const devApiKey = process.env.DEV_API_KEY;
     if (devApiKey) {
-      const response = NextResponse.next();
-      response.headers.set('x-client-id', devApiKey);
-      return response;
+      bearer = devApiKey;
     }
-    return NextResponse.next();
+    //return NextResponse.next();
   }
 
   const { pathname } = request.nextUrl;
   // Only allow api/remotion, api/transcribe & api/transcriptions routes
   if (
-    !pathname.startsWith('/api/remotion') &&
+    !pathname.startsWith('/api/') &&
     !pathname.startsWith('/api/transcribe') &&
-    !pathname.startsWith('/api/transcriptions')
+    !pathname.startsWith('/api/transcriptions') &&
+    !pathname.startsWith('/api/studio') &&
+    !pathname.startsWith('/api/presets') &&
+    !pathname.startsWith('/api/preset-data') &&
+    process.env.NODE_ENV === 'production'
   ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

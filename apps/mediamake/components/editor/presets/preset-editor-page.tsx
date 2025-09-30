@@ -13,8 +13,13 @@ export function PresetEditor() {
     const handleSelectPreset = (preset: Preset | DatabasePreset | null) => {
         // Add the selected preset to the array (only if not null)
         if (preset) {
-            setSelectedPresets([preset]);
+            setSelectedPresets(prev => [...prev, preset]);
         }
+    };
+
+    // Clear selectedPresets after they've been processed
+    const handlePresetsProcessed = () => {
+        setSelectedPresets([]);
     };
 
     return (
@@ -30,6 +35,7 @@ export function PresetEditor() {
                             />
                             <PresetEditorWithProvider
                                 selectedPresets={selectedPresets}
+                                onPresetsProcessed={handlePresetsProcessed}
                             />
                         </div>
                     </div>

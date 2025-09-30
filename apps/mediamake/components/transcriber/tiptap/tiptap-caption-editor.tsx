@@ -45,6 +45,7 @@ import './tiptap-editor.css';
 import { HighlightExtension, updateHighlightTime } from './highlight-extension';
 import { ClickAndSeekExtension } from './click-seek-extension';
 import { OverviewPanel } from '../overview-panel';
+import { SentenceTimeline } from '../sentence-timeline';
 import { toast } from "sonner";
 import { diffArrays } from 'diff';
 import { Extension } from '@tiptap/core';
@@ -55,6 +56,18 @@ import { SentenceParagraph } from './sentence-paragraph-extension';
 import { WordMark } from './word-mark-extension';
 import { CaptionSyncExtension } from './caption-sync-extension';
 import { generateId } from "@microfox/datamotion";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+
+const CustomParagraph = Paragraph.extend({
+    addAttributes() {
+        return {
+            ...this.parent?.(),
+            'data-sentence-id': {
+                default: null,
+            },
+        };
+    },
+});
 
 // Add these constants
 const TEXT_NODE = 3;
@@ -66,70 +79,6 @@ interface TiptapCaptionEditorProps {
     onTranscriptionDataUpdate?: (updatedData: any) => Promise<void>;
 }
 
-/**
- * @deprecated Not in use.
- */
-const parseJsonToCaptions = (jsonData: any): Caption[] => {
-    return [];
-};
-
-const parseEditorStateToCaptions = (doc: ProseMirrorNode): Caption[] => {
-    const captions: Caption[] = [];
-
-    doc.content.forEach((paragraphNode, offset, index) => {
-        if (paragraphNode.type.name === 'paragraph') {
-            const sentenceAttrs = paragraphNode.attrs;
-            const words: CaptionWord[] = [];
-
-            let textContent = ``;
-            let start = 0;
-            let end = 0;
-            paragraphNode.content.forEach((textNode, index) => {
-                if (textNode.isText) {
-                    textNode.marks.forEach(mark => {
-                        if (mark.type.name === 'word') {
-                            const wordAttrs = mark.attrs;
-                            textContent += `${textNode.text!.trim()} `;
-                            if (index === 0) {
-                                start = wordAttrs['data-absolute-start'];
-                            }
-                            end = wordAttrs['data-absolute-end'];
-                            let wordStart = wordAttrs['data-absolute-start'];
-                            let wordEnd = wordAttrs['data-absolute-end'];
-                            let wordDuration = wordEnd - wordStart;
-                            words.push({
-                                id: generateId(),
-                                text: textNode.text!.trim(),
-                                start: wordStart - start,
-                                end: wordEnd - start,
-                                absoluteStart: wordStart,
-                                absoluteEnd: wordEnd,
-                                confidence: wordAttrs['data-confidence'] || 0.8,
-                                duration: wordDuration,
-                            });
-                        }
-                    });
-                }
-            });
-
-            if (words.length > 0) {
-                captions.push({
-                    id: `sentence-${generateId()}`,
-                    text: textContent.trim(),
-                    start: start,
-                    end: end,
-                    absoluteStart: start,
-                    absoluteEnd: end,
-                    duration: end - start,
-                    words: words
-                });
-            }
-        }
-    });
-    return captions;
-};
-
-
 export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange }: TiptapCaptionEditorProps) {
     const { audioRef, isPlaying, currentTime, duration, seekTo, togglePlayPause, setVolume: setVolumeContext, formatTime, volume } = useAudioPlayer();
     const [showBubbleMenu, setShowBubbleMenu] = useState(false);
@@ -139,6 +88,22 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
     const [hasChanges, setHasChanges] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const bubbleMenuRef = useRef<HTMLDivElement>(null);
+    const [localCaptions, setLocalCaptions] = useState<Caption[]>([]);
+    const captionsRef = useRef(localCaptions);
+
+    useEffect(() => {
+        captionsRef.current = localCaptions;
+    }, [localCaptions]);
+
+    useEffect(() => {
+        setLocalCaptions(transcriptionData.captions);
+    }, [transcriptionData.captions]);
+
+    const handleCaptionsChange = (newCaptions: Caption[]) => {
+        console.log("handleCaptionsChange called with:", newCaptions);
+        setLocalCaptions(newCaptions);
+        setHasChanges(true); // Mark that we have changes to be saved
+    };
 
     const timeStateRef = useRef({
         currentTime: 0,
@@ -167,8 +132,9 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
         extensions: [
             StarterKit.configure({
                 codeBlock: false,
-                paragraph: false, // Disable default paragraph
+                paragraph: false, // We are using our custom paragraph
             }),
+            CustomParagraph,
             LinkExtension.configure({
                 openOnClick: false,
                 HTMLAttributes: {
@@ -182,7 +148,7 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
             TableHeader,
             TableCell,
             CodeBlock,
-            SentenceParagraph,
+            //SentenceParagraph,
             WordMark,
             HighlightExtension,
             ClickAndSeekExtension.configure({
@@ -201,18 +167,76 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
             },
         },
         immediatelyRender: false,
-        onUpdate: ({ editor }) => {
-            // Handle content updates
+        onUpdate: ({ editor, transaction }) => {
+            console.log("Tiptap onUpdate triggered.");
 
-            // // Parse the editor state to get the latest captions
-            // const newCaptions = parseEditorStateToCaptions(editor.state.doc);
+            if (!transaction.docChanged) {
+                console.log("No document changes, skipping.");
+                return;
+            }
 
-            // // Only update state if the content has meaningfully changed to prevent infinite loops
-            // if (JSON.stringify(newCaptions) !== JSON.stringify(transcriptionData.captions)) {
-            //     console.log('🔄 Editor content updated, syncing React state...');
-            //     console.log('🔄 Sentences updated:', newCaptions);
-            //     setHasChanges(true);
-            // }
+            const newCaptions: Caption[] = [];
+
+            editor.state.doc.forEach(p_node => {
+                const newCaptionWords: CaptionWord[] = [];
+
+                p_node.content.forEach(childNode => {
+                    if (childNode.isText) {
+                        const wordMark = childNode.marks.find(mark => mark.type.name === 'word');
+                        const text = childNode.text?.trim();
+                        if (wordMark && text) {
+                            const absoluteStart = parseFloat(wordMark.attrs['data-absolute-start']);
+                            const absoluteEnd = parseFloat(wordMark.attrs['data-absolute-end']);
+
+                            if (!isNaN(absoluteStart) && !isNaN(absoluteEnd)) {
+                                newCaptionWords.push({
+                                    id: generateId(),
+                                    text: text,
+                                    absoluteStart,
+                                    absoluteEnd,
+                                    start: 0, // Will be recalculated below
+                                    end: 0,   // Will be recalculated below
+                                    duration: absoluteEnd - absoluteStart,
+                                    confidence: wordMark.attrs['data-confidence'] || 1.0,
+                                });
+                            }
+                        }
+                    }
+                });
+
+                if (newCaptionWords.length > 0) {
+                    const sentenceStart = newCaptionWords[0].absoluteStart;
+                    const sentenceEnd = newCaptionWords[newCaptionWords.length - 1].absoluteEnd;
+
+                    // Adjust relative timings for all words in the new sentence.
+                    newCaptionWords.forEach(w => {
+                        w.start = w.absoluteStart - sentenceStart;
+                        w.end = w.absoluteEnd - sentenceStart;
+                    });
+
+                    newCaptions.push({
+                        id: p_node.attrs['data-sentence-id'] || `sentence-${generateId()}`,
+                        text: p_node.textContent.trim(),
+                        start: sentenceStart,
+                        end: sentenceEnd,
+                        duration: sentenceEnd - sentenceStart,
+                        absoluteStart: sentenceStart,
+                        absoluteEnd: sentenceEnd,
+                        words: newCaptionWords,
+                    });
+                }
+            });
+
+            const hasStructuralChanges = JSON.stringify(captionsRef.current) !== JSON.stringify(newCaptions);
+
+            console.log("Has structural changes:", hasStructuralChanges);
+
+            if (hasStructuralChanges) {
+                console.log("Calling handleCaptionsChange with updated captions.");
+                handleCaptionsChange(newCaptions);
+            } else {
+                console.log("No structural changes detected, not updating state.");
+            }
         },
         onSelectionUpdate: ({ editor }) => {
             // Handle selection updates for bubble menu
@@ -263,21 +287,28 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
         },
     });
 
-    // Initialize sentences from transcription data
-    useEffect(() => {
-        if (transcriptionData.captions && editor) {
-            const processedSentences: Caption[] = transcriptionData.captions;
-            console.log('🔄 Setting sentences from transcription data:', processedSentences.length, 'sentences');
+    const lastSyncedCaptions = useRef<string | null>(null);
 
-            if (processedSentences.length > 0) {
-                const content = {
-                    type: 'doc',
-                    content: processedSentences.map((sentence) => ({
-                        type: 'paragraph',
-                        attrs: {
-                            class: 'sentence-item'
-                        },
-                        content: sentence.words.map((word) => ({
+    // This effect is responsible for syncing the state of the captions (from the timeline)
+    // into the Tiptap editor's view.
+    useEffect(() => {
+        if (!editor || !localCaptions) return;
+
+        const captionsJson = JSON.stringify(localCaptions);
+
+        console.log("Syncing captions to Tiptap editor. Has content changed?", captionsJson !== lastSyncedCaptions.current);
+
+        // We do a deep comparison to ensure we only update the editor when the data has actually changed.
+        // This is a crucial step to prevent infinite rendering loops.
+        if (captionsJson !== lastSyncedCaptions.current) {
+            console.log("Content has changed, updating editor view.");
+            lastSyncedCaptions.current = captionsJson;
+
+            const content = {
+                type: 'doc',
+                content: localCaptions.map((sentence: Caption) => {
+                    const wordNodes = sentence.words.flatMap((word, index) => {
+                        const wordNode = {
                             type: 'text',
                             marks: [{
                                 type: 'word',
@@ -289,13 +320,38 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
                                 }
                             }],
                             text: word.text,
-                        }))
-                    }))
-                };
-                editor.commands.setContent(content);
+                        };
+
+                        if (index < sentence.words.length - 1) {
+                            return [wordNode, { type: 'text', text: ' ' }];
+                        }
+
+                        return [wordNode];
+                    });
+
+                    // Add a trailing space to prevent words from merging when sentences are merged
+                    const paragraphContent = wordNodes.length > 0 ? [...wordNodes, { type: 'text', text: ' ' }] : [];
+
+                    return {
+                        type: 'paragraph',
+                        attrs: {
+                            'data-sentence-id': sentence.id,
+                        },
+                        content: paragraphContent
+                    };
+                })
+            };
+
+            // Preserve the user's cursor position during the update.
+            const { from, to } = editor.state.selection;
+            editor.commands.setContent(content, { emitUpdate: false }); // `emitUpdate: false` prevents an `onUpdate` loop
+
+            // Ensure the previous cursor position is valid within the new content length.
+            if (from <= editor.state.doc.content.size && to <= editor.state.doc.content.size) {
+                editor.commands.setTextSelection({ from, to });
             }
         }
-    }, [transcriptionData, editor]);
+    }, [localCaptions, editor]);
 
     // Handle click outside to hide bubble menu
     useEffect(() => {
@@ -330,9 +386,11 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
             return;
         }
 
-        const finalCaptions = parseEditorStateToCaptions(editor.state.doc);
+        // We use localCaptions as the source of truth for saving.
+        // We could also parse the editor state again as a final check, but this assumes timeline is the master.
+        const finalCaptions = localCaptions;
 
-        if (!finalCaptions) {
+        if (!finalCaptions || finalCaptions.length === 0) {
             console.log("No changes to save or transcription ID is missing.");
             toast.error("No changes to save or transcription ID is missing.");
             return;
@@ -355,28 +413,13 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
     };
 
     return (
-        <div className="w-full h-screen flex flex-col">
-
-            {/* Main Content with Tabs */}
+        <div className="w-full h-full flex flex-col">
+            {/* Main Content with Resizable Panels */}
             <div className="flex-1 overflow-hidden">
-                {/* <Tabs defaultValue="editor" className="h-full flex flex-col">
-                    <div className=" px-0 ">
-                        <TabsList className="bg-transparent h-auto p-0 sticky top-0 bg-white">
-                            <TabsTrigger value="editor" className="px-4 py-3 text-sm font-medium">
-                                <Type className="h-4 w-4 mr-2" />
-                                Editor
-                            </TabsTrigger>
-                            <TabsTrigger value="timeline" className="px-4 py-3 text-sm font-medium">
-                                Timeline
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
-
-                    <TabsContent value="editor" className="flex-1 overflow-hidden"> */}
-                <div className="h-full flex flex-col">
-                    {/* Medium-style Editor */}
-                    <div className="flex-1 overflow-auto">
-                        <div className=" mx-auto ">
+                <ResizablePanelGroup direction="horizontal" className="h-full">
+                    {/* Editor Panel */}
+                    <ResizablePanel defaultSize={70} minSize={40} className="flex flex-col">
+                        <div className="flex-1 overflow-auto">
                             <div className="relative">
                                 {/* Bubble Menu */}
                                 {showBubbleMenu && (
@@ -434,26 +477,33 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
                                 <div className="prose prose-lg max-w-none">
                                     <EditorContent
                                         editor={editor}
-                                        className="min-h-[500px] focus:outline-none"
+                                        className="max-h-[500px] focus:outline-none p-4 overflow-auto"
                                     />
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </ResizablePanel>
 
-                </div>
-                {/* </TabsContent>
+                    {/* Resizable Handle */}
+                    <ResizableHandle withHandle />
 
-                    <TabsContent value="timeline" className="flex-1 overflow-hidden">
-                        <OverviewPanel
-                            sentences={transcriptionData.captions}
-                            currentSentenceIndex={timeStateRef.current.currentSentenceIndex}
-                            onSentenceClick={handleSentenceClick}
+                    {/* Timeline Panel */}
+                    <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+                        <SentenceTimeline
+                            captions={localCaptions}
+                            currentTime={currentTime}
+                            duration={duration}
+                            isPlaying={isPlaying}
+                            onSeek={seekTo}
+                            onTogglePlayPause={togglePlayPause}
+                            onCaptionsChange={handleCaptionsChange}
                             formatTime={formatTime}
+                            className="h-full"
                         />
-                    </TabsContent>
-                </Tabs> */}
+                    </ResizablePanel>
+                </ResizablePanelGroup>
             </div>
+
             {hasChanges && (
                 <div className="fixed bottom-6 right-6 z-50">
                     <Button

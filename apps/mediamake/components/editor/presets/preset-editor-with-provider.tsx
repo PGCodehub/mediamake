@@ -11,10 +11,11 @@ import { RenderProvider } from "../player";
 interface PresetEditorWithProviderProps {
     selectedPresets: (Preset | DatabasePreset)[];
     onPresetsChange?: (presets: AppliedPreset[]) => void;
+    onPresetsProcessed?: () => void;
 }
 
 // Inner component that uses the context
-function PresetEditorContent({ selectedPresets, onPresetsChange }: PresetEditorWithProviderProps) {
+function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProcessed }: PresetEditorWithProviderProps) {
     const {
         appliedPresets,
         setAppliedPresets,
@@ -37,44 +38,31 @@ function PresetEditorContent({ selectedPresets, onPresetsChange }: PresetEditorW
     // Add new presets to applied list when selectedPresets changes
     useEffect(() => {
         if (selectedPresets.length > 0) {
-            // Create a unique key for this set of presets
-            const presetKey = selectedPresets.map(p => p.metadata.id).join(',');
+            // Get the last selected preset (most recent addition)
+            const latestPreset = selectedPresets[selectedPresets.length - 1];
+            const newAppliedPreset = createAppliedPreset(latestPreset);
 
-            // Only process if we haven't processed this exact set before
-            if (!processedPresetsRef.current.includes(presetKey)) {
-                const newAppliedPresets = selectedPresets.map(createAppliedPreset);
+            // Always add the new preset to the list (allow duplicates)
+            setAppliedPresets((prev: AppliedPresetsState) => ({
+                ...prev,
+                presets: [...prev.presets, newAppliedPreset],
+                activePresetId: newAppliedPreset.id
+            }));
 
-                const _appliedPresets = (pst: AppliedPresetsState) => {
-                    const isPresetExist = pst.presets.some(p => p.preset.metadata.id === newAppliedPresets[0]?.preset.metadata.id);
-                    if (isPresetExist) {
-                        return {
-                            presets: pst.presets.map(p => p.preset.metadata.id === newAppliedPresets[0]?.preset.metadata.id ? {
-                                ...newAppliedPresets[0],
-                                inputData: p.inputData,
-                            } : p),
-                            activePresetId: newAppliedPresets[0]?.id || null
-                        }
-                    } else {
-                        return {
-                            presets: [...pst.presets, ...newAppliedPresets],
-                            activePresetId: newAppliedPresets[0]?.id || null
-                        }
-                    }
-                }
-                setAppliedPresets(_appliedPresets);
+            // Initialize configuration if not set
+            if (!configuration.style && !configuration.config) {
+                setConfiguration({
+                    style: defaultInputProps.style,
+                    config: defaultInputProps.config
+                });
+            }
 
-                // Initialize configuration if not set
-                if (!configuration.style && !configuration.config) {
-                    setConfiguration({
-                        style: defaultInputProps.style,
-                        config: defaultInputProps.config
-                    });
-                }
-                // Mark this set as processed
-                processedPresetsRef.current.push(presetKey);
+            // Clear the selectedPresets to avoid reprocessing
+            if (onPresetsProcessed) {
+                onPresetsProcessed();
             }
         }
-    }, [selectedPresets, setAppliedPresets, setConfiguration, configuration.style, configuration.config]);
+    }, [selectedPresets, setAppliedPresets, setConfiguration, configuration.style, configuration.config, onPresetsProcessed]);
 
 
     useEffect(() => {

@@ -72,6 +72,10 @@ export const ComponentRenderer: React.FC<BaseRenderableData> = ({
     let newTiming: CalculatedTiming = calculateTimingWithInheritance(componentData, root, videoConfig);
 
 
+    if (id === "BaseScene") {
+        console.log('newTiming', newTiming, videoConfig);
+    }
+
     const newContext: InternalRenderableContext = {
         ...context,
         boundaries: (context?.boundaries) as CalculatedBoundaries,
@@ -147,19 +151,21 @@ export const ComponentRenderer: React.FC<BaseRenderableData> = ({
         return (
             <RenderContext.Provider value={newContext}>
                 <Sequence layout='none' name={componentId + " - " + id} from={newTiming.startInFrames} durationInFrames={newTiming.durationInFrames}>
-                    <ComponentClass {...props}>
-                        {effects && effects.length > 0 ? (
-                            <EffectWrapper effects={effects} context={newContext}>
+                    {effects && effects.length > 0 ? (
+                        <EffectWrapper effects={effects} context={newContext}>
+                            <ComponentClass {...props}>
                                 {childrenData?.map((child) => (
                                     <ComponentRenderer key={child.id} {...child} />
                                 ))}
-                            </EffectWrapper>
-                        ) : (
-                            childrenData?.map((child) => (
+                            </ComponentClass>
+                        </EffectWrapper>
+                    ) : (
+                        <ComponentClass {...props}>
+                            {childrenData?.map((child) => (
                                 <ComponentRenderer key={child.id} {...child} />
-                            ))
-                        )}
-                    </ComponentClass>
+                            ))}
+                        </ComponentClass>
+                    )}
                 </Sequence>
             </RenderContext.Provider>
         );

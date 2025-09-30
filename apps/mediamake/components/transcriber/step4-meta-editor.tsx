@@ -441,10 +441,10 @@ export function Step4MetadataEditor({
                                     <div className="text-sm text-muted-foreground">High Impact</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-2xl font-bold text-red-600">
-                                        {metadataResult.splitRecommendations}
+                                    <div className="text-2xl font-bold text-green-600">
+                                        {metadataResult.confidence?.toFixed(1) || 'N/A'}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">Split Recommendations</div>
+                                    <div className="text-sm text-muted-foreground">Avg Confidence</div>
                                 </div>
                                 <div className="text-center">
                                     <div className="text-2xl font-bold text-blue-600">
@@ -502,10 +502,10 @@ export function Step4MetadataEditor({
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <Badge
                                                                 variant="outline"
-                                                                className={cn("text-xs", getFeelColor(sentence.metadata.feel))}
+                                                                className={cn("text-xs", getFeelColor(sentence.metadata.keywordFeel))}
                                                             >
                                                                 <Heart className="h-3 w-3 mr-1" />
-                                                                {sentence.metadata.feel}
+                                                                {sentence.metadata.keywordFeel}
                                                             </Badge>
                                                             <Badge
                                                                 variant="outline"
@@ -514,12 +514,6 @@ export function Step4MetadataEditor({
                                                                 <Zap className="h-3 w-3 mr-1" />
                                                                 {sentence.metadata.strength}/10
                                                             </Badge>
-                                                            {sentence.metadata.shouldSplit && (
-                                                                <Badge variant="outline" className="text-xs text-red-600 border-red-200">
-                                                                    <Scissors className="h-3 w-3 mr-1" />
-                                                                    Split
-                                                                </Badge>
-                                                            )}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground mt-1">
                                                             Keyword: {sentence.metadata.keyword}

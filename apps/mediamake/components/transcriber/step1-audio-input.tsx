@@ -62,7 +62,7 @@ export function Step1AudioInput({ transcriptionData, initialAudioUrl, initialLan
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-h-[600px] overflow-auto">
             <Card>
                 <CardContent className="space-y-6">
                     {/* Audio URL Input */}

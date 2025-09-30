@@ -37,14 +37,24 @@ export const calculateComponentDuration = async (
       source: new UrlSource(src),
     });
     const audioDuration = await audioInput.computeDuration();
+
+    // Calculate trimmed duration if startFrom or endAt is specified
+    let trimmedDuration = audioDuration;
     if (component.data.startFrom || component.data.endAt) {
-      return (
+      trimmedDuration =
         audioDuration -
         (component.data.startFrom || 0) -
-        (component.data.endAt ? audioDuration - (component.data.endAt || 0) : 0)
-      );
+        (component.data.endAt
+          ? audioDuration - (component.data.endAt || 0)
+          : 0);
     }
-    return audioDuration;
+
+    // Factor in playback rate - if playback rate is > 1, duration is shorter
+    // if playback rate is < 1, duration is longer
+    const playbackRate = component.data.playbackRate || 1;
+    const effectiveDuration = trimmedDuration / playbackRate;
+
+    return effectiveDuration;
   } else {
     // NOT SUPPORTED
     // if (matchingComponents[0].componentId === "VideoAtom") {
@@ -108,7 +118,8 @@ export const calculateDuration = async (
       );
     }
     if (
-      matchingComponents[0].type === 'scene' &&
+      (matchingComponents[0].type === 'scene' ||
+        matchingComponents[0].type === 'layout') &&
       matchingComponents[0].context?.timing?.duration
     ) {
       calculatedDuration = matchingComponents[0].context.timing.duration;
@@ -127,71 +138,92 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
     for (const component of components) {
       let updatedComponent = { ...component };
 
+      // Recursively process childrenData if it exists
+      if (component.childrenData && component.childrenData.length > 0) {
+        updatedComponent.childrenData = await iterateRecursively(
+          component.childrenData,
+          onlyScene
+        );
+      }
+
       // Check if this component's ID matches any target ID ( if fitDurationTo exists )
       if (
-        component.context?.timing?.fitDurationTo?.length > 0 &&
+        updatedComponent.context?.timing?.fitDurationTo?.length > 0 &&
         !onlyScene &&
-        component.context?.timing?.fitDurationTo != component.id &&
-        component.context?.timing?.fitDurationTo != 'this' &&
-        component.context?.timing?.fitDurationTo != 'fill'
+        updatedComponent.context?.timing?.fitDurationTo !=
+          updatedComponent.id &&
+        updatedComponent.context?.timing?.fitDurationTo != 'this' &&
+        updatedComponent.context?.timing?.fitDurationTo != 'fill'
       ) {
-        const duration = await calculateDuration(component.childrenData, {
-          fitDurationTo: component.context?.timing?.fitDurationTo,
-        });
+        const duration = await calculateDuration(
+          updatedComponent.childrenData,
+          {
+            fitDurationTo: updatedComponent.context?.timing?.fitDurationTo,
+          }
+        );
 
         // Create a new context object with updated timing
         updatedComponent = {
-          ...component,
+          ...updatedComponent,
           context: {
-            ...component.context,
+            ...updatedComponent.context,
             timing: {
-              ...component.context.timing,
+              ...updatedComponent.context.timing,
               duration: duration,
             },
           },
         };
       }
 
-      // Recursively process childrenData if it exists
-      if (component.childrenData && component.childrenData.length > 0) {
-        updatedComponent.childrenData = await iterateRecursively(
-          component.childrenData
-        );
-      }
-
       if (
-        component.type === 'scene' &&
-        ((component.context?.timing?.fitDurationTo?.length > 0 &&
-          (component.context?.timing?.fitDurationTo == component.id ||
-            component.context?.timing?.fitDurationTo == 'this')) ||
-          !component.context?.timing?.duration) &&
+        (updatedComponent.type === 'scene' ||
+          updatedComponent.type === 'layout') &&
         onlyScene
       ) {
-        const duration =
-          updatedComponent.childrenData.reduce(
-            (acc, child) => acc + (child.context?.timing?.duration ?? 0),
-            0
-          ) ?? 10;
-        updatedComponent.context = {
-          ...(updatedComponent.context || {}),
-          timing: {
-            ...(updatedComponent.context?.timing || {}),
-            duration: duration,
-          },
-        };
+        let duration: number | undefined;
+
+        // If fitDurationTo is set and points to another component, calculate duration from that component
+        if (
+          updatedComponent.context?.timing?.fitDurationTo &&
+          updatedComponent.context.timing.fitDurationTo !==
+            updatedComponent.id &&
+          updatedComponent.context.timing.fitDurationTo !== 'this'
+        ) {
+          duration = await calculateDuration(updatedComponent.childrenData, {
+            fitDurationTo: updatedComponent.context.timing.fitDurationTo,
+          });
+        }
+        // If fitDurationTo is 'this' or same as component id, or no fitDurationTo, sum children durations
+        else if (!updatedComponent.context?.timing?.duration) {
+          duration =
+            updatedComponent.childrenData.reduce(
+              (acc, child) => acc + (child.context?.timing?.duration ?? 0),
+              0
+            ) ?? 10;
+        }
+
+        if (duration !== undefined) {
+          updatedComponent.context = {
+            ...(updatedComponent.context || {}),
+            timing: {
+              ...(updatedComponent.context?.timing || {}),
+              duration: duration,
+            },
+          };
+        }
       }
 
       if (
-        component.type === 'atom' &&
-        !component.context?.timing?.duration &&
+        updatedComponent.type === 'atom' &&
+        !updatedComponent.context?.timing?.duration &&
         !onlyScene
       ) {
         if (
-          component.componentId === 'VideoAtom' ||
-          component.componentId === 'AudioAtom'
+          updatedComponent.componentId === 'VideoAtom' ||
+          updatedComponent.componentId === 'AudioAtom'
         ) {
-          const duration = await calculateComponentDuration(component);
-          if (!component.context?.timing?.fitDurationTo) {
+          const duration = await calculateComponentDuration(updatedComponent);
+          if (!updatedComponent.context?.timing?.fitDurationTo) {
             updatedComponent.context = {
               ...(updatedComponent.context || {}),
               timing: {
@@ -199,7 +231,7 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
                 duration: duration,
               },
             };
-          } else if (component.context?.timing?.fitDurationTo) {
+          } else if (updatedComponent.context?.timing?.fitDurationTo) {
             updatedComponent.data = {
               ...updatedComponent.data,
               srcDuration: duration,

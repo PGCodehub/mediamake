@@ -1,6 +1,7 @@
 import { InputCompositionProps } from '@microfox/remotion';
 import z from 'zod';
 import { PresetMetadata } from '../types';
+import { CSSProperties } from 'react';
 
 const presetParams = z.object({
   width: z.number().describe('Width of the video').default(1920),
@@ -11,6 +12,9 @@ const presetParams = z.object({
     .array(z.string().url())
     .min(1)
     .describe('Array of video URLs to stitch together in sequence'),
+  position: z
+    .string()
+    .describe('top/bottom/left/right/25% 75%/top 0 right 10px'),
 });
 
 const presetExecution = (
@@ -32,6 +36,9 @@ const presetExecution = (
     data: {
       src: videoUrl,
       className: 'w-full h-auto object-cover bg-black',
+      style: {
+        objectPosition: params.position,
+      },
       fit: 'cover' as const,
     },
   }));

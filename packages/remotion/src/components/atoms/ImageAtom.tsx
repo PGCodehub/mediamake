@@ -109,8 +109,6 @@ export const Atom: React.FC<ImageAtomProps> = ({ data, id }) => {
     const enhancedStyle = useMemo(() => ({
         ...data.style,
         ...overrideStyles,
-        ...(isLoading && { opacity: 0.5 }),
-        ...(hasError && { opacity: 0.3, filter: 'grayscale(100%)' })
     }), [data.style, overrideStyles, isLoading, hasError]);
 
     return (

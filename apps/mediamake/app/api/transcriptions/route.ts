@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const clientId = req.headers.get('x-client-id') || undefined;
-
     // Parse query parameters
     const filters: TranscriptionFilters = {
       clientId,
@@ -38,7 +37,6 @@ export async function GET(req: NextRequest) {
     if (filters.tags && filters.tags.length > 0) {
       query.tags = { $in: filters.tags };
     }
-
     // Calculate pagination
     const skip = (filters.page! - 1) * filters.limit!;
     const sort: any = {};

@@ -1,12 +1,20 @@
 import { Preset } from '../types';
 import { waveformPreset } from './waveform';
 import { videoStitchPreset } from './video-stitch';
-import { plainSubtitlesPreset } from './subtitles-plain';
+import { subVerticalFloatPreset } from './sub-vertical-float';
+import { plainSubtitlesPreset } from './subtitles';
+import { baseScenePreset } from './base-scene';
+import { mediaTrackPreset } from './media-track';
+import { thinkerVisualsPreset } from './thinker-visuals';
 
 export const predefinedPresets: Preset[] = [
+  baseScenePreset,
+  mediaTrackPreset,
   waveformPreset,
   videoStitchPreset,
+  subVerticalFloatPreset,
   plainSubtitlesPreset,
+  thinkerVisualsPreset,
   // Add more predefined presets here
 ];
 

@@ -1,0 +1,5514 @@
+{
+  "presets": [
+    {
+      "presetId": "base-scene",
+      "presetType": "full",
+      "presetInputData": {
+        "backgroundColor": "black",
+        "duaration": 20,
+        "fitDurationTo": "audio-track"
+      }
+    },
+    {
+      "presetId": "media-track",
+      "presetType": "children",
+      "presetInputData": {
+        "mediaItems": [
+          {
+            "src": "https://cdn1.suno.ai/166ad0af-2085-4a63-b31c-7f9a81e1fb09.mp3",
+            "type": "audio"
+          }
+        ],
+        "trackName": "audio-track",
+        "trackType": "sequence",
+        "trackDuration": 0
+      }
+    },
+    {
+      "presetId": "thinker-visuals",
+      "presetType": "children",
+      "presetInputData": {
+        "random": false,
+        "imageUrl": "https://aidev.blr1.cdn.digitaloceanspaces.com/mediamake/u6251845547_Rodins_The_Thinker_in_a_luxry_chromium_black_art__a3a22513-8951-4171-8f21-485c8ae346e5_2%20(1).png",
+        "titleText": "Get into Zone",
+        "keystoneText": "Keystone",
+        "keystoneColor": "#FFDF14",
+        "titleColor": "",
+        "videoUrl": "https://aidev.blr1.cdn.digitaloceanspaces.com/mediamake/u6251845547_luxry_chromium_shinging_tiny_nano_pieces_breaking_a1f22ffd-92e3-4011-aa23-74920317ae50_3.mp4"
+      }
+    },
+    {
+      "presetId": "sub-vertical-float",
+      "presetType": "children",
+      "presetInputData": {
+        "wordAnimationDuration": 0.15,
+        "negativeOffset": 0.5,
+        "padding": "4em",
+        "position": "left",
+        "randomizePosition": true,
+        "inputCaptions": [
+          {
+            "id": "sentence-xGH9HNjl19cOxOxJ",
+            "text": "A thousand moving pieces,",
+            "start": 12,
+            "end": 15.04,
+            "duration": 3.039999999999999,
+            "absoluteStart": 12,
+            "absoluteEnd": 15.04,
+            "words": [
+              {
+                "id": "CiSVPG2f4Gl0vOoJ",
+                "text": "A",
+                "absoluteStart": 12,
+                "absoluteEnd": 12.12,
+                "start": 0,
+                "end": 0.11999999999999922,
+                "duration": 0.11999999999999922,
+                "confidence": 0.94970703
+              },
+              {
+                "id": "IBe02qaSMqwuY8UY",
+                "text": "thousand",
+                "absoluteStart": 12.12,
+                "absoluteEnd": 12.48,
+                "start": 0.11999999999999922,
+                "end": 0.4800000000000004,
+                "duration": 0.3600000000000012,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "mtCuyHzoEFkbAoWz",
+                "text": "moving",
+                "absoluteStart": 12.48,
+                "absoluteEnd": 12.96,
+                "start": 0.4800000000000004,
+                "end": 0.9600000000000009,
+                "duration": 0.4800000000000004,
+                "confidence": 0.99975586
+              },
+              {
+                "id": "4dq7FQogGXFZwPep",
+                "text": "pieces,",
+                "absoluteStart": 12.96,
+                "absoluteEnd": 15.04,
+                "start": 0.9600000000000009,
+                "end": 3.039999999999999,
+                "duration": 2.0799999999999983,
+                "confidence": 0.9757487
+              }
+            ],
+            "metadata": {
+              "keyword": "pieces",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.85
+            }
+          },
+          {
+            "id": "sentence-kesPc2ZNeEVK2uK5",
+            "text": "a hundred broken parts",
+            "start": 15.04,
+            "end": 18.24,
+            "duration": 3.1999999999999993,
+            "absoluteStart": 15.04,
+            "absoluteEnd": 18.24,
+            "words": [
+              {
+                "id": "9K4CNeX1eSknEvLE",
+                "text": "a",
+                "absoluteStart": 15.04,
+                "absoluteEnd": 15.36,
+                "start": 0,
+                "end": 0.3200000000000003,
+                "duration": 0.3200000000000003,
+                "confidence": 0.8486328
+              },
+              {
+                "id": "xkRDWclrQx2HjiXL",
+                "text": "hundred",
+                "absoluteStart": 15.36,
+                "absoluteEnd": 15.64,
+                "start": 0.3200000000000003,
+                "end": 0.6000000000000014,
+                "duration": 0.28000000000000114,
+                "confidence": 0.98779297
+              },
+              {
+                "id": "R9T1QaYga0QxDay3",
+                "text": "broken",
+                "absoluteStart": 15.64,
+                "absoluteEnd": 16.199,
+                "start": 0.6000000000000014,
+                "end": 1.1590000000000025,
+                "duration": 0.559000000000001,
+                "confidence": 0.99690753
+              },
+              {
+                "id": "rBEir8WF8l5oN1fy",
+                "text": "parts",
+                "absoluteStart": 16.199,
+                "absoluteEnd": 18.24,
+                "start": 1.1590000000000025,
+                "end": 3.1999999999999993,
+                "duration": 2.040999999999997,
+                "confidence": 0.8027344
+              }
+            ],
+            "metadata": {
+              "keyword": "broken",
+              "strength": 9,
+              "keywordFeel": "sorrowful",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-obFDSMZR02N6s5hu",
+            "text": "A million faded blueprints",
+            "start": 18.24,
+            "end": 21.2,
+            "duration": 2.960000000000001,
+            "absoluteStart": 18.24,
+            "absoluteEnd": 21.2,
+            "words": [
+              {
+                "id": "kkp2Qk88rBYrDxhP",
+                "text": "A",
+                "absoluteStart": 18.24,
+                "absoluteEnd": 18.52,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9873047
+              },
+              {
+                "id": "3r46Zl45pCp1Bmwn",
+                "text": "million",
+                "absoluteStart": 18.52,
+                "absoluteEnd": 18.8,
+                "start": 0.28000000000000114,
+                "end": 0.5600000000000023,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "3PHQvHHusafJxZKz",
+                "text": "faded",
+                "absoluteStart": 18.8,
+                "absoluteEnd": 19.36,
+                "start": 0.5600000000000023,
+                "end": 1.120000000000001,
+                "duration": 0.5599999999999987,
+                "confidence": 0.99625653
+              },
+              {
+                "id": "suZM3FT5tjVvgi9h",
+                "text": "blueprints",
+                "absoluteStart": 19.36,
+                "absoluteEnd": 21.2,
+                "start": 1.120000000000001,
+                "end": 2.960000000000001,
+                "duration": 1.8399999999999999,
+                "confidence": 0.8858398
+              }
+            ],
+            "metadata": {
+              "keyword": "faded",
+              "strength": 7,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-g3PZKUxrU3bIkPLA",
+            "text": "and a dozen false starts",
+            "start": 21.2,
+            "end": 24.4,
+            "duration": 3.1999999999999993,
+            "absoluteStart": 21.2,
+            "absoluteEnd": 24.4,
+            "words": [
+              {
+                "id": "2TFrWklSD6o0G2it",
+                "text": "and",
+                "absoluteStart": 21.2,
+                "absoluteEnd": 21.52,
+                "start": 0,
+                "end": 0.3200000000000003,
+                "duration": 0.3200000000000003,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "Dig6F2qYI1qi1L61",
+                "text": "a",
+                "absoluteStart": 21.52,
+                "absoluteEnd": 21.72,
+                "start": 0.3200000000000003,
+                "end": 0.5199999999999996,
+                "duration": 0.1999999999999993,
+                "confidence": 0.98291016
+              },
+              {
+                "id": "v280cjjsnwROFeAa",
+                "text": "dozen",
+                "absoluteStart": 21.72,
+                "absoluteEnd": 22.16,
+                "start": 0.5199999999999996,
+                "end": 0.9600000000000009,
+                "duration": 0.4400000000000013,
+                "confidence": 0.9991862
+              },
+              {
+                "id": "iFWGndT1mfmllyi0",
+                "text": "false",
+                "absoluteStart": 22.16,
+                "absoluteEnd": 22.6,
+                "start": 0.9600000000000009,
+                "end": 1.4000000000000021,
+                "duration": 0.4400000000000013,
+                "confidence": 0.93033856
+              },
+              {
+                "id": "W2uwiL51PBIvPnTM",
+                "text": "starts",
+                "absoluteStart": 22.6,
+                "absoluteEnd": 24.4,
+                "start": 1.4000000000000021,
+                "end": 3.1999999999999993,
+                "duration": 1.7999999999999972,
+                "confidence": 0.97924805
+              }
+            ],
+            "metadata": {
+              "keyword": "false",
+              "strength": 7,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-M5lfc27oYYZFC515",
+            "text": "I've been living in the chaos,",
+            "start": 24.4,
+            "end": 27.6,
+            "duration": 3.200000000000003,
+            "absoluteStart": 24.4,
+            "absoluteEnd": 27.6,
+            "words": [
+              {
+                "id": "20GFUeVVHnexmbsF",
+                "text": "I've",
+                "absoluteStart": 24.4,
+                "absoluteEnd": 24.8,
+                "start": 0,
+                "end": 0.40000000000000213,
+                "duration": 0.40000000000000213,
+                "confidence": 0.9588216
+              },
+              {
+                "id": "0E2d1WUVpZTPE21M",
+                "text": "been",
+                "absoluteStart": 24.8,
+                "absoluteEnd": 24.96,
+                "start": 0.40000000000000213,
+                "end": 0.5600000000000023,
+                "duration": 0.16000000000000014,
+                "confidence": 0.8671875
+              },
+              {
+                "id": "GWoOLnlqOaTqoNlb",
+                "text": "living",
+                "absoluteStart": 24.96,
+                "absoluteEnd": 25.32,
+                "start": 0.5600000000000023,
+                "end": 0.9200000000000017,
+                "duration": 0.35999999999999943,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "FMRX6pd5JbI9Pa78",
+                "text": "in",
+                "absoluteStart": 25.32,
+                "absoluteEnd": 25.56,
+                "start": 0.9200000000000017,
+                "end": 1.1600000000000001,
+                "duration": 0.23999999999999844,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "3ViemWOXpzm7gWbj",
+                "text": "the",
+                "absoluteStart": 25.56,
+                "absoluteEnd": 25.76,
+                "start": 1.1600000000000001,
+                "end": 1.360000000000003,
+                "duration": 0.20000000000000284,
+                "confidence": 0.984375
+              },
+              {
+                "id": "MZ2H6WFf7VRRKRUk",
+                "text": "chaos,",
+                "absoluteStart": 25.76,
+                "absoluteEnd": 27.6,
+                "start": 1.360000000000003,
+                "end": 3.200000000000003,
+                "duration": 1.8399999999999999,
+                "confidence": 0.92252606
+              }
+            ],
+            "metadata": {
+              "keyword": "chaos",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-dGcD8Fkl97Xq2yY9",
+            "text": "I've been sleeping on the floor",
+            "start": 27.6,
+            "end": 31.12,
+            "duration": 3.5199999999999996,
+            "absoluteStart": 27.6,
+            "absoluteEnd": 31.12,
+            "words": [
+              {
+                "id": "A0bKsKQVaDvtd9El",
+                "text": "I've",
+                "absoluteStart": 27.6,
+                "absoluteEnd": 27.96,
+                "start": 0,
+                "end": 0.35999999999999943,
+                "duration": 0.35999999999999943,
+                "confidence": 0.85091144
+              },
+              {
+                "id": "Dltc43aQhJYYnZOG",
+                "text": "been",
+                "absoluteStart": 27.96,
+                "absoluteEnd": 28.12,
+                "start": 0.35999999999999943,
+                "end": 0.5199999999999996,
+                "duration": 0.16000000000000014,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "ePLEA3TAdizJdOgp",
+                "text": "sleeping",
+                "absoluteStart": 28.12,
+                "absoluteEnd": 28.6,
+                "start": 0.5199999999999996,
+                "end": 1,
+                "duration": 0.4800000000000004,
+                "confidence": 0.9873047
+              },
+              {
+                "id": "tqaJi8KYXgFaBtbx",
+                "text": "on",
+                "absoluteStart": 28.6,
+                "absoluteEnd": 28.76,
+                "start": 1,
+                "end": 1.1600000000000001,
+                "duration": 0.16000000000000014,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "JQVnlUGEiJolFPZO",
+                "text": "the",
+                "absoluteStart": 28.76,
+                "absoluteEnd": 28.92,
+                "start": 1.1600000000000001,
+                "end": 1.3200000000000003,
+                "duration": 0.16000000000000014,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "gde4wScFye2mZHr7",
+                "text": "floor",
+                "absoluteStart": 28.92,
+                "absoluteEnd": 31.12,
+                "start": 1.3200000000000003,
+                "end": 3.5199999999999996,
+                "duration": 2.1999999999999993,
+                "confidence": 0.9819336
+              }
+            ],
+            "metadata": {
+              "keyword": "floor",
+              "strength": 8,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-s7IXBcF4pLI7ZzYB",
+            "text": "Trying to build a kingdom",
+            "start": 31.12,
+            "end": 33.02,
+            "duration": 1.9000000000000021,
+            "absoluteStart": 31.12,
+            "absoluteEnd": 33.02,
+            "words": [
+              {
+                "id": "rnINsY8q1UKmvUna",
+                "text": "Trying",
+                "absoluteStart": 31.12,
+                "absoluteEnd": 31.48,
+                "start": 0,
+                "end": 0.35999999999999943,
+                "duration": 0.35999999999999943,
+                "confidence": 0.9399414
+              },
+              {
+                "id": "TGUPAjOiKh4ZYbFU",
+                "text": "to",
+                "absoluteStart": 31.48,
+                "absoluteEnd": 31.68,
+                "start": 0.35999999999999943,
+                "end": 0.5599999999999987,
+                "duration": 0.1999999999999993,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "Yy05pqWwFb1Xh1VV",
+                "text": "build",
+                "absoluteStart": 31.68,
+                "absoluteEnd": 31.91,
+                "start": 0.5599999999999987,
+                "end": 0.7899999999999991,
+                "duration": 0.23000000000000043,
+                "confidence": 0.87060547
+              },
+              {
+                "id": "tfE8sdKs9I5CqUzC",
+                "text": "a",
+                "absoluteStart": 31.91,
+                "absoluteEnd": 32.26,
+                "start": 0.7899999999999991,
+                "end": 1.139999999999997,
+                "duration": 0.34999999999999787,
+                "confidence": 0.6772461
+              },
+              {
+                "id": "82mi1hZJwQipHUnw",
+                "text": "kingdom",
+                "absoluteStart": 32.26,
+                "absoluteEnd": 33.02,
+                "start": 1.139999999999997,
+                "end": 1.9000000000000021,
+                "duration": 0.7600000000000051,
+                "confidence": 0.9321289
+              }
+            ],
+            "metadata": {
+              "keyword": "kingdom",
+              "strength": 8,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-bdf4WEwcHCU6uc24",
+            "text": "with no frame",
+            "start": 33.02,
+            "end": 34.1,
+            "duration": 1.0799999999999983,
+            "absoluteStart": 33.02,
+            "absoluteEnd": 34.1,
+            "words": [
+              {
+                "id": "TC7EpgcAmzUu5Oc6",
+                "text": "with",
+                "absoluteStart": 33.02,
+                "absoluteEnd": 33.34,
+                "start": 0,
+                "end": 0.3200000000000003,
+                "duration": 0.3200000000000003,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "bsyD2q7keNUksto4",
+                "text": "no",
+                "absoluteStart": 33.34,
+                "absoluteEnd": 33.62,
+                "start": 0.3200000000000003,
+                "end": 0.5999999999999943,
+                "duration": 0.27999999999999403,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "mbbmlhZh0mXLwL5r",
+                "text": "frame",
+                "absoluteStart": 33.62,
+                "absoluteEnd": 34.1,
+                "start": 0.5999999999999943,
+                "end": 1.0799999999999983,
+                "duration": 0.480000000000004,
+                "confidence": 0.9926758
+              }
+            ],
+            "metadata": {
+              "keyword": "frame",
+              "strength": 7,
+              "keywordFeel": "mysterious",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": "sentence-FkjGXI7WIm3EcmIT",
+            "text": "and with no door",
+            "start": 34.1,
+            "end": 36.404374999999995,
+            "duration": 2.304374999999993,
+            "absoluteStart": 34.1,
+            "absoluteEnd": 36.404374999999995,
+            "words": [
+              {
+                "id": "OKg74FFnwEvIeXn1",
+                "text": "and",
+                "absoluteStart": 34.1,
+                "absoluteEnd": 34.38,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "SIpNhlKN6AKbER5S",
+                "text": "with",
+                "absoluteStart": 34.38,
+                "absoluteEnd": 34.66,
+                "start": 0.28000000000000114,
+                "end": 0.5599999999999952,
+                "duration": 0.27999999999999403,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "FHc2aWgFuQULrajw",
+                "text": "no",
+                "absoluteStart": 34.66,
+                "absoluteEnd": 35.02,
+                "start": 0.5599999999999952,
+                "end": 0.9200000000000017,
+                "duration": 0.36000000000000654,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "gT98iDvj2mMWEgR8",
+                "text": "door",
+                "absoluteStart": 35.02,
+                "absoluteEnd": 36.404374999999995,
+                "start": 0.9200000000000017,
+                "end": 2.304374999999993,
+                "duration": 1.3843749999999915,
+                "confidence": 0.9916992
+              }
+            ],
+            "metadata": {
+              "keyword": "door",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-AstdmqTqHgbyatUh",
+            "text": "Every single theory was",
+            "start": 37.66,
+            "end": 39.1,
+            "duration": 1.4400000000000048,
+            "absoluteStart": 37.66,
+            "absoluteEnd": 39.1,
+            "words": [
+              {
+                "id": "fH1nOp41Ip7Gjt1e",
+                "text": "Every",
+                "absoluteStart": 37.66,
+                "absoluteEnd": 38.02,
+                "start": 0,
+                "end": 0.36000000000000654,
+                "duration": 0.36000000000000654,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "Jp84953s7Mur42yW",
+                "text": "single",
+                "absoluteStart": 38.02,
+                "absoluteEnd": 38.46,
+                "start": 0.36000000000000654,
+                "end": 0.8000000000000043,
+                "duration": 0.4399999999999977,
+                "confidence": 0.99975586
+              },
+              {
+                "id": "F87G2KRIBG7ifs9g",
+                "text": "theory",
+                "absoluteStart": 38.46,
+                "absoluteEnd": 38.86,
+                "start": 0.8000000000000043,
+                "end": 1.2000000000000028,
+                "duration": 0.3999999999999986,
+                "confidence": 0.9987793
+              },
+              {
+                "id": "iejcqdpWh6kEVs75",
+                "text": "was",
+                "absoluteStart": 38.86,
+                "absoluteEnd": 39.1,
+                "start": 1.2000000000000028,
+                "end": 1.4400000000000048,
+                "duration": 0.240000000000002,
+                "confidence": 0.99902344
+              }
+            ],
+            "metadata": {
+              "keyword": "theory",
+              "strength": 6,
+              "keywordFeel": "intense",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": "sentence-vLVGRvXmC2r7vB9p",
+            "text": "a dead end in the maze",
+            "start": 39.1,
+            "end": 40.54,
+            "duration": 1.4399999999999977,
+            "absoluteStart": 39.1,
+            "absoluteEnd": 40.54,
+            "words": [
+              {
+                "id": "9wtw2C8cmtlgplHQ",
+                "text": "a",
+                "absoluteStart": 39.1,
+                "absoluteEnd": 39.3,
+                "start": 0,
+                "end": 0.19999999999999574,
+                "duration": 0.19999999999999574,
+                "confidence": 0.58740234
+              },
+              {
+                "id": "6xtgrDlljLiDU290",
+                "text": "dead",
+                "absoluteStart": 39.3,
+                "absoluteEnd": 39.58,
+                "start": 0.19999999999999574,
+                "end": 0.4799999999999969,
+                "duration": 0.28000000000000114,
+                "confidence": 0.77441406
+              },
+              {
+                "id": "O9dK0P2nJ26hbF10",
+                "text": "end",
+                "absoluteStart": 39.58,
+                "absoluteEnd": 39.78,
+                "start": 0.4799999999999969,
+                "end": 0.6799999999999997,
+                "duration": 0.20000000000000284,
+                "confidence": 0.921875
+              },
+              {
+                "id": "QGtnpsmxmQwLj1l3",
+                "text": "in",
+                "absoluteStart": 39.78,
+                "absoluteEnd": 39.94,
+                "start": 0.6799999999999997,
+                "end": 0.8399999999999963,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9873047
+              },
+              {
+                "id": "PJYnWQivvRYGYEG8",
+                "text": "the",
+                "absoluteStart": 39.94,
+                "absoluteEnd": 40.14,
+                "start": 0.8399999999999963,
+                "end": 1.0399999999999991,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "zIdc7XMCfcHthBwx",
+                "text": "maze",
+                "absoluteStart": 40.14,
+                "absoluteEnd": 40.54,
+                "start": 1.0399999999999991,
+                "end": 1.4399999999999977,
+                "duration": 0.3999999999999986,
+                "confidence": 0.82666016
+              }
+            ],
+            "metadata": {
+              "keyword": "dead end",
+              "strength": 8,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-aGlmcNv6Gly4zLam",
+            "text": "I've been talking to the shadows",
+            "start": 40.54,
+            "end": 42.3,
+            "duration": 1.759999999999998,
+            "absoluteStart": 40.54,
+            "absoluteEnd": 42.3,
+            "words": [
+              {
+                "id": "m7Y7wvTopptFcAaV",
+                "text": "I've",
+                "absoluteStart": 40.54,
+                "absoluteEnd": 40.82,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.976888
+              },
+              {
+                "id": "uklD6vKD36oRRsIh",
+                "text": "been",
+                "absoluteStart": 40.82,
+                "absoluteEnd": 40.98,
+                "start": 0.28000000000000114,
+                "end": 0.4399999999999977,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "8XQPhvH7mf9YYs3U",
+                "text": "talking",
+                "absoluteStart": 40.98,
+                "absoluteEnd": 41.3,
+                "start": 0.4399999999999977,
+                "end": 0.759999999999998,
+                "duration": 0.3200000000000003,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "Hv3fS8BNNKxNOluy",
+                "text": "to",
+                "absoluteStart": 41.3,
+                "absoluteEnd": 41.5,
+                "start": 0.759999999999998,
+                "end": 0.9600000000000009,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "u7Zhb0w5t5zd1b6t",
+                "text": "the",
+                "absoluteStart": 41.5,
+                "absoluteEnd": 41.7,
+                "start": 0.9600000000000009,
+                "end": 1.1600000000000037,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "9qx8hfsMQzkflBTF",
+                "text": "shadows",
+                "absoluteStart": 41.7,
+                "absoluteEnd": 42.3,
+                "start": 1.1600000000000037,
+                "end": 1.759999999999998,
+                "duration": 0.5999999999999943,
+                "confidence": 0.9532471
+              }
+            ],
+            "metadata": {
+              "keyword": "shadows",
+              "strength": 8,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-cIQaPDX5kAD412Tc",
+            "text": "for nights and for days",
+            "start": 42.3,
+            "end": 44.06,
+            "duration": 1.7600000000000051,
+            "absoluteStart": 42.3,
+            "absoluteEnd": 44.06,
+            "words": [
+              {
+                "id": "nQQRtCFiiPkxAmch",
+                "text": "for",
+                "absoluteStart": 42.3,
+                "absoluteEnd": 42.54,
+                "start": 0,
+                "end": 0.240000000000002,
+                "duration": 0.240000000000002,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "XlMxBb3wZbhzsJ8U",
+                "text": "nights",
+                "absoluteStart": 42.54,
+                "absoluteEnd": 42.98,
+                "start": 0.240000000000002,
+                "end": 0.6799999999999997,
+                "duration": 0.4399999999999977,
+                "confidence": 0.9946289
+              },
+              {
+                "id": "kMdhahOIZSiCxxfd",
+                "text": "and",
+                "absoluteStart": 42.98,
+                "absoluteEnd": 43.14,
+                "start": 0.6799999999999997,
+                "end": 0.8400000000000034,
+                "duration": 0.1600000000000037,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "fQJRrfws18s9TxjO",
+                "text": "for",
+                "absoluteStart": 43.14,
+                "absoluteEnd": 43.34,
+                "start": 0.8400000000000034,
+                "end": 1.0400000000000063,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "QxQY4f0XyGReXv5K",
+                "text": "days",
+                "absoluteStart": 43.34,
+                "absoluteEnd": 44.06,
+                "start": 1.0400000000000063,
+                "end": 1.7600000000000051,
+                "duration": 0.7199999999999989,
+                "confidence": 0.9995117
+              }
+            ],
+            "metadata": {
+              "keyword": "nights",
+              "strength": 7,
+              "keywordFeel": "melancholic",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": "sentence-MPqLJq2woNV3RpLx",
+            "text": "Searching for a pattern,",
+            "start": 44.06,
+            "end": 45.46,
+            "duration": 1.3999999999999986,
+            "absoluteStart": 44.06,
+            "absoluteEnd": 45.46,
+            "words": [
+              {
+                "id": "wvkOl71bn8aVu6Vv",
+                "text": "Searching",
+                "absoluteStart": 44.06,
+                "absoluteEnd": 44.58,
+                "start": 0,
+                "end": 0.519999999999996,
+                "duration": 0.519999999999996,
+                "confidence": 0.9954834
+              },
+              {
+                "id": "1N9FApUCOS0HfavJ",
+                "text": "for",
+                "absoluteStart": 44.58,
+                "absoluteEnd": 44.74,
+                "start": 0.519999999999996,
+                "end": 0.6799999999999997,
+                "duration": 0.1600000000000037,
+                "confidence": 1
+              },
+              {
+                "id": "bocco9DKC7nTmMSx",
+                "text": "a",
+                "absoluteStart": 44.74,
+                "absoluteEnd": 44.94,
+                "start": 0.6799999999999997,
+                "end": 0.8799999999999955,
+                "duration": 0.19999999999999574,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "IX9j74yCSRd5yHhR",
+                "text": "pattern,",
+                "absoluteStart": 44.94,
+                "absoluteEnd": 45.46,
+                "start": 0.8799999999999955,
+                "end": 1.3999999999999986,
+                "duration": 0.5200000000000031,
+                "confidence": 0.998291
+              }
+            ],
+            "metadata": {
+              "keyword": "Searching",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-sxlquuswbyUtqCC8",
+            "text": "a ghost inside the code",
+            "start": 45.46,
+            "end": 47.18,
+            "duration": 1.7199999999999989,
+            "absoluteStart": 45.46,
+            "absoluteEnd": 47.18,
+            "words": [
+              {
+                "id": "CeKDyl9s6CDx8BdI",
+                "text": "a",
+                "absoluteStart": 45.46,
+                "absoluteEnd": 45.7,
+                "start": 0,
+                "end": 0.240000000000002,
+                "duration": 0.240000000000002,
+                "confidence": 0.8173828
+              },
+              {
+                "id": "4xsnaMJV0CZDBQLq",
+                "text": "ghost",
+                "absoluteStart": 45.7,
+                "absoluteEnd": 45.98,
+                "start": 0.240000000000002,
+                "end": 0.519999999999996,
+                "duration": 0.27999999999999403,
+                "confidence": 0.9733073
+              },
+              {
+                "id": "KOrNVyRyM6biAH2u",
+                "text": "inside",
+                "absoluteStart": 45.98,
+                "absoluteEnd": 46.38,
+                "start": 0.519999999999996,
+                "end": 0.9200000000000017,
+                "duration": 0.4000000000000057,
+                "confidence": 0.9992676
+              },
+              {
+                "id": "yTruDIlZF6iYb2G1",
+                "text": "the",
+                "absoluteStart": 46.38,
+                "absoluteEnd": 46.54,
+                "start": 0.9200000000000017,
+                "end": 1.0799999999999983,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "PFpJPsopg10w3fZ3",
+                "text": "code",
+                "absoluteStart": 46.54,
+                "absoluteEnd": 47.18,
+                "start": 1.0799999999999983,
+                "end": 1.7199999999999989,
+                "duration": 0.6400000000000006,
+                "confidence": 0.71988934
+              }
+            ],
+            "metadata": {
+              "keyword": "ghost",
+              "strength": 8,
+              "keywordFeel": "mysterious",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-f0JdfpKAp9s4YTBZ",
+            "text": "Waiting for a single seed",
+            "start": 47.18,
+            "end": 48.78,
+            "duration": 1.6000000000000014,
+            "absoluteStart": 47.18,
+            "absoluteEnd": 48.78,
+            "words": [
+              {
+                "id": "vnWATbys8ldVXY7D",
+                "text": "Waiting",
+                "absoluteStart": 47.18,
+                "absoluteEnd": 47.62,
+                "start": 0,
+                "end": 0.4399999999999977,
+                "duration": 0.4399999999999977,
+                "confidence": 0.94384766
+              },
+              {
+                "id": "7a9JU5ZQTqvZDpOJ",
+                "text": "for",
+                "absoluteStart": 47.62,
+                "absoluteEnd": 47.94,
+                "start": 0.4399999999999977,
+                "end": 0.759999999999998,
+                "duration": 0.3200000000000003,
+                "confidence": 1
+              },
+              {
+                "id": "vAGKjwWTl1hYczrB",
+                "text": "a",
+                "absoluteStart": 47.94,
+                "absoluteEnd": 48.179,
+                "start": 0.759999999999998,
+                "end": 0.9990000000000023,
+                "duration": 0.23900000000000432,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "tw0oaKzK51k4LECy",
+                "text": "single",
+                "absoluteStart": 48.179,
+                "absoluteEnd": 48.5,
+                "start": 0.9990000000000023,
+                "end": 1.3200000000000003,
+                "duration": 0.32099999999999795,
+                "confidence": 0.99975586
+              },
+              {
+                "id": "KdWmmnr3CBckOchH",
+                "text": "seed",
+                "absoluteStart": 48.5,
+                "absoluteEnd": 48.78,
+                "start": 1.3200000000000003,
+                "end": 1.6000000000000014,
+                "duration": 0.28000000000000114,
+                "confidence": 0.7907715
+              }
+            ],
+            "metadata": {
+              "keyword": "seed",
+              "strength": 7,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-R8sltonaqtBhVqZ2",
+            "text": "to finally take and grow",
+            "start": 48.78,
+            "end": 52.38,
+            "duration": 3.6000000000000014,
+            "absoluteStart": 48.78,
+            "absoluteEnd": 52.38,
+            "words": [
+              {
+                "id": "7XpjuiIHpVtzDzYh",
+                "text": "to",
+                "absoluteStart": 48.78,
+                "absoluteEnd": 49.02,
+                "start": 0,
+                "end": 0.240000000000002,
+                "duration": 0.240000000000002,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "VZ9wTt1VMDVZ6FgI",
+                "text": "finally",
+                "absoluteStart": 49.02,
+                "absoluteEnd": 49.58,
+                "start": 0.240000000000002,
+                "end": 0.7999999999999972,
+                "duration": 0.5599999999999952,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "yodH9N7IXWH4lkOi",
+                "text": "take",
+                "absoluteStart": 49.58,
+                "absoluteEnd": 49.98,
+                "start": 0.7999999999999972,
+                "end": 1.1999999999999957,
+                "duration": 0.3999999999999986,
+                "confidence": 0.9868164
+              },
+              {
+                "id": "hOKuzb0XqimeRjnk",
+                "text": "and",
+                "absoluteStart": 49.98,
+                "absoluteEnd": 50.54,
+                "start": 1.1999999999999957,
+                "end": 1.759999999999998,
+                "duration": 0.5600000000000023,
+                "confidence": 0.97265625
+              },
+              {
+                "id": "Ou47nJegsCZhzPWq",
+                "text": "grow",
+                "absoluteStart": 50.54,
+                "absoluteEnd": 52.38,
+                "start": 1.759999999999998,
+                "end": 3.6000000000000014,
+                "duration": 1.8400000000000034,
+                "confidence": 0.99560547
+              }
+            ],
+            "metadata": {
+              "keyword": "grow",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-bUrUPiTriR0bdeiF",
+            "text": "I was lost inside the static...",
+            "start": 52.38,
+            "end": 55.58,
+            "duration": 3.1999999999999957,
+            "absoluteStart": 52.38,
+            "absoluteEnd": 55.58,
+            "words": [
+              {
+                "id": "MFMyg1xRp2YrRQsF",
+                "text": "I",
+                "absoluteStart": 52.38,
+                "absoluteEnd": 52.66,
+                "start": 0,
+                "end": 0.27999999999999403,
+                "duration": 0.27999999999999403,
+                "confidence": 0.99121094
+              },
+              {
+                "id": "fjrgcaK6jQP5TgtX",
+                "text": "was",
+                "absoluteStart": 52.66,
+                "absoluteEnd": 52.86,
+                "start": 0.27999999999999403,
+                "end": 0.4799999999999969,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "l2bMOnf8AcRBKCmR",
+                "text": "lost",
+                "absoluteStart": 52.86,
+                "absoluteEnd": 53.14,
+                "start": 0.4799999999999969,
+                "end": 0.759999999999998,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "8DyqUKm6NdTgCVsU",
+                "text": "inside",
+                "absoluteStart": 53.14,
+                "absoluteEnd": 53.54,
+                "start": 0.759999999999998,
+                "end": 1.1599999999999966,
+                "duration": 0.3999999999999986,
+                "confidence": 0.9992676
+              },
+              {
+                "id": "o5dF5jXeVTGubevU",
+                "text": "the",
+                "absoluteStart": 53.54,
+                "absoluteEnd": 53.74,
+                "start": 1.1599999999999966,
+                "end": 1.3599999999999994,
+                "duration": 0.20000000000000284,
+                "confidence": 0.9980469
+              },
+              {
+                "id": "uZgilbyJ3LNjLKUt",
+                "text": "static...",
+                "absoluteStart": 53.74,
+                "absoluteEnd": 55.58,
+                "start": 1.3599999999999994,
+                "end": 3.1999999999999957,
+                "duration": 1.8399999999999963,
+                "confidence": 0.7919922
+              }
+            ],
+            "metadata": {
+              "keyword": "lost",
+              "strength": 8,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-6tioCNuQcw6kn4KZ",
+            "text": "Then the signal started breaking through...",
+            "start": 55.58,
+            "end": 58.78,
+            "duration": 3.200000000000003,
+            "absoluteStart": 55.58,
+            "absoluteEnd": 58.78,
+            "words": [
+              {
+                "id": "HWsbzIsEoscBsmBS",
+                "text": "Then",
+                "absoluteStart": 55.58,
+                "absoluteEnd": 55.9,
+                "start": 0,
+                "end": 0.3200000000000003,
+                "duration": 0.3200000000000003,
+                "confidence": 0.9921875
+              },
+              {
+                "id": "1Mk2eYOo8oObt1Ev",
+                "text": "the",
+                "absoluteStart": 55.9,
+                "absoluteEnd": 56.1,
+                "start": 0.3200000000000003,
+                "end": 0.5200000000000031,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "Du559xZgSLoRKMMs",
+                "text": "signal",
+                "absoluteStart": 56.1,
+                "absoluteEnd": 56.54,
+                "start": 0.5200000000000031,
+                "end": 0.9600000000000009,
+                "duration": 0.4399999999999977,
+                "confidence": 0.99316406
+              },
+              {
+                "id": "EAmV7ZDdm4oVMRMh",
+                "text": "started",
+                "absoluteStart": 56.54,
+                "absoluteEnd": 56.86,
+                "start": 0.9600000000000009,
+                "end": 1.2800000000000011,
+                "duration": 0.3200000000000003,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "0LX9yvyGaCj6RxDX",
+                "text": "breaking",
+                "absoluteStart": 56.86,
+                "absoluteEnd": 57.5,
+                "start": 1.2800000000000011,
+                "end": 1.9200000000000017,
+                "duration": 0.6400000000000006,
+                "confidence": 0.9934082
+              },
+              {
+                "id": "T9q5x446axz5kIW0",
+                "text": "through...",
+                "absoluteStart": 57.5,
+                "absoluteEnd": 58.78,
+                "start": 1.9200000000000017,
+                "end": 3.200000000000003,
+                "duration": 1.2800000000000011,
+                "confidence": 0.99902344
+              }
+            ],
+            "metadata": {
+              "keyword": "breaking through",
+              "strength": 8,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-WMkQAUQKpbj8zH8K",
+            "text": "It was always automatic...",
+            "start": 58.78,
+            "end": 61.98,
+            "duration": 3.1999999999999957,
+            "absoluteStart": 58.78,
+            "absoluteEnd": 61.98,
+            "words": [
+              {
+                "id": "J9RxHOy7m4vlxQC3",
+                "text": "It",
+                "absoluteStart": 58.78,
+                "absoluteEnd": 59.1,
+                "start": 0,
+                "end": 0.3200000000000003,
+                "duration": 0.3200000000000003,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "lwFbIUW0KzaVRYjl",
+                "text": "was",
+                "absoluteStart": 59.1,
+                "absoluteEnd": 59.34,
+                "start": 0.3200000000000003,
+                "end": 0.5600000000000023,
+                "duration": 0.240000000000002,
+                "confidence": 0.9975586
+              },
+              {
+                "id": "yfXnY8oW72NNZCxu",
+                "text": "always",
+                "absoluteStart": 59.34,
+                "absoluteEnd": 59.74,
+                "start": 0.5600000000000023,
+                "end": 0.9600000000000009,
+                "duration": 0.3999999999999986,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "MAvQvZolrHoyfWcu",
+                "text": "automatic...",
+                "absoluteStart": 59.74,
+                "absoluteEnd": 61.98,
+                "start": 0.9600000000000009,
+                "end": 3.1999999999999957,
+                "duration": 2.239999999999995,
+                "confidence": 0.99820966
+              }
+            ],
+            "metadata": {
+              "keyword": "automatic",
+              "strength": 7,
+              "keywordFeel": "nostalgic",
+              "confidence": 0.85
+            }
+          },
+          {
+            "id": "sentence-dw8YjGvuahs8VRtP",
+            "text": "Something old becoming something new...",
+            "start": 61.98,
+            "end": 66.84,
+            "duration": 4.8600000000000065,
+            "absoluteStart": 61.98,
+            "absoluteEnd": 66.84,
+            "words": [
+              {
+                "id": "sVWMRzvMUpjbO0nB",
+                "text": "Something",
+                "absoluteStart": 61.98,
+                "absoluteEnd": 62.38,
+                "start": 0,
+                "end": 0.4000000000000057,
+                "duration": 0.4000000000000057,
+                "confidence": 0.98339844
+              },
+              {
+                "id": "yThjyyWM0P3RHDYp",
+                "text": "old",
+                "absoluteStart": 62.38,
+                "absoluteEnd": 62.7,
+                "start": 0.4000000000000057,
+                "end": 0.720000000000006,
+                "duration": 0.3200000000000003,
+                "confidence": 0.27075195
+              },
+              {
+                "id": "EQAcCEpR1ORAgu7X",
+                "text": "becoming",
+                "absoluteStart": 62.7,
+                "absoluteEnd": 63.26,
+                "start": 0.720000000000006,
+                "end": 1.2800000000000011,
+                "duration": 0.5599999999999952,
+                "confidence": 0.9658203
+              },
+              {
+                "id": "3LEjG2dDnfzTNoAw",
+                "text": "something",
+                "absoluteStart": 63.26,
+                "absoluteEnd": 63.66,
+                "start": 1.2800000000000011,
+                "end": 1.6799999999999997,
+                "duration": 0.3999999999999986,
+                "confidence": 0.98828125
+              },
+              {
+                "id": "E2s1LtBOcVA0Nmow",
+                "text": "new...",
+                "absoluteStart": 63.66,
+                "absoluteEnd": 66.84,
+                "start": 1.6799999999999997,
+                "end": 4.8600000000000065,
+                "duration": 3.180000000000007,
+                "confidence": 0.8959961
+              }
+            ],
+            "metadata": {
+              "keyword": "new",
+              "strength": 7,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-ZEDSX1ouQ4YGuV96",
+            "text": "I can feel it now,",
+            "start": 66.84,
+            "end": 68.2,
+            "duration": 1.3599999999999994,
+            "absoluteStart": 66.84,
+            "absoluteEnd": 68.2,
+            "words": [
+              {
+                "id": "O6vx88QAGkRifZlq",
+                "text": "I",
+                "absoluteStart": 66.84,
+                "absoluteEnd": 67.12,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.98876953
+              },
+              {
+                "id": "iUdlUwAtBZ7cyEMI",
+                "text": "can",
+                "absoluteStart": 67.12,
+                "absoluteEnd": 67.32,
+                "start": 0.28000000000000114,
+                "end": 0.47999999999998977,
+                "duration": 0.19999999999998863,
+                "confidence": 0.9902344
+              },
+              {
+                "id": "OPD8xwCAYiD2gKEG",
+                "text": "feel",
+                "absoluteStart": 67.32,
+                "absoluteEnd": 67.56,
+                "start": 0.47999999999998977,
+                "end": 0.7199999999999989,
+                "duration": 0.2400000000000091,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "mujB7Y5YKFiv6xx2",
+                "text": "it",
+                "absoluteStart": 67.56,
+                "absoluteEnd": 67.8,
+                "start": 0.7199999999999989,
+                "end": 0.9599999999999937,
+                "duration": 0.23999999999999488,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "clVHRWLDZFTOhU5G",
+                "text": "now,",
+                "absoluteStart": 67.8,
+                "absoluteEnd": 68.2,
+                "start": 0.9599999999999937,
+                "end": 1.3599999999999994,
+                "duration": 0.4000000000000057,
+                "confidence": 0.9995117
+              }
+            ],
+            "metadata": {
+              "keyword": "feel",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-cRMUlOjEyyJHgQAy",
+            "text": "the final piece is coming",
+            "start": 68.2,
+            "end": 69.8,
+            "duration": 1.5999999999999943,
+            "absoluteStart": 68.2,
+            "absoluteEnd": 69.8,
+            "words": [
+              {
+                "id": "HJYHHe6TkIyN11CU",
+                "text": "the",
+                "absoluteStart": 68.2,
+                "absoluteEnd": 68.52,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "mtOl6mgAwLeuJCbe",
+                "text": "final",
+                "absoluteStart": 68.52,
+                "absoluteEnd": 68.84,
+                "start": 0.3199999999999932,
+                "end": 0.6400000000000006,
+                "duration": 0.3200000000000074,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "NgRT5fgOuAcQ9EZd",
+                "text": "piece",
+                "absoluteStart": 68.84,
+                "absoluteEnd": 69.2,
+                "start": 0.6400000000000006,
+                "end": 1,
+                "duration": 0.35999999999999943,
+                "confidence": 0.8930664
+              },
+              {
+                "id": "NgeLlQ8lIoV8Ggc6",
+                "text": "is",
+                "absoluteStart": 69.2,
+                "absoluteEnd": 69.4,
+                "start": 1,
+                "end": 1.2000000000000028,
+                "duration": 0.20000000000000284,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "7WKHPNtJALSXPQ0Z",
+                "text": "coming",
+                "absoluteStart": 69.4,
+                "absoluteEnd": 69.8,
+                "start": 1.2000000000000028,
+                "end": 1.5999999999999943,
+                "duration": 0.3999999999999915,
+                "confidence": 0.9975586
+              }
+            ],
+            "metadata": {
+              "keyword": "final",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-LCUFJ5FIXUNv7X6S",
+            "text": "into view!",
+            "start": 69.8,
+            "end": 74.6,
+            "duration": 4.799999999999997,
+            "absoluteStart": 69.8,
+            "absoluteEnd": 74.6,
+            "words": [
+              {
+                "id": "LvPHbehpEAIXGNXH",
+                "text": "into",
+                "absoluteStart": 69.8,
+                "absoluteEnd": 70.2,
+                "start": 0,
+                "end": 0.4000000000000057,
+                "duration": 0.4000000000000057,
+                "confidence": 0.98876953
+              },
+              {
+                "id": "rum8zNitmEix7Jb4",
+                "text": "view!",
+                "absoluteStart": 70.2,
+                "absoluteEnd": 74.6,
+                "start": 0.4000000000000057,
+                "end": 4.799999999999997,
+                "duration": 4.3999999999999915,
+                "confidence": 0.9975586
+              }
+            ],
+            "metadata": {
+              "keyword": "view",
+              "strength": 7,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-s3b1WjdLvd1H1RkF",
+            "text": "And it all falls into place!",
+            "start": 74.6,
+            "end": 78.04,
+            "duration": 3.440000000000012,
+            "absoluteStart": 74.6,
+            "absoluteEnd": 78.04,
+            "words": [
+              {
+                "id": "SThUPcO7BPgEvb29",
+                "text": "And",
+                "absoluteStart": 74.6,
+                "absoluteEnd": 74.92,
+                "start": 0,
+                "end": 0.3200000000000074,
+                "duration": 0.3200000000000074,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "vVMkunxsfizcfxvF",
+                "text": "it",
+                "absoluteStart": 74.92,
+                "absoluteEnd": 75.2,
+                "start": 0.3200000000000074,
+                "end": 0.6000000000000085,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "d86FCJiBYyLoiPoH",
+                "text": "all",
+                "absoluteStart": 75.2,
+                "absoluteEnd": 75.64,
+                "start": 0.6000000000000085,
+                "end": 1.0400000000000063,
+                "duration": 0.4399999999999977,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "yqskwID8hMF2Q40w",
+                "text": "falls",
+                "absoluteStart": 75.64,
+                "absoluteEnd": 76.24,
+                "start": 1.0400000000000063,
+                "end": 1.6400000000000006,
+                "duration": 0.5999999999999943,
+                "confidence": 0.9980469
+              },
+              {
+                "id": "OyOvwKxYqTRtRZhz",
+                "text": "into",
+                "absoluteStart": 76.24,
+                "absoluteEnd": 76.68,
+                "start": 1.6400000000000006,
+                "end": 2.0800000000000125,
+                "duration": 0.44000000000001194,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "mePrsJZ8QCy1a2Ku",
+                "text": "place!",
+                "absoluteStart": 76.68,
+                "absoluteEnd": 78.04,
+                "start": 2.0800000000000125,
+                "end": 3.440000000000012,
+                "duration": 1.3599999999999994,
+                "confidence": 0.8330078
+              }
+            ],
+            "metadata": {
+              "keyword": "place",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-HAjUw3qGgYbSIJJZ",
+            "text": "Like a star in outer space!",
+            "start": 78.04,
+            "end": 81.4,
+            "duration": 3.3599999999999994,
+            "absoluteStart": 78.04,
+            "absoluteEnd": 81.4,
+            "words": [
+              {
+                "id": "uUSODGdgyV8IFzUt",
+                "text": "Like",
+                "absoluteStart": 78.04,
+                "absoluteEnd": 78.36,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "Qg8u4VwQ5ctPyo1g",
+                "text": "a",
+                "absoluteStart": 78.36,
+                "absoluteEnd": 78.56,
+                "start": 0.3199999999999932,
+                "end": 0.519999999999996,
+                "duration": 0.20000000000000284,
+                "confidence": 0.98339844
+              },
+              {
+                "id": "UwLoocR4FMRy9rQJ",
+                "text": "star",
+                "absoluteStart": 78.56,
+                "absoluteEnd": 78.92,
+                "start": 0.519999999999996,
+                "end": 0.8799999999999955,
+                "duration": 0.35999999999999943,
+                "confidence": 0.9838867
+              },
+              {
+                "id": "sQ7s15EQBOqnZjeU",
+                "text": "in",
+                "absoluteStart": 78.92,
+                "absoluteEnd": 79.32,
+                "start": 0.8799999999999955,
+                "end": 1.279999999999987,
+                "duration": 0.3999999999999915,
+                "confidence": 0.8300781
+              },
+              {
+                "id": "tRX38kqIFSBblGPi",
+                "text": "outer",
+                "absoluteStart": 79.32,
+                "absoluteEnd": 79.959,
+                "start": 1.279999999999987,
+                "end": 1.918999999999997,
+                "duration": 0.63900000000001,
+                "confidence": 0.9748535
+              },
+              {
+                "id": "1Xsasu8yRhO130pa",
+                "text": "space!",
+                "absoluteStart": 79.959,
+                "absoluteEnd": 81.4,
+                "start": 1.918999999999997,
+                "end": 3.3599999999999994,
+                "duration": 1.4410000000000025,
+                "confidence": 0.9980469
+              }
+            ],
+            "metadata": {
+              "keyword": "star",
+              "strength": 8,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-fPXGrJRssUgZWjj3",
+            "text": "The one thing that was missing,",
+            "start": 81.4,
+            "end": 84.6,
+            "duration": 3.1999999999999886,
+            "absoluteStart": 81.4,
+            "absoluteEnd": 84.6,
+            "words": [
+              {
+                "id": "wpOlt4qiFULyNCVn",
+                "text": "The",
+                "absoluteStart": 81.4,
+                "absoluteEnd": 81.76,
+                "start": 0,
+                "end": 0.35999999999999943,
+                "duration": 0.35999999999999943,
+                "confidence": 0.9663086
+              },
+              {
+                "id": "U2MD0UzpciOPI2PE",
+                "text": "one",
+                "absoluteStart": 81.76,
+                "absoluteEnd": 82.12,
+                "start": 0.35999999999999943,
+                "end": 0.7199999999999989,
+                "duration": 0.35999999999999943,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "KgHU4wxzLGjxg2Jt",
+                "text": "thing",
+                "absoluteStart": 82.12,
+                "absoluteEnd": 82.48,
+                "start": 0.7199999999999989,
+                "end": 1.0799999999999983,
+                "duration": 0.35999999999999943,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "O74YmlTLB6WYB7Ld",
+                "text": "that",
+                "absoluteStart": 82.48,
+                "absoluteEnd": 82.84,
+                "start": 1.0799999999999983,
+                "end": 1.4399999999999977,
+                "duration": 0.35999999999999943,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "c4tr69UK8fvCYhdz",
+                "text": "was",
+                "absoluteStart": 82.84,
+                "absoluteEnd": 83.2,
+                "start": 1.4399999999999977,
+                "end": 1.7999999999999972,
+                "duration": 0.35999999999999943,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "4g9hHSrYWoUIc3yU",
+                "text": "missing,",
+                "absoluteStart": 83.2,
+                "absoluteEnd": 84.6,
+                "start": 1.7999999999999972,
+                "end": 3.1999999999999886,
+                "duration": 1.3999999999999915,
+                "confidence": 0.9904785
+              }
+            ],
+            "metadata": {
+              "keyword": "missing",
+              "strength": 8,
+              "keywordFeel": "sorrowful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-I6TZ69zzTsseeE0i",
+            "text": "the beauty and the grace!",
+            "start": 84.6,
+            "end": 89,
+            "duration": 4.400000000000006,
+            "absoluteStart": 84.6,
+            "absoluteEnd": 89,
+            "words": [
+              {
+                "id": "x7Kgw9LGMFz4EZba",
+                "text": "the",
+                "absoluteStart": 84.6,
+                "absoluteEnd": 84.96,
+                "start": 0,
+                "end": 0.35999999999999943,
+                "duration": 0.35999999999999943,
+                "confidence": 0.9926758
+              },
+              {
+                "id": "xVF2Go9CeuU8rv3f",
+                "text": "beauty",
+                "absoluteStart": 84.96,
+                "absoluteEnd": 85.48,
+                "start": 0.35999999999999943,
+                "end": 0.8800000000000097,
+                "duration": 0.5200000000000102,
+                "confidence": 0.94189453
+              },
+              {
+                "id": "ziuFTw4hWpuOfbpf",
+                "text": "and",
+                "absoluteStart": 85.48,
+                "absoluteEnd": 86.08,
+                "start": 0.8800000000000097,
+                "end": 1.480000000000004,
+                "duration": 0.5999999999999943,
+                "confidence": 0.9946289
+              },
+              {
+                "id": "fktJfkSt2pVFbOyB",
+                "text": "the",
+                "absoluteStart": 86.08,
+                "absoluteEnd": 86.32,
+                "start": 1.480000000000004,
+                "end": 1.7199999999999989,
+                "duration": 0.23999999999999488,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "lXle0Lqlv9E4cXO0",
+                "text": "grace!",
+                "absoluteStart": 86.32,
+                "absoluteEnd": 89,
+                "start": 1.7199999999999989,
+                "end": 4.400000000000006,
+                "duration": 2.680000000000007,
+                "confidence": 0.6984863
+              }
+            ],
+            "metadata": {
+              "keyword": "beauty",
+              "strength": 8,
+              "keywordFeel": "joyful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-EnL7avLF0oL29kjb",
+            "text": "It was a KEYSTONE!",
+            "start": 89,
+            "end": 90.6,
+            "duration": 1.5999999999999943,
+            "absoluteStart": 89,
+            "absoluteEnd": 90.6,
+            "words": [
+              {
+                "id": "PjXZbeHbO8MXp9KA",
+                "text": "It",
+                "absoluteStart": 89,
+                "absoluteEnd": 89.28,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 1
+              },
+              {
+                "id": "zhZY15NDrRxMnrfH",
+                "text": "was",
+                "absoluteStart": 89.28,
+                "absoluteEnd": 89.52,
+                "start": 0.28000000000000114,
+                "end": 0.519999999999996,
+                "duration": 0.23999999999999488,
+                "confidence": 0.79833984
+              },
+              {
+                "id": "qqu4g34JbxwZpuDJ",
+                "text": "a",
+                "absoluteStart": 89.52,
+                "absoluteEnd": 89.72,
+                "start": 0.519999999999996,
+                "end": 0.7199999999999989,
+                "duration": 0.20000000000000284,
+                "confidence": 0.8671875
+              },
+              {
+                "id": "DUd5hMemycQ7b4Sw",
+                "text": "KEYSTONE!",
+                "absoluteStart": 89.72,
+                "absoluteEnd": 90.6,
+                "start": 0.7199999999999989,
+                "end": 1.5999999999999943,
+                "duration": 0.8799999999999955,
+                "confidence": 0.7472331
+              }
+            ],
+            "metadata": {
+              "keyword": "KEYSTONE",
+              "strength": 9,
+              "keywordFeel": "dramatic",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-FcmT91m9etoeNoQ2",
+            "text": "The answer in the stone!",
+            "start": 90.6,
+            "end": 92.6,
+            "duration": 2,
+            "absoluteStart": 90.6,
+            "absoluteEnd": 92.6,
+            "words": [
+              {
+                "id": "SJUH9dualsBvbdEy",
+                "text": "The",
+                "absoluteStart": 90.6,
+                "absoluteEnd": 90.88,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9975586
+              },
+              {
+                "id": "A80nLyMzgUW4iV1m",
+                "text": "answer",
+                "absoluteStart": 90.88,
+                "absoluteEnd": 91.32,
+                "start": 0.28000000000000114,
+                "end": 0.7199999999999989,
+                "duration": 0.4399999999999977,
+                "confidence": 0.76497394
+              },
+              {
+                "id": "Gjomn4h7WU7s9cOM",
+                "text": "in",
+                "absoluteStart": 91.32,
+                "absoluteEnd": 91.52,
+                "start": 0.7199999999999989,
+                "end": 0.9200000000000017,
+                "duration": 0.20000000000000284,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "qdizcPqCX9IaYrzW",
+                "text": "the",
+                "absoluteStart": 91.52,
+                "absoluteEnd": 91.72,
+                "start": 0.9200000000000017,
+                "end": 1.1200000000000045,
+                "duration": 0.20000000000000284,
+                "confidence": 1
+              },
+              {
+                "id": "lpQDnMvXx5yAOsLC",
+                "text": "stone!",
+                "absoluteStart": 91.72,
+                "absoluteEnd": 92.6,
+                "start": 1.1200000000000045,
+                "end": 2,
+                "duration": 0.8799999999999955,
+                "confidence": 0.97314453
+              }
+            ],
+            "metadata": {
+              "keyword": "stone",
+              "strength": 8,
+              "keywordFeel": "mysterious",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-WOW4GjkUuZtThfyI",
+            "text": "The one true note to build a brand new throne!",
+            "start": 92.6,
+            "end": 96.1,
+            "duration": 3.5,
+            "absoluteStart": 92.6,
+            "absoluteEnd": 96.1,
+            "words": [
+              {
+                "id": "pmDiYOB345OU2n9O",
+                "text": "The",
+                "absoluteStart": 92.6,
+                "absoluteEnd": 92.88,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 1
+              },
+              {
+                "id": "qjVLM6AnhrOXCgCa",
+                "text": "one",
+                "absoluteStart": 92.88,
+                "absoluteEnd": 93.16,
+                "start": 0.28000000000000114,
+                "end": 0.5600000000000023,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9326172
+              },
+              {
+                "id": "dlUGOS4kWddXdOpH",
+                "text": "true",
+                "absoluteStart": 93.16,
+                "absoluteEnd": 93.6,
+                "start": 0.5600000000000023,
+                "end": 1,
+                "duration": 0.4399999999999977,
+                "confidence": 1
+              },
+              {
+                "id": "J33Jf93ycTT02wXw",
+                "text": "note",
+                "absoluteStart": 93.6,
+                "absoluteEnd": 93.96,
+                "start": 1,
+                "end": 1.3599999999999994,
+                "duration": 0.35999999999999943,
+                "confidence": 0.6904297
+              },
+              {
+                "id": "yL5uQmDTJZ44o3nL",
+                "text": "to",
+                "absoluteStart": 93.96,
+                "absoluteEnd": 94.16,
+                "start": 1.3599999999999994,
+                "end": 1.5600000000000023,
+                "duration": 0.20000000000000284,
+                "confidence": 0.78808594
+              },
+              {
+                "id": "QEDuV0lfvdCbb0O5",
+                "text": "build",
+                "absoluteStart": 94.16,
+                "absoluteEnd": 94.36,
+                "start": 1.5600000000000023,
+                "end": 1.7600000000000051,
+                "duration": 0.20000000000000284,
+                "confidence": 1
+              },
+              {
+                "id": "IFgayj7P1OkuGIb6",
+                "text": "a",
+                "absoluteStart": 94.36,
+                "absoluteEnd": 94.56,
+                "start": 1.7600000000000051,
+                "end": 1.960000000000008,
+                "duration": 0.20000000000000284,
+                "confidence": 1
+              },
+              {
+                "id": "tb4pcsFzaSwD7Hdy",
+                "text": "brand",
+                "absoluteStart": 94.56,
+                "absoluteEnd": 94.84,
+                "start": 1.960000000000008,
+                "end": 2.240000000000009,
+                "duration": 0.28000000000000114,
+                "confidence": 1
+              },
+              {
+                "id": "lh5ubuEYODCPeqJ3",
+                "text": "new",
+                "absoluteStart": 94.84,
+                "absoluteEnd": 95.16,
+                "start": 2.240000000000009,
+                "end": 2.5600000000000023,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "ohXhPBQUX8BOHLVY",
+                "text": "throne!",
+                "absoluteStart": 95.16,
+                "absoluteEnd": 96.1,
+                "start": 2.5600000000000023,
+                "end": 3.5,
+                "duration": 0.9399999999999977,
+                "confidence": 0.9016113
+              }
+            ],
+            "metadata": {
+              "keyword": "throne",
+              "strength": 9,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-trFWnv0pwoZOU3qK",
+            "text": "The whole world clicks and",
+            "start": 96.1,
+            "end": 97.5,
+            "duration": 1.4000000000000057,
+            "absoluteStart": 96.1,
+            "absoluteEnd": 97.5,
+            "words": [
+              {
+                "id": "9sFXkZ9lcDmVSoJ2",
+                "text": "The",
+                "absoluteStart": 96.1,
+                "absoluteEnd": 96.22,
+                "start": 0,
+                "end": 0.12000000000000455,
+                "duration": 0.12000000000000455,
+                "confidence": 0.9794922
+              },
+              {
+                "id": "2VIrAJrCWL8PMR0i",
+                "text": "whole",
+                "absoluteStart": 96.22,
+                "absoluteEnd": 96.5,
+                "start": 0.12000000000000455,
+                "end": 0.4000000000000057,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "EZdsrEEwvcQyuKd6",
+                "text": "world",
+                "absoluteStart": 96.5,
+                "absoluteEnd": 96.82,
+                "start": 0.4000000000000057,
+                "end": 0.7199999999999989,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "ZKhWtnPTj1f9jyyF",
+                "text": "clicks",
+                "absoluteStart": 96.82,
+                "absoluteEnd": 97.34,
+                "start": 0.7199999999999989,
+                "end": 1.240000000000009,
+                "duration": 0.5200000000000102,
+                "confidence": 0.96728516
+              },
+              {
+                "id": "Lb9iVZZfEXZpjfaH",
+                "text": "and",
+                "absoluteStart": 97.34,
+                "absoluteEnd": 97.5,
+                "start": 1.240000000000009,
+                "end": 1.4000000000000057,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9838867
+              }
+            ],
+            "metadata": {
+              "keyword": "clicks",
+              "strength": 7,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-EaCoBjZM6BQuy1oz",
+            "text": "the tumblers finally turn!",
+            "start": 97.5,
+            "end": 102.26,
+            "duration": 4.760000000000005,
+            "absoluteStart": 97.5,
+            "absoluteEnd": 102.26,
+            "words": [
+              {
+                "id": "LDRRTnhttBpRS1Pq",
+                "text": "the",
+                "absoluteStart": 97.5,
+                "absoluteEnd": 97.7,
+                "start": 0,
+                "end": 0.20000000000000284,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99121094
+              },
+              {
+                "id": "FyLtocVCcdAlYOVo",
+                "text": "tumblers",
+                "absoluteStart": 97.7,
+                "absoluteEnd": 98.58,
+                "start": 0.20000000000000284,
+                "end": 1.0799999999999983,
+                "duration": 0.8799999999999955,
+                "confidence": 0.8930664
+              },
+              {
+                "id": "CKCwMs6lzxqliz4x",
+                "text": "finally",
+                "absoluteStart": 98.58,
+                "absoluteEnd": 99.1,
+                "start": 1.0799999999999983,
+                "end": 1.5999999999999943,
+                "duration": 0.519999999999996,
+                "confidence": 0.9921875
+              },
+              {
+                "id": "WZwkG1u0YiNgoowJ",
+                "text": "turn!",
+                "absoluteStart": 99.1,
+                "absoluteEnd": 102.26,
+                "start": 1.5999999999999943,
+                "end": 4.760000000000005,
+                "duration": 3.160000000000011,
+                "confidence": 0.99658203
+              }
+            ],
+            "metadata": {
+              "keyword": "finally",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-FRrQbK7ISvNPGxXN",
+            "text": "The final, vital lesson",
+            "start": 102.26,
+            "end": 103.74,
+            "duration": 1.4799999999999898,
+            "absoluteStart": 102.26,
+            "absoluteEnd": 103.74,
+            "words": [
+              {
+                "id": "fKFhKGmb2FoqOdKC",
+                "text": "The",
+                "absoluteStart": 102.26,
+                "absoluteEnd": 102.58,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.95751953
+              },
+              {
+                "id": "BPCvptJrigKQvHad",
+                "text": "final,",
+                "absoluteStart": 102.58,
+                "absoluteEnd": 102.86,
+                "start": 0.3199999999999932,
+                "end": 0.5999999999999943,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "zOAcCRh0mKZOfOaC",
+                "text": "vital",
+                "absoluteStart": 102.86,
+                "absoluteEnd": 103.34,
+                "start": 0.5999999999999943,
+                "end": 1.0799999999999983,
+                "duration": 0.480000000000004,
+                "confidence": 0.9895833
+              },
+              {
+                "id": "isxt5qHpzgNcg8E5",
+                "text": "lesson",
+                "absoluteStart": 103.34,
+                "absoluteEnd": 103.74,
+                "start": 1.0799999999999983,
+                "end": 1.4799999999999898,
+                "duration": 0.3999999999999915,
+                "confidence": 0.99975586
+              }
+            ],
+            "metadata": {
+              "keyword": "vital",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-ip7eMPlM0tmExYoX",
+            "text": "that they could never learn!",
+            "start": 103.74,
+            "end": 107.38,
+            "duration": 3.6400000000000006,
+            "absoluteStart": 103.74,
+            "absoluteEnd": 107.38,
+            "words": [
+              {
+                "id": "k1y32PhtDqzvCAuw",
+                "text": "that",
+                "absoluteStart": 103.74,
+                "absoluteEnd": 103.98,
+                "start": 0,
+                "end": 0.2400000000000091,
+                "duration": 0.2400000000000091,
+                "confidence": 0.9760742
+              },
+              {
+                "id": "kb29KD6SbSSsG7M6",
+                "text": "they",
+                "absoluteStart": 103.98,
+                "absoluteEnd": 104.26,
+                "start": 0.2400000000000091,
+                "end": 0.5200000000000102,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "5dx6hEe6qOgl4AoG",
+                "text": "could",
+                "absoluteStart": 104.26,
+                "absoluteEnd": 104.74,
+                "start": 0.5200000000000102,
+                "end": 1,
+                "duration": 0.47999999999998977,
+                "confidence": 0.9980469
+              },
+              {
+                "id": "g4MjDG8cKicKGIlz",
+                "text": "never",
+                "absoluteStart": 104.74,
+                "absoluteEnd": 105.46,
+                "start": 1,
+                "end": 1.7199999999999989,
+                "duration": 0.7199999999999989,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "AXUMCoLXzkDZQhZY",
+                "text": "learn!",
+                "absoluteStart": 105.46,
+                "absoluteEnd": 107.38,
+                "start": 1.7199999999999989,
+                "end": 3.6400000000000006,
+                "duration": 1.9200000000000017,
+                "confidence": 0.9016113
+              }
+            ],
+            "metadata": {
+              "keyword": "never",
+              "strength": 8,
+              "keywordFeel": "sorrowful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-hzfVK4cAS9BBY6Hb",
+            "text": "They said the problem's unsolvable,",
+            "start": 107.38,
+            "end": 110.98,
+            "duration": 3.6000000000000085,
+            "absoluteStart": 107.38,
+            "absoluteEnd": 110.98,
+            "words": [
+              {
+                "id": "QOsmMO4ZqTaUErRW",
+                "text": "They",
+                "absoluteStart": 107.38,
+                "absoluteEnd": 107.7,
+                "start": 0,
+                "end": 0.3200000000000074,
+                "duration": 0.3200000000000074,
+                "confidence": 0.98779297
+              },
+              {
+                "id": "wjGIqXOV8Kz3ezcw",
+                "text": "said",
+                "absoluteStart": 107.7,
+                "absoluteEnd": 107.9,
+                "start": 0.3200000000000074,
+                "end": 0.5200000000000102,
+                "duration": 0.20000000000000284,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "mMrQ4z9mluySeTTV",
+                "text": "the",
+                "absoluteStart": 107.9,
+                "absoluteEnd": 108.1,
+                "start": 0.5200000000000102,
+                "end": 0.7199999999999989,
+                "duration": 0.19999999999998863,
+                "confidence": 0.98583984
+              },
+              {
+                "id": "mU1wrT4R6hrAbcon",
+                "text": "problem's",
+                "absoluteStart": 108.1,
+                "absoluteEnd": 108.66,
+                "start": 0.7199999999999989,
+                "end": 1.2800000000000011,
+                "duration": 0.5600000000000023,
+                "confidence": 0.85628253
+              },
+              {
+                "id": "PvMWuEljQkhTuFrE",
+                "text": "unsolvable,",
+                "absoluteStart": 108.66,
+                "absoluteEnd": 110.98,
+                "start": 1.2800000000000011,
+                "end": 3.6000000000000085,
+                "duration": 2.3200000000000074,
+                "confidence": 0.9976562
+              }
+            ],
+            "metadata": {
+              "keyword": "unsolvable",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-RuT5mWClFQwczvGx",
+            "text": "the lock would never break",
+            "start": 110.98,
+            "end": 114.18,
+            "duration": 3.200000000000003,
+            "absoluteStart": 110.98,
+            "absoluteEnd": 114.18,
+            "words": [
+              {
+                "id": "9mNCUeKoFJkDaBMI",
+                "text": "the",
+                "absoluteStart": 110.98,
+                "absoluteEnd": 111.26,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9770508
+              },
+              {
+                "id": "LZKuth6IYsGqIPkU",
+                "text": "lock",
+                "absoluteStart": 111.26,
+                "absoluteEnd": 111.54,
+                "start": 0.28000000000000114,
+                "end": 0.5600000000000023,
+                "duration": 0.28000000000000114,
+                "confidence": 0.6520996
+              },
+              {
+                "id": "wqpKpxJOTvxjKoPm",
+                "text": "would",
+                "absoluteStart": 111.54,
+                "absoluteEnd": 111.78,
+                "start": 0.5600000000000023,
+                "end": 0.7999999999999972,
+                "duration": 0.23999999999999488,
+                "confidence": 0.9892578
+              },
+              {
+                "id": "q1KbD1AlnJLxEu5p",
+                "text": "never",
+                "absoluteStart": 111.78,
+                "absoluteEnd": 112.099,
+                "start": 0.7999999999999972,
+                "end": 1.1189999999999998,
+                "duration": 0.3190000000000026,
+                "confidence": 1
+              },
+              {
+                "id": "rKlvQlHh03UMSYu2",
+                "text": "break",
+                "absoluteStart": 112.1,
+                "absoluteEnd": 114.18,
+                "start": 1.1199999999999903,
+                "end": 3.200000000000003,
+                "duration": 2.0800000000000125,
+                "confidence": 1
+              }
+            ],
+            "metadata": {
+              "keyword": "never break",
+              "strength": 9,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-91AlpEHPfgJNWfdw",
+            "text": "They didn't see the logic",
+            "start": 114.18,
+            "end": 116.26,
+            "duration": 2.0799999999999983,
+            "absoluteStart": 114.18,
+            "absoluteEnd": 116.26,
+            "words": [
+              {
+                "id": "XscniIjFejfAapol",
+                "text": "They",
+                "absoluteStart": 114.18,
+                "absoluteEnd": 114.5,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9790039
+              },
+              {
+                "id": "yZGRJ6J9wTTpExCk",
+                "text": "didn't",
+                "absoluteStart": 114.5,
+                "absoluteEnd": 114.94,
+                "start": 0.3199999999999932,
+                "end": 0.7599999999999909,
+                "duration": 0.4399999999999977,
+                "confidence": 0.99934894
+              },
+              {
+                "id": "PbwOzaECtD6HJSiC",
+                "text": "see",
+                "absoluteStart": 114.94,
+                "absoluteEnd": 115.14,
+                "start": 0.7599999999999909,
+                "end": 0.9599999999999937,
+                "duration": 0.20000000000000284,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "uKP5no3rzfYd2VPx",
+                "text": "the",
+                "absoluteStart": 115.14,
+                "absoluteEnd": 115.38,
+                "start": 0.9599999999999937,
+                "end": 1.1999999999999886,
+                "duration": 0.23999999999999488,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "qXcfuSJ8Md2E7cy1",
+                "text": "logic",
+                "absoluteStart": 115.38,
+                "absoluteEnd": 116.26,
+                "start": 1.1999999999999886,
+                "end": 2.0799999999999983,
+                "duration": 0.8800000000000097,
+                "confidence": 1
+              }
+            ],
+            "metadata": {
+              "keyword": "logic",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.85
+            }
+          },
+          {
+            "id": "sentence-vWt2cwI3jaMDNhOM",
+            "text": "in the risks I had to take",
+            "start": 116.26,
+            "end": 120.26,
+            "duration": 4,
+            "absoluteStart": 116.26,
+            "absoluteEnd": 120.26,
+            "words": [
+              {
+                "id": "y4KDRr5TiY2kDNvA",
+                "text": "in",
+                "absoluteStart": 116.26,
+                "absoluteEnd": 116.54,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9379883
+              },
+              {
+                "id": "tsm5XbkrPpD2nqnX",
+                "text": "the",
+                "absoluteStart": 116.54,
+                "absoluteEnd": 116.74,
+                "start": 0.28000000000000114,
+                "end": 0.47999999999998977,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "GWsHNGBPpCRuYtXW",
+                "text": "risks",
+                "absoluteStart": 116.74,
+                "absoluteEnd": 117.26,
+                "start": 0.47999999999998977,
+                "end": 1,
+                "duration": 0.5200000000000102,
+                "confidence": 0.99731445
+              },
+              {
+                "id": "tQP45FDKXHx93AOE",
+                "text": "I",
+                "absoluteStart": 117.26,
+                "absoluteEnd": 117.54,
+                "start": 1,
+                "end": 1.2800000000000011,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "bHLUxCEnerKpxVDC",
+                "text": "had",
+                "absoluteStart": 117.54,
+                "absoluteEnd": 117.9,
+                "start": 1.2800000000000011,
+                "end": 1.6400000000000006,
+                "duration": 0.35999999999999943,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "rli4DhDfJDu1m0ZM",
+                "text": "to",
+                "absoluteStart": 117.9,
+                "absoluteEnd": 118.26,
+                "start": 1.6400000000000006,
+                "end": 2,
+                "duration": 0.35999999999999943,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "CmjPCRJZdLXsaQhX",
+                "text": "take",
+                "absoluteStart": 118.26,
+                "absoluteEnd": 120.26,
+                "start": 2,
+                "end": 4,
+                "duration": 2,
+                "confidence": 0.9995117
+              }
+            ],
+            "metadata": {
+              "keyword": "risks",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-9DIz3uGpfER7PLNA",
+            "text": "I wasn't looking for an answer,",
+            "start": 120.26,
+            "end": 123.62,
+            "duration": 3.3599999999999994,
+            "absoluteStart": 120.26,
+            "absoluteEnd": 123.62,
+            "words": [
+              {
+                "id": "2XyDu2fq7Jxga4Kw",
+                "text": "I",
+                "absoluteStart": 120.26,
+                "absoluteEnd": 120.54,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "0l6eV1We1Wa1Jsxc",
+                "text": "wasn't",
+                "absoluteStart": 120.54,
+                "absoluteEnd": 120.94,
+                "start": 0.28000000000000114,
+                "end": 0.6799999999999926,
+                "duration": 0.3999999999999915,
+                "confidence": 0.9991455
+              },
+              {
+                "id": "KUmQJXd6cC8mhIun",
+                "text": "looking",
+                "absoluteStart": 120.94,
+                "absoluteEnd": 121.22,
+                "start": 0.6799999999999926,
+                "end": 0.9599999999999937,
+                "duration": 0.28000000000000114,
+                "confidence": 0.86621094
+              },
+              {
+                "id": "wMAkfK891dU4y6Lc",
+                "text": "for",
+                "absoluteStart": 121.22,
+                "absoluteEnd": 121.54,
+                "start": 0.9599999999999937,
+                "end": 1.2800000000000011,
+                "duration": 0.3200000000000074,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "YAJI43ROTpltSlri",
+                "text": "an",
+                "absoluteStart": 121.54,
+                "absoluteEnd": 121.78,
+                "start": 1.2800000000000011,
+                "end": 1.519999999999996,
+                "duration": 0.23999999999999488,
+                "confidence": 0.9975586
+              },
+              {
+                "id": "zrjwvWBTslgjsVQw",
+                "text": "answer,",
+                "absoluteStart": 121.78,
+                "absoluteEnd": 123.62,
+                "start": 1.519999999999996,
+                "end": 3.3599999999999994,
+                "duration": 1.8400000000000034,
+                "confidence": 0.9869792
+              }
+            ],
+            "metadata": {
+              "keyword": "answer",
+              "strength": 7,
+              "keywordFeel": "calm",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-ZQFsaYm31mUeuEWl",
+            "text": "I was looking for the flaw",
+            "start": 123.62,
+            "end": 126.98,
+            "duration": 3.3599999999999994,
+            "absoluteStart": 123.62,
+            "absoluteEnd": 126.98,
+            "words": [
+              {
+                "id": "layhHAaGBS7vkJ6D",
+                "text": "I",
+                "absoluteStart": 123.62,
+                "absoluteEnd": 123.9,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "SLDVhN1ehFIMnflZ",
+                "text": "was",
+                "absoluteStart": 123.9,
+                "absoluteEnd": 124.1,
+                "start": 0.28000000000000114,
+                "end": 0.47999999999998977,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "EWhCK43XEQn2UIRt",
+                "text": "looking",
+                "absoluteStart": 124.1,
+                "absoluteEnd": 124.42,
+                "start": 0.47999999999998977,
+                "end": 0.7999999999999972,
+                "duration": 0.3200000000000074,
+                "confidence": 0.8798828
+              },
+              {
+                "id": "ixdu96kEUkvlJ0zJ",
+                "text": "for",
+                "absoluteStart": 124.42,
+                "absoluteEnd": 124.7,
+                "start": 0.7999999999999972,
+                "end": 1.0799999999999983,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "9a4GcFniEULXfHja",
+                "text": "the",
+                "absoluteStart": 124.7,
+                "absoluteEnd": 124.9,
+                "start": 1.0799999999999983,
+                "end": 1.2800000000000011,
+                "duration": 0.20000000000000284,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "luH9Pr88LgJPWLwv",
+                "text": "flaw",
+                "absoluteStart": 124.9,
+                "absoluteEnd": 126.98,
+                "start": 1.2800000000000011,
+                "end": 3.3599999999999994,
+                "duration": 2.0799999999999983,
+                "confidence": 0.8022461
+              }
+            ],
+            "metadata": {
+              "keyword": "flaw",
+              "strength": 7,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-txvMRnyVVMgG2KW4",
+            "text": "A single, simple fracture",
+            "start": 126.98,
+            "end": 129.04,
+            "duration": 2.059999999999988,
+            "absoluteStart": 126.98,
+            "absoluteEnd": 129.04,
+            "words": [
+              {
+                "id": "P3sP5iZqEYqJJB0w",
+                "text": "A",
+                "absoluteStart": 126.98,
+                "absoluteEnd": 127.26,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.8129883
+              },
+              {
+                "id": "eYZOKhSSFg8vlT0W",
+                "text": "single,",
+                "absoluteStart": 127.26,
+                "absoluteEnd": 127.84,
+                "start": 0.28000000000000114,
+                "end": 0.8599999999999994,
+                "duration": 0.5799999999999983,
+                "confidence": 0.9926758
+              },
+              {
+                "id": "UkNlsv3juFSGyIsF",
+                "text": "simple",
+                "absoluteStart": 127.84,
+                "absoluteEnd": 128.16,
+                "start": 0.8599999999999994,
+                "end": 1.1799999999999926,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "x7YaMg8knaonZVjM",
+                "text": "fracture",
+                "absoluteStart": 128.16,
+                "absoluteEnd": 129.04,
+                "start": 1.1799999999999926,
+                "end": 2.059999999999988,
+                "duration": 0.8799999999999955,
+                "confidence": 0.99886066
+              }
+            ],
+            "metadata": {
+              "keyword": "fracture",
+              "strength": 9,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-cyW1zgYZw90itIy3",
+            "text": "in their fundamental law",
+            "start": 129.04,
+            "end": 133.36,
+            "duration": 4.320000000000022,
+            "absoluteStart": 129.04,
+            "absoluteEnd": 133.36,
+            "words": [
+              {
+                "id": "3pnnpdIyqgRcTr31",
+                "text": "in",
+                "absoluteStart": 129.04,
+                "absoluteEnd": 129.36,
+                "start": 0,
+                "end": 0.3200000000000216,
+                "duration": 0.3200000000000216,
+                "confidence": 0.80371094
+              },
+              {
+                "id": "8dMIlRNKlHUpzMBG",
+                "text": "their",
+                "absoluteStart": 129.36,
+                "absoluteEnd": 129.76,
+                "start": 0.3200000000000216,
+                "end": 0.7199999999999989,
+                "duration": 0.39999999999997726,
+                "confidence": 0.68896484
+              },
+              {
+                "id": "RHv1RCO2ml02gF25",
+                "text": "fundamental",
+                "absoluteStart": 129.76,
+                "absoluteEnd": 131.04,
+                "start": 0.7199999999999989,
+                "end": 2,
+                "duration": 1.2800000000000011,
+                "confidence": 0.9717773
+              },
+              {
+                "id": "oy9l0A05FpmnmvKT",
+                "text": "law",
+                "absoluteStart": 131.04,
+                "absoluteEnd": 133.36,
+                "start": 2,
+                "end": 4.320000000000022,
+                "duration": 2.3200000000000216,
+                "confidence": 0.98095703
+              }
+            ],
+            "metadata": {
+              "keyword": "law",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": "sentence-xyxguF1wEyUFeg9g",
+            "text": "And once you see the fracture,",
+            "start": 133.36,
+            "end": 134.96,
+            "duration": 1.5999999999999943,
+            "absoluteStart": 133.36,
+            "absoluteEnd": 134.96,
+            "words": [
+              {
+                "id": "BLda6MvccSvphEGL",
+                "text": "And",
+                "absoluteStart": 133.36,
+                "absoluteEnd": 133.68,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.8598633
+              },
+              {
+                "id": "YdMixDoaSpor42tS",
+                "text": "once",
+                "absoluteStart": 133.68,
+                "absoluteEnd": 133.92,
+                "start": 0.3199999999999932,
+                "end": 0.5599999999999739,
+                "duration": 0.23999999999998067,
+                "confidence": 0.9819336
+              },
+              {
+                "id": "t0xPyneqRFMboJlt",
+                "text": "you",
+                "absoluteStart": 133.92,
+                "absoluteEnd": 134.12,
+                "start": 0.5599999999999739,
+                "end": 0.7599999999999909,
+                "duration": 0.20000000000001705,
+                "confidence": 0.9975586
+              },
+              {
+                "id": "0rexdMw2bdmaZ7nc",
+                "text": "see",
+                "absoluteStart": 134.12,
+                "absoluteEnd": 134.28,
+                "start": 0.7599999999999909,
+                "end": 0.9199999999999875,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "sE09MPlYji913lxI",
+                "text": "the",
+                "absoluteStart": 134.28,
+                "absoluteEnd": 134.48,
+                "start": 0.9199999999999875,
+                "end": 1.1199999999999761,
+                "duration": 0.19999999999998863,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "8zCkGtaHGH9kZVNo",
+                "text": "fracture,",
+                "absoluteStart": 134.48,
+                "absoluteEnd": 134.96,
+                "start": 1.1199999999999761,
+                "end": 1.5999999999999943,
+                "duration": 0.4800000000000182,
+                "confidence": 0.99593097
+              }
+            ],
+            "metadata": {
+              "keyword": "fracture",
+              "strength": 8,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-argumA0qLTnCMabp",
+            "text": "you can finally understand",
+            "start": 134.96,
+            "end": 136.64,
+            "duration": 1.6799999999999784,
+            "absoluteStart": 134.96,
+            "absoluteEnd": 136.64,
+            "words": [
+              {
+                "id": "BdNqcmcUIaRL3gaL",
+                "text": "you",
+                "absoluteStart": 134.96,
+                "absoluteEnd": 135.16,
+                "start": 0,
+                "end": 0.19999999999998863,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "ADEk8AnLlSiONX2w",
+                "text": "can",
+                "absoluteStart": 135.16,
+                "absoluteEnd": 135.32,
+                "start": 0.19999999999998863,
+                "end": 0.3599999999999852,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9980469
+              },
+              {
+                "id": "wyRkaV0kvGGte9jC",
+                "text": "finally",
+                "absoluteStart": 135.32,
+                "absoluteEnd": 135.84,
+                "start": 0.3599999999999852,
+                "end": 0.8799999999999955,
+                "duration": 0.5200000000000102,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "D9te4l1gzRmChAL2",
+                "text": "understand",
+                "absoluteStart": 135.84,
+                "absoluteEnd": 136.64,
+                "start": 0.8799999999999955,
+                "end": 1.6799999999999784,
+                "duration": 0.799999999999983,
+                "confidence": 0.99902344
+              }
+            ],
+            "metadata": {
+              "keyword": "understand",
+              "strength": 8,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-OqKJKruoEtq2MOdj",
+            "text": "The shape of the solution",
+            "start": 136.64,
+            "end": 138.04,
+            "duration": 1.4000000000000057,
+            "absoluteStart": 136.64,
+            "absoluteEnd": 138.04,
+            "words": [
+              {
+                "id": "MNPcgagxXmkDxLWJ",
+                "text": "The",
+                "absoluteStart": 136.64,
+                "absoluteEnd": 136.92,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "klAG5JoTqg5v6c6B",
+                "text": "shape",
+                "absoluteStart": 136.92,
+                "absoluteEnd": 137.2,
+                "start": 0.28000000000000114,
+                "end": 0.5600000000000023,
+                "duration": 0.28000000000000114,
+                "confidence": 0.998291
+              },
+              {
+                "id": "PDfDEiQKA6taT0FD",
+                "text": "of",
+                "absoluteStart": 137.2,
+                "absoluteEnd": 137.36,
+                "start": 0.5600000000000023,
+                "end": 0.7200000000000273,
+                "duration": 0.160000000000025,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "6m67tXhaENEyX6lb",
+                "text": "the",
+                "absoluteStart": 137.36,
+                "absoluteEnd": 137.52,
+                "start": 0.7200000000000273,
+                "end": 0.8800000000000239,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "fUniY4awgooZAwJV",
+                "text": "solution",
+                "absoluteStart": 137.52,
+                "absoluteEnd": 138.04,
+                "start": 0.8800000000000239,
+                "end": 1.4000000000000057,
+                "duration": 0.5199999999999818,
+                "confidence": 0.9995117
+              }
+            ],
+            "metadata": {
+              "keyword": "solution",
+              "strength": 7,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-FafNITc6hIArjjOP",
+            "text": "that you're holding in your hand",
+            "start": 138.04,
+            "end": 139.84,
+            "duration": 1.8000000000000114,
+            "absoluteStart": 138.04,
+            "absoluteEnd": 139.84,
+            "words": [
+              {
+                "id": "mXAuWZgI9pWYYr5s",
+                "text": "that",
+                "absoluteStart": 138.04,
+                "absoluteEnd": 138.32,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "a2Gho5teipfJmvLx",
+                "text": "you're",
+                "absoluteStart": 138.32,
+                "absoluteEnd": 138.6,
+                "start": 0.28000000000000114,
+                "end": 0.5600000000000023,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99593097
+              },
+              {
+                "id": "8MdH93sM8b7Rni1z",
+                "text": "holding",
+                "absoluteStart": 138.6,
+                "absoluteEnd": 138.96,
+                "start": 0.5600000000000023,
+                "end": 0.9200000000000159,
+                "duration": 0.36000000000001364,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "9VGxV7QhXOSwan5M",
+                "text": "in",
+                "absoluteStart": 138.96,
+                "absoluteEnd": 139.16,
+                "start": 0.9200000000000159,
+                "end": 1.1200000000000045,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "zQapThRFCe0cIWw6",
+                "text": "your",
+                "absoluteStart": 139.16,
+                "absoluteEnd": 139.36,
+                "start": 1.1200000000000045,
+                "end": 1.3200000000000216,
+                "duration": 0.20000000000001705,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "WpylNaNlt0FfJ6lQ",
+                "text": "hand",
+                "absoluteStart": 139.36,
+                "absoluteEnd": 139.84,
+                "start": 1.3200000000000216,
+                "end": 1.8000000000000114,
+                "duration": 0.47999999999998977,
+                "confidence": 0.99853516
+              }
+            ],
+            "metadata": {
+              "keyword": "holding",
+              "strength": 6,
+              "keywordFeel": "calm",
+              "confidence": 0.75
+            }
+          },
+          {
+            "id": "sentence-mDkw0X9spb8Lw2Iu",
+            "text": "It isn't magic,",
+            "start": 139.84,
+            "end": 140.96,
+            "duration": 1.1200000000000045,
+            "absoluteStart": 139.84,
+            "absoluteEnd": 140.96,
+            "words": [
+              {
+                "id": "FIiJjPEbDvwuy5B2",
+                "text": "It",
+                "absoluteStart": 139.84,
+                "absoluteEnd": 140.16,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9658203
+              },
+              {
+                "id": "17PMrcxkgJDS9zNy",
+                "text": "isn't",
+                "absoluteStart": 140.16,
+                "absoluteEnd": 140.56,
+                "start": 0.3199999999999932,
+                "end": 0.7199999999999989,
+                "duration": 0.4000000000000057,
+                "confidence": 0.98791504
+              },
+              {
+                "id": "a4BIQtFctCLcXHSa",
+                "text": "magic,",
+                "absoluteStart": 140.56,
+                "absoluteEnd": 140.96,
+                "start": 0.7199999999999989,
+                "end": 1.1200000000000045,
+                "duration": 0.4000000000000057,
+                "confidence": 0.998291
+              }
+            ],
+            "metadata": {
+              "keyword": "magic",
+              "strength": 7,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-icnKibZZKsGnnFln",
+            "text": "it's a focus,",
+            "start": 140.96,
+            "end": 141.68,
+            "duration": 0.7199999999999989,
+            "absoluteStart": 140.96,
+            "absoluteEnd": 141.68,
+            "words": [
+              {
+                "id": "AwokI6outRg17uKQ",
+                "text": "it's",
+                "absoluteStart": 140.96,
+                "absoluteEnd": 141.24,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.991862
+              },
+              {
+                "id": "2XPFFc2SX9FCUOd3",
+                "text": "a",
+                "absoluteStart": 141.24,
+                "absoluteEnd": 141.4,
+                "start": 0.28000000000000114,
+                "end": 0.4399999999999977,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99121094
+              },
+              {
+                "id": "HxbDBIJta317ozZK",
+                "text": "focus,",
+                "absoluteStart": 141.4,
+                "absoluteEnd": 141.68,
+                "start": 0.4399999999999977,
+                "end": 0.7199999999999989,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9980469
+              }
+            ],
+            "metadata": {
+              "keyword": "focus",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": "sentence-RDgdHD4zGjZSm5Mr",
+            "text": "it's a fire",
+            "start": 141.68,
+            "end": 142.48,
+            "duration": 0.799999999999983,
+            "absoluteStart": 141.68,
+            "absoluteEnd": 142.48,
+            "words": [
+              {
+                "id": "w2xbMeAVphlFtIRq",
+                "text": "it's",
+                "absoluteStart": 141.68,
+                "absoluteEnd": 142.04,
+                "start": 0,
+                "end": 0.3599999999999852,
+                "duration": 0.3599999999999852,
+                "confidence": 0.9944661
+              },
+              {
+                "id": "B02w7hZsrmlySQN1",
+                "text": "a",
+                "absoluteStart": 142.04,
+                "absoluteEnd": 142.2,
+                "start": 0.3599999999999852,
+                "end": 0.5199999999999818,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9941406
+              },
+              {
+                "id": "x6pjxEQiDARUTpRi",
+                "text": "fire",
+                "absoluteStart": 142.2,
+                "absoluteEnd": 142.48,
+                "start": 0.5199999999999818,
+                "end": 0.799999999999983,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99658203
+              }
+            ],
+            "metadata": {
+              "keyword": "fire",
+              "strength": 9,
+              "keywordFeel": "intense",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-g6u5vCv0L7reJLbI",
+            "text": "in the brain",
+            "start": 142.48,
+            "end": 143.16,
+            "duration": 0.6800000000000068,
+            "absoluteStart": 142.48,
+            "absoluteEnd": 143.16,
+            "words": [
+              {
+                "id": "1Mem2ju7X68BCH7n",
+                "text": "in",
+                "absoluteStart": 142.48,
+                "absoluteEnd": 142.76,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9814453
+              },
+              {
+                "id": "jqDqMTzz8xPcNQmI",
+                "text": "the",
+                "absoluteStart": 142.76,
+                "absoluteEnd": 142.92,
+                "start": 0.28000000000000114,
+                "end": 0.4399999999999977,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "BX6PWJ1Z1ZIcJiA2",
+                "text": "brain",
+                "absoluteStart": 142.92,
+                "absoluteEnd": 143.16,
+                "start": 0.4399999999999977,
+                "end": 0.6800000000000068,
+                "duration": 0.2400000000000091,
+                "confidence": 0.99243164
+              }
+            ],
+            "metadata": {
+              "keyword": "brain",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-AT6JpN51lW9nuwoc",
+            "text": "That sees",
+            "start": 143.16,
+            "end": 143.639,
+            "duration": 0.4790000000000134,
+            "absoluteStart": 143.16,
+            "absoluteEnd": 143.639,
+            "words": [
+              {
+                "id": "4MyYXFKCNvkXL3TP",
+                "text": "That",
+                "absoluteStart": 143.16,
+                "absoluteEnd": 143.32,
+                "start": 0,
+                "end": 0.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.87841797
+              },
+              {
+                "id": "8W9SygBEsAd6Q7bI",
+                "text": "sees",
+                "absoluteStart": 143.32,
+                "absoluteEnd": 143.639,
+                "start": 0.1599999999999966,
+                "end": 0.4790000000000134,
+                "duration": 0.3190000000000168,
+                "confidence": 0.98657227
+              }
+            ],
+            "metadata": {
+              "keyword": "sees",
+              "strength": 3,
+              "keywordFeel": "calm",
+              "confidence": 0.6
+            }
+          },
+          {
+            "id": "sentence-f7MqEcTXdBHYQwFE",
+            "text": "the empty space",
+            "start": 143.639,
+            "end": 144.36,
+            "duration": 0.7210000000000036,
+            "absoluteStart": 143.639,
+            "absoluteEnd": 144.36,
+            "words": [
+              {
+                "id": "Ig6okENmLrPeBkrV",
+                "text": "the",
+                "absoluteStart": 143.639,
+                "absoluteEnd": 143.799,
+                "start": 0,
+                "end": 0.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "YzXieB6ZjqW3kEOA",
+                "text": "empty",
+                "absoluteStart": 143.799,
+                "absoluteEnd": 144.12,
+                "start": 0.1599999999999966,
+                "end": 0.48099999999999454,
+                "duration": 0.32099999999999795,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "ZqyDePSjXT8kD36O",
+                "text": "space",
+                "absoluteStart": 144.12,
+                "absoluteEnd": 144.36,
+                "start": 0.48099999999999454,
+                "end": 0.7210000000000036,
+                "duration": 0.2400000000000091,
+                "confidence": 1
+              }
+            ],
+            "metadata": {
+              "keyword": "empty",
+              "strength": 7,
+              "keywordFeel": "melancholic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-jo1LdldlDanVBhrK",
+            "text": "where all the",
+            "start": 144.36,
+            "end": 144.92,
+            "duration": 0.5599999999999739,
+            "absoluteStart": 144.36,
+            "absoluteEnd": 144.92,
+            "words": [
+              {
+                "id": "W7q3aF3xbU7JnqgE",
+                "text": "where",
+                "absoluteStart": 144.36,
+                "absoluteEnd": 144.6,
+                "start": 0,
+                "end": 0.23999999999998067,
+                "duration": 0.23999999999998067,
+                "confidence": 0.9975586
+              },
+              {
+                "id": "eql358ABU81U5Guy",
+                "text": "all",
+                "absoluteStart": 144.6,
+                "absoluteEnd": 144.76,
+                "start": 0.23999999999998067,
+                "end": 0.39999999999997726,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "SPjcR6LVOOqxOTXf",
+                "text": "the",
+                "absoluteStart": 144.76,
+                "absoluteEnd": 144.92,
+                "start": 0.39999999999997726,
+                "end": 0.5599999999999739,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9995117
+              }
+            ],
+            "metadata": {
+              "keyword": "where",
+              "strength": 1,
+              "keywordFeel": "mysterious",
+              "confidence": 0.1
+            }
+          },
+          {
+            "id": "sentence-xHdHIETEktd09DBV",
+            "text": "pressure",
+            "start": 144.92,
+            "end": 145.36,
+            "duration": 0.44000000000002615,
+            "absoluteStart": 144.92,
+            "absoluteEnd": 145.36,
+            "words": [
+              {
+                "id": "BnDXNu7u4QiU0cnd",
+                "text": "pressure",
+                "absoluteStart": 144.92,
+                "absoluteEnd": 145.36,
+                "start": 0,
+                "end": 0.44000000000002615,
+                "duration": 0.44000000000002615,
+                "confidence": 0.99975586
+              }
+            ],
+            "metadata": {
+              "keyword": "pressure",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-UjItR2UpQZpKxm8r",
+            "text": "and the strain",
+            "start": 145.36,
+            "end": 146.12,
+            "duration": 0.7599999999999909,
+            "absoluteStart": 145.36,
+            "absoluteEnd": 146.12,
+            "words": [
+              {
+                "id": "qa5gk9uFPhr96O5l",
+                "text": "and",
+                "absoluteStart": 145.36,
+                "absoluteEnd": 145.56,
+                "start": 0,
+                "end": 0.19999999999998863,
+                "duration": 0.19999999999998863,
+                "confidence": 0.9794922
+              },
+              {
+                "id": "gfoI1uxHPURwaOJp",
+                "text": "the",
+                "absoluteStart": 145.56,
+                "absoluteEnd": 145.72,
+                "start": 0.19999999999998863,
+                "end": 0.3599999999999852,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "FoxaGVjoGBRRT1y7",
+                "text": "strain",
+                "absoluteStart": 145.72,
+                "absoluteEnd": 146.12,
+                "start": 0.3599999999999852,
+                "end": 0.7599999999999909,
+                "duration": 0.4000000000000057,
+                "confidence": 0.7475586
+              }
+            ],
+            "metadata": {
+              "keyword": "strain",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-mG4Uhqb1ntRhFWjV",
+            "text": "can finally...",
+            "start": 146.12,
+            "end": 148.4,
+            "duration": 2.280000000000001,
+            "absoluteStart": 146.12,
+            "absoluteEnd": 148.4,
+            "words": [
+              {
+                "id": "pjo6WIdQcf8WkJ1K",
+                "text": "can",
+                "absoluteStart": 146.12,
+                "absoluteEnd": 146.44,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.95654297
+              },
+              {
+                "id": "0jcAlqKsPhkAL3eS",
+                "text": "finally...",
+                "absoluteStart": 146.44,
+                "absoluteEnd": 148.4,
+                "start": 0.3199999999999932,
+                "end": 2.280000000000001,
+                "duration": 1.960000000000008,
+                "confidence": 0.9042969
+              }
+            ],
+            "metadata": {
+              "keyword": "finally",
+              "strength": 8,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-vx0Q1iOYgkmzUFWU",
+            "text": "Fall away into the static!",
+            "start": 148.4,
+            "end": 150.97191406250002,
+            "duration": 2.5719140625000136,
+            "absoluteStart": 148.4,
+            "absoluteEnd": 150.97191406250002,
+            "words": [
+              {
+                "id": "TSDcfndkxetmAVbE",
+                "text": "Fall",
+                "absoluteStart": 148.4,
+                "absoluteEnd": 148.76,
+                "start": 0,
+                "end": 0.3599999999999852,
+                "duration": 0.3599999999999852,
+                "confidence": 0.88720703
+              },
+              {
+                "id": "sUA3IZGc4xe4mMjo",
+                "text": "away",
+                "absoluteStart": 148.76,
+                "absoluteEnd": 149.12,
+                "start": 0.3599999999999852,
+                "end": 0.7199999999999989,
+                "duration": 0.36000000000001364,
+                "confidence": 0.8676758
+              },
+              {
+                "id": "ucbkdOFzTwQTCIX7",
+                "text": "into",
+                "absoluteStart": 149.12,
+                "absoluteEnd": 149.48,
+                "start": 0.7199999999999989,
+                "end": 1.079999999999984,
+                "duration": 0.3599999999999852,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "pNsbbmM0iIkFLIp8",
+                "text": "the",
+                "absoluteStart": 149.48,
+                "absoluteEnd": 149.72,
+                "start": 1.079999999999984,
+                "end": 1.3199999999999932,
+                "duration": 0.2400000000000091,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "mItGmeWPEN8PQVcY",
+                "text": "static!",
+                "absoluteStart": 149.72,
+                "absoluteEnd": 150.97191406250002,
+                "start": 1.3199999999999932,
+                "end": 2.5719140625000136,
+                "duration": 1.2519140625000205,
+                "confidence": 0.97436523
+              }
+            ],
+            "metadata": {
+              "keyword": "static",
+              "strength": 9,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-AaxUWfQGDIjy6Xwx",
+            "text": "Yeah, the signal's coming clear and true!",
+            "start": 151.52,
+            "end": 154.8,
+            "duration": 3.280000000000001,
+            "absoluteStart": 151.52,
+            "absoluteEnd": 154.8,
+            "words": [
+              {
+                "id": "saoJG9apEa49hsaA",
+                "text": "Yeah,",
+                "absoluteStart": 151.52,
+                "absoluteEnd": 151.88,
+                "start": 0,
+                "end": 0.3599999999999852,
+                "duration": 0.3599999999999852,
+                "confidence": 0.9920247
+              },
+              {
+                "id": "hyC3eqW74YLPp8o8",
+                "text": "the",
+                "absoluteStart": 151.88,
+                "absoluteEnd": 152.08,
+                "start": 0.3599999999999852,
+                "end": 0.5600000000000023,
+                "duration": 0.20000000000001705,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "OxCEWZ9NlmwuR2cQ",
+                "text": "signal's",
+                "absoluteStart": 152.08,
+                "absoluteEnd": 152.52,
+                "start": 0.5600000000000023,
+                "end": 1,
+                "duration": 0.4399999999999977,
+                "confidence": 0.8066406
+              },
+              {
+                "id": "DTpEQBXX6mNkNNMZ",
+                "text": "coming",
+                "absoluteStart": 152.52,
+                "absoluteEnd": 152.88,
+                "start": 1,
+                "end": 1.3599999999999852,
+                "duration": 0.3599999999999852,
+                "confidence": 0.98535156
+              },
+              {
+                "id": "asVDL9FNXeO6wwT4",
+                "text": "clear",
+                "absoluteStart": 152.88,
+                "absoluteEnd": 153.24,
+                "start": 1.3599999999999852,
+                "end": 1.7199999999999989,
+                "duration": 0.36000000000001364,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "FSFylwk9MCvZCofs",
+                "text": "and",
+                "absoluteStart": 153.24,
+                "absoluteEnd": 153.52,
+                "start": 1.7199999999999989,
+                "end": 2,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "nZWFt97RjyU47XLJ",
+                "text": "true!",
+                "absoluteStart": 153.52,
+                "absoluteEnd": 154.8,
+                "start": 2,
+                "end": 3.280000000000001,
+                "duration": 1.2800000000000011,
+                "confidence": 0.88720703
+              }
+            ],
+            "metadata": {
+              "keyword": "true",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-6B3jqkKbDxU6wdMM",
+            "text": "It was always systematic!",
+            "start": 154.8,
+            "end": 158,
+            "duration": 3.1999999999999886,
+            "absoluteStart": 154.8,
+            "absoluteEnd": 158,
+            "words": [
+              {
+                "id": "0HvzvYgkb5WVBo51",
+                "text": "It",
+                "absoluteStart": 154.8,
+                "absoluteEnd": 155.12,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "tjIAptHrSfaQJroO",
+                "text": "was",
+                "absoluteStart": 155.12,
+                "absoluteEnd": 155.36,
+                "start": 0.3199999999999932,
+                "end": 0.5600000000000023,
+                "duration": 0.2400000000000091,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "8p7lV8DRhkLtDW19",
+                "text": "always",
+                "absoluteStart": 155.36,
+                "absoluteEnd": 155.68,
+                "start": 0.5600000000000023,
+                "end": 0.8799999999999955,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "LiDjNh7XsIUD26NW",
+                "text": "systematic!",
+                "absoluteStart": 155.68,
+                "absoluteEnd": 158,
+                "start": 0.8799999999999955,
+                "end": 3.1999999999999886,
+                "duration": 2.319999999999993,
+                "confidence": 0.9968262
+              }
+            ],
+            "metadata": {
+              "keyword": "systematic",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-HX02KZccvesFiqxR",
+            "text": "Something borrowed",
+            "start": 158,
+            "end": 159,
+            "duration": 1,
+            "absoluteStart": 158,
+            "absoluteEnd": 159,
+            "words": [
+              {
+                "id": "9SmGDvIhNbcOtEVq",
+                "text": "Something",
+                "absoluteStart": 158,
+                "absoluteEnd": 158.4,
+                "start": 0,
+                "end": 0.4000000000000057,
+                "duration": 0.4000000000000057,
+                "confidence": 0.9824219
+              },
+              {
+                "id": "0cRqSRU38c4goEie",
+                "text": "borrowed",
+                "absoluteStart": 158.4,
+                "absoluteEnd": 159,
+                "start": 0.4000000000000057,
+                "end": 1,
+                "duration": 0.5999999999999943,
+                "confidence": 0.84228516
+              }
+            ],
+            "metadata": {
+              "keyword": "borrowed",
+              "strength": 6,
+              "keywordFeel": "nostalgic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-2pNi7YdWXk0ZKgek",
+            "text": "becoming something new!",
+            "start": 159,
+            "end": 162.78,
+            "duration": 3.780000000000001,
+            "absoluteStart": 159,
+            "absoluteEnd": 162.78,
+            "words": [
+              {
+                "id": "dnwuqFVV7i3JwM94",
+                "text": "becoming",
+                "absoluteStart": 159,
+                "absoluteEnd": 159.44,
+                "start": 0,
+                "end": 0.4399999999999977,
+                "duration": 0.4399999999999977,
+                "confidence": 0.98339844
+              },
+              {
+                "id": "E3vn4AJ3fJpY7PUV",
+                "text": "something",
+                "absoluteStart": 159.44,
+                "absoluteEnd": 159.94,
+                "start": 0.4399999999999977,
+                "end": 0.9399999999999977,
+                "duration": 0.5,
+                "confidence": 0.9770508
+              },
+              {
+                "id": "IVn42OJOLxeynipn",
+                "text": "new!",
+                "absoluteStart": 159.94,
+                "absoluteEnd": 162.78,
+                "start": 0.9399999999999977,
+                "end": 3.780000000000001,
+                "duration": 2.8400000000000034,
+                "confidence": 0.99902344
+              }
+            ],
+            "metadata": {
+              "keyword": "new",
+              "strength": 8,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-yUQu7QWUUvxmujv0",
+            "text": "I can hold it now,",
+            "start": 162.78,
+            "end": 164.22,
+            "duration": 1.4399999999999977,
+            "absoluteStart": 162.78,
+            "absoluteEnd": 164.22,
+            "words": [
+              {
+                "id": "WKEGQgLv4tYmExxE",
+                "text": "I",
+                "absoluteStart": 162.78,
+                "absoluteEnd": 163.1,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "BmBjocdKRzNvsgUV",
+                "text": "can",
+                "absoluteStart": 163.1,
+                "absoluteEnd": 163.34,
+                "start": 0.3199999999999932,
+                "end": 0.5600000000000023,
+                "duration": 0.2400000000000091,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "JSEMVI2cAqouPKyI",
+                "text": "hold",
+                "absoluteStart": 163.34,
+                "absoluteEnd": 163.58,
+                "start": 0.5600000000000023,
+                "end": 0.8000000000000114,
+                "duration": 0.2400000000000091,
+                "confidence": 1
+              },
+              {
+                "id": "95pl74pxF0Qn4k8h",
+                "text": "it",
+                "absoluteStart": 163.58,
+                "absoluteEnd": 163.82,
+                "start": 0.8000000000000114,
+                "end": 1.039999999999992,
+                "duration": 0.23999999999998067,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "7qDVZi6QxwVEzp11",
+                "text": "now,",
+                "absoluteStart": 163.82,
+                "absoluteEnd": 164.22,
+                "start": 1.039999999999992,
+                "end": 1.4399999999999977,
+                "duration": 0.4000000000000057,
+                "confidence": 0.99902344
+              }
+            ],
+            "metadata": {
+              "keyword": "hold",
+              "strength": 7,
+              "keywordFeel": "peaceful",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": "sentence-38an6WoKt6UrBAAs",
+            "text": "the final piece",
+            "start": 164.22,
+            "end": 165.18,
+            "duration": 0.960000000000008,
+            "absoluteStart": 164.22,
+            "absoluteEnd": 165.18,
+            "words": [
+              {
+                "id": "pyOugo0cz9uazVFH",
+                "text": "the",
+                "absoluteStart": 164.22,
+                "absoluteEnd": 164.54,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "lJOQd3fcFRjLjNLJ",
+                "text": "final",
+                "absoluteStart": 164.54,
+                "absoluteEnd": 164.82,
+                "start": 0.3199999999999932,
+                "end": 0.5999999999999943,
+                "duration": 0.28000000000000114,
+                "confidence": 1
+              },
+              {
+                "id": "NKhxhtwhYcBPkHo2",
+                "text": "piece",
+                "absoluteStart": 164.82,
+                "absoluteEnd": 165.18,
+                "start": 0.5999999999999943,
+                "end": 0.960000000000008,
+                "duration": 0.36000000000001364,
+                "confidence": 0.98291016
+              }
+            ],
+            "metadata": {
+              "keyword": "final",
+              "strength": 7,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-r16ctoLMdGJhGS44",
+            "text": "for all the world",
+            "start": 165.18,
+            "end": 166.02,
+            "duration": 0.8400000000000034,
+            "absoluteStart": 165.18,
+            "absoluteEnd": 166.02,
+            "words": [
+              {
+                "id": "xqhOINnzCwQNpTMO",
+                "text": "for",
+                "absoluteStart": 165.18,
+                "absoluteEnd": 165.38,
+                "start": 0,
+                "end": 0.19999999999998863,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "IJgtSHiq5DWvjsQS",
+                "text": "all",
+                "absoluteStart": 165.38,
+                "absoluteEnd": 165.58,
+                "start": 0.19999999999998863,
+                "end": 0.4000000000000057,
+                "duration": 0.20000000000001705,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "xKbbqFVDUVbZKqL1",
+                "text": "the",
+                "absoluteStart": 165.58,
+                "absoluteEnd": 165.78,
+                "start": 0.4000000000000057,
+                "end": 0.5999999999999943,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "NXlDFRPNo6SD9P1K",
+                "text": "world",
+                "absoluteStart": 165.78,
+                "absoluteEnd": 166.02,
+                "start": 0.5999999999999943,
+                "end": 0.8400000000000034,
+                "duration": 0.2400000000000091,
+                "confidence": 1
+              }
+            ],
+            "metadata": {
+              "keyword": "world",
+              "strength": 6,
+              "keywordFeel": "dramatic",
+              "confidence": 0.88
+            }
+          },
+          {
+            "id": "sentence-STXHmODcwFHZV3wV",
+            "text": "to view!",
+            "start": 166.02,
+            "end": 170.54,
+            "duration": 4.519999999999982,
+            "absoluteStart": 166.02,
+            "absoluteEnd": 170.54,
+            "words": [
+              {
+                "id": "CLmvn9gWvGtULNpr",
+                "text": "to",
+                "absoluteStart": 166.02,
+                "absoluteEnd": 166.3,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9145508
+              },
+              {
+                "id": "TrpEWKgngHw42RSI",
+                "text": "view!",
+                "absoluteStart": 166.3,
+                "absoluteEnd": 170.54,
+                "start": 0.28000000000000114,
+                "end": 4.519999999999982,
+                "duration": 4.239999999999981,
+                "confidence": 0.9897461
+              }
+            ],
+            "metadata": {
+              "keyword": "view",
+              "strength": 7,
+              "keywordFeel": "energetic",
+              "confidence": 0.7
+            }
+          },
+          {
+            "id": "sentence-I2KKUg8CpkPyNxCZ",
+            "text": "And it all falls into place!",
+            "start": 170.54,
+            "end": 174.06,
+            "duration": 3.5200000000000102,
+            "absoluteStart": 170.54,
+            "absoluteEnd": 174.06,
+            "words": [
+              {
+                "id": "cJpFSJzJK568Lf57",
+                "text": "And",
+                "absoluteStart": 170.54,
+                "absoluteEnd": 170.9,
+                "start": 0,
+                "end": 0.36000000000001364,
+                "duration": 0.36000000000001364,
+                "confidence": 0.8989258
+              },
+              {
+                "id": "liPdbnQbhdcHr7Ma",
+                "text": "it",
+                "absoluteStart": 170.9,
+                "absoluteEnd": 171.22,
+                "start": 0.36000000000001364,
+                "end": 0.6800000000000068,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "2ZSsfhpvSJi6CMnZ",
+                "text": "all",
+                "absoluteStart": 171.22,
+                "absoluteEnd": 171.66,
+                "start": 0.6800000000000068,
+                "end": 1.1200000000000045,
+                "duration": 0.4399999999999977,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "FElGeJyvqXdSIs17",
+                "text": "falls",
+                "absoluteStart": 171.66,
+                "absoluteEnd": 172.26,
+                "start": 1.1200000000000045,
+                "end": 1.7199999999999989,
+                "duration": 0.5999999999999943,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "qmFQPJMqZfA2htwA",
+                "text": "into",
+                "absoluteStart": 172.26,
+                "absoluteEnd": 172.7,
+                "start": 1.7199999999999989,
+                "end": 2.1599999999999966,
+                "duration": 0.4399999999999977,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "GCP0DGo3QbVftjaa",
+                "text": "place!",
+                "absoluteStart": 172.7,
+                "absoluteEnd": 174.06,
+                "start": 2.1599999999999966,
+                "end": 3.5200000000000102,
+                "duration": 1.3600000000000136,
+                "confidence": 0.9692383
+              }
+            ],
+            "metadata": {
+              "keyword": "place",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-ZO7uXsylYom6Hyxk",
+            "text": "Like a star in outer space!",
+            "start": 174.06,
+            "end": 177.42,
+            "duration": 3.359999999999985,
+            "absoluteStart": 174.06,
+            "absoluteEnd": 177.42,
+            "words": [
+              {
+                "id": "ui18DnnAhqAHY4uU",
+                "text": "Like",
+                "absoluteStart": 174.06,
+                "absoluteEnd": 174.34,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9980469
+              },
+              {
+                "id": "WVMcxmyuluQvcm4L",
+                "text": "a",
+                "absoluteStart": 174.34,
+                "absoluteEnd": 174.54,
+                "start": 0.28000000000000114,
+                "end": 0.47999999999998977,
+                "duration": 0.19999999999998863,
+                "confidence": 0.98876953
+              },
+              {
+                "id": "lM4x7vx508vyYiL5",
+                "text": "star",
+                "absoluteStart": 174.54,
+                "absoluteEnd": 174.94,
+                "start": 0.47999999999998977,
+                "end": 0.8799999999999955,
+                "duration": 0.4000000000000057,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "Lx6mhBpzyEdsPw9J",
+                "text": "in",
+                "absoluteStart": 174.94,
+                "absoluteEnd": 175.419,
+                "start": 0.8799999999999955,
+                "end": 1.3590000000000089,
+                "duration": 0.4790000000000134,
+                "confidence": 0.98828125
+              },
+              {
+                "id": "QowTZ4GkgInMp2Vu",
+                "text": "outer",
+                "absoluteStart": 175.419,
+                "absoluteEnd": 175.94,
+                "start": 1.3590000000000089,
+                "end": 1.8799999999999955,
+                "duration": 0.5209999999999866,
+                "confidence": 0.99316406
+              },
+              {
+                "id": "cDEegNUFW45ghcpm",
+                "text": "space!",
+                "absoluteStart": 175.94,
+                "absoluteEnd": 177.42,
+                "start": 1.8799999999999955,
+                "end": 3.359999999999985,
+                "duration": 1.4799999999999898,
+                "confidence": 0.9980469
+              }
+            ],
+            "metadata": {
+              "keyword": "star",
+              "strength": 8,
+              "keywordFeel": "hopeful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-GJrBvN34HaPTkQxC",
+            "text": "The one thing that was missing,",
+            "start": 177.42,
+            "end": 180.62,
+            "duration": 3.200000000000017,
+            "absoluteStart": 177.42,
+            "absoluteEnd": 180.62,
+            "words": [
+              {
+                "id": "6b55XX2uoBETM7BH",
+                "text": "The",
+                "absoluteStart": 177.42,
+                "absoluteEnd": 177.78,
+                "start": 0,
+                "end": 0.36000000000001364,
+                "duration": 0.36000000000001364,
+                "confidence": 0.7402344
+              },
+              {
+                "id": "foNjs8MOsejhVVeS",
+                "text": "one",
+                "absoluteStart": 177.78,
+                "absoluteEnd": 178.14,
+                "start": 0.36000000000001364,
+                "end": 0.7199999999999989,
+                "duration": 0.3599999999999852,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "KrvgXVZAhbB6QqV4",
+                "text": "thing",
+                "absoluteStart": 178.14,
+                "absoluteEnd": 178.5,
+                "start": 0.7199999999999989,
+                "end": 1.0800000000000125,
+                "duration": 0.36000000000001364,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "EUziWhUQ2AFmaXXb",
+                "text": "that",
+                "absoluteStart": 178.5,
+                "absoluteEnd": 178.86,
+                "start": 1.0800000000000125,
+                "end": 1.4400000000000261,
+                "duration": 0.36000000000001364,
+                "confidence": 0.99072266
+              },
+              {
+                "id": "C8NymUOT8Ap1oJ1M",
+                "text": "was",
+                "absoluteStart": 178.86,
+                "absoluteEnd": 179.22,
+                "start": 1.4400000000000261,
+                "end": 1.8000000000000114,
+                "duration": 0.3599999999999852,
+                "confidence": 0.99365234
+              },
+              {
+                "id": "XroljbDZr4Qv4v7v",
+                "text": "missing,",
+                "absoluteStart": 179.22,
+                "absoluteEnd": 180.62,
+                "start": 1.8000000000000114,
+                "end": 3.200000000000017,
+                "duration": 1.4000000000000057,
+                "confidence": 0.97436523
+              }
+            ],
+            "metadata": {
+              "keyword": "missing",
+              "strength": 7,
+              "keywordFeel": "melancholic",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-rWudLMG7ELVBWB8m",
+            "text": "the beauty and the grace!",
+            "start": 180.62,
+            "end": 185.02,
+            "duration": 4.400000000000006,
+            "absoluteStart": 180.62,
+            "absoluteEnd": 185.02,
+            "words": [
+              {
+                "id": "d1HaWcsel3QvwYdH",
+                "text": "the",
+                "absoluteStart": 180.62,
+                "absoluteEnd": 180.98,
+                "start": 0,
+                "end": 0.3599999999999852,
+                "duration": 0.3599999999999852,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "ptbRB8MDb2EIwtKH",
+                "text": "beauty",
+                "absoluteStart": 180.98,
+                "absoluteEnd": 181.42,
+                "start": 0.3599999999999852,
+                "end": 0.799999999999983,
+                "duration": 0.4399999999999977,
+                "confidence": 0.82747394
+              },
+              {
+                "id": "WrplLXgjgoCPoTBF",
+                "text": "and",
+                "absoluteStart": 181.42,
+                "absoluteEnd": 182.06,
+                "start": 0.799999999999983,
+                "end": 1.4399999999999977,
+                "duration": 0.6400000000000148,
+                "confidence": 0.9926758
+              },
+              {
+                "id": "TRuIaQPfRFELDxXC",
+                "text": "the",
+                "absoluteStart": 182.06,
+                "absoluteEnd": 182.3,
+                "start": 1.4399999999999977,
+                "end": 1.6800000000000068,
+                "duration": 0.2400000000000091,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "F6c9gQprlcRX89W8",
+                "text": "grace!",
+                "absoluteStart": 182.3,
+                "absoluteEnd": 185.02,
+                "start": 1.6800000000000068,
+                "end": 4.400000000000006,
+                "duration": 2.719999999999999,
+                "confidence": 0.9760742
+              }
+            ],
+            "metadata": {
+              "keyword": "beauty",
+              "strength": 9,
+              "keywordFeel": "joyful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-d711Ht5n4dcpAxsJ",
+            "text": "It was the keystone",
+            "start": 185.02,
+            "end": 186.62,
+            "duration": 1.5999999999999943,
+            "absoluteStart": 185.02,
+            "absoluteEnd": 186.62,
+            "words": [
+              {
+                "id": "aqznH6GjMtImnHMO",
+                "text": "It",
+                "absoluteStart": 185.02,
+                "absoluteEnd": 185.3,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.86279297
+              },
+              {
+                "id": "LD6kfpuFLWSu7KLj",
+                "text": "was",
+                "absoluteStart": 185.3,
+                "absoluteEnd": 185.5,
+                "start": 0.28000000000000114,
+                "end": 0.47999999999998977,
+                "duration": 0.19999999999998863,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "M7ZNih4tfAx9TAls",
+                "text": "the",
+                "absoluteStart": 185.5,
+                "absoluteEnd": 185.74,
+                "start": 0.47999999999998977,
+                "end": 0.7199999999999989,
+                "duration": 0.2400000000000091,
+                "confidence": 0.9194336
+              },
+              {
+                "id": "8iq5H2g8bXS01f1U",
+                "text": "keystone",
+                "absoluteStart": 185.74,
+                "absoluteEnd": 186.62,
+                "start": 0.7199999999999989,
+                "end": 1.5999999999999943,
+                "duration": 0.8799999999999955,
+                "confidence": 0.861084
+              }
+            ],
+            "metadata": {
+              "keyword": "keystone",
+              "strength": 7,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-vqJDMsPusQLCPDxS",
+            "text": "the answer in the stone",
+            "start": 186.62,
+            "end": 188.62,
+            "duration": 2,
+            "absoluteStart": 186.62,
+            "absoluteEnd": 188.62,
+            "words": [
+              {
+                "id": "0xNenU5yrdzxmEIY",
+                "text": "the",
+                "absoluteStart": 186.62,
+                "absoluteEnd": 186.94,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "46Vdsl77xd1uzDFC",
+                "text": "answer",
+                "absoluteStart": 186.94,
+                "absoluteEnd": 187.38,
+                "start": 0.3199999999999932,
+                "end": 0.7599999999999909,
+                "duration": 0.4399999999999977,
+                "confidence": 0.9760742
+              },
+              {
+                "id": "wSUO1RjUKZeZA28p",
+                "text": "in",
+                "absoluteStart": 187.38,
+                "absoluteEnd": 187.54,
+                "start": 0.7599999999999909,
+                "end": 0.9199999999999875,
+                "duration": 0.1599999999999966,
+                "confidence": 0.98583984
+              },
+              {
+                "id": "pu3C0COXU4LDoCpK",
+                "text": "the",
+                "absoluteStart": 187.54,
+                "absoluteEnd": 187.7,
+                "start": 0.9199999999999875,
+                "end": 1.079999999999984,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9941406
+              },
+              {
+                "id": "azJpIuCycej3eFdD",
+                "text": "stone",
+                "absoluteStart": 187.7,
+                "absoluteEnd": 188.62,
+                "start": 1.079999999999984,
+                "end": 2,
+                "duration": 0.9200000000000159,
+                "confidence": 0.98046875
+              }
+            ],
+            "metadata": {
+              "keyword": "stone",
+              "strength": 8,
+              "keywordFeel": "mysterious",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-w6wEI7sC227c9qSD",
+            "text": "the one true note",
+            "start": 188.62,
+            "end": 189.98,
+            "duration": 1.3599999999999852,
+            "absoluteStart": 188.62,
+            "absoluteEnd": 189.98,
+            "words": [
+              {
+                "id": "LdpQY2XOjlkfn2Kr",
+                "text": "the",
+                "absoluteStart": 188.62,
+                "absoluteEnd": 188.94,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "6mM1vCBTqxlCHRyo",
+                "text": "one",
+                "absoluteStart": 188.94,
+                "absoluteEnd": 189.22,
+                "start": 0.3199999999999932,
+                "end": 0.5999999999999943,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "9seeygbGFmGpwpGb",
+                "text": "true",
+                "absoluteStart": 189.22,
+                "absoluteEnd": 189.66,
+                "start": 0.5999999999999943,
+                "end": 1.039999999999992,
+                "duration": 0.4399999999999977,
+                "confidence": 0.99560547
+              },
+              {
+                "id": "M2Z3kpqyFsaGb86q",
+                "text": "note",
+                "absoluteStart": 189.66,
+                "absoluteEnd": 189.98,
+                "start": 1.039999999999992,
+                "end": 1.3599999999999852,
+                "duration": 0.3199999999999932,
+                "confidence": 0.7434082
+              }
+            ],
+            "metadata": {
+              "keyword": "true",
+              "strength": 7,
+              "keywordFeel": "calm",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-JyCnnBiyGTVHD3Ro",
+            "text": "to build a brand new throne",
+            "start": 189.98,
+            "end": 192.04,
+            "duration": 2.0600000000000023,
+            "absoluteStart": 189.98,
+            "absoluteEnd": 192.04,
+            "words": [
+              {
+                "id": "psVhmJiSL1l4dVYq",
+                "text": "to",
+                "absoluteStart": 189.98,
+                "absoluteEnd": 190.14,
+                "start": 0,
+                "end": 0.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.9316406
+              },
+              {
+                "id": "R4AB1nIqPnFQ6sa6",
+                "text": "build",
+                "absoluteStart": 190.14,
+                "absoluteEnd": 190.38,
+                "start": 0.1599999999999966,
+                "end": 0.4000000000000057,
+                "duration": 0.2400000000000091,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "csruh5ITRrsN7p5k",
+                "text": "a",
+                "absoluteStart": 190.38,
+                "absoluteEnd": 190.58,
+                "start": 0.4000000000000057,
+                "end": 0.6000000000000227,
+                "duration": 0.20000000000001705,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "0shO4NdsUd2HM4dT",
+                "text": "brand",
+                "absoluteStart": 190.58,
+                "absoluteEnd": 190.82,
+                "start": 0.6000000000000227,
+                "end": 0.8400000000000034,
+                "duration": 0.23999999999998067,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "ouuyNLqrpMoyZ24Q",
+                "text": "new",
+                "absoluteStart": 190.82,
+                "absoluteEnd": 191.14,
+                "start": 0.8400000000000034,
+                "end": 1.1599999999999966,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "BLl9Y3QLY7EGCIx4",
+                "text": "throne",
+                "absoluteStart": 191.14,
+                "absoluteEnd": 192.04,
+                "start": 1.1599999999999966,
+                "end": 2.0600000000000023,
+                "duration": 0.9000000000000057,
+                "confidence": 0.7553711
+              }
+            ],
+            "metadata": {
+              "keyword": "throne",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-Ph5ZNt3kY2W2TSPK",
+            "text": "the whole world clicks",
+            "start": 192.04,
+            "end": 193.36,
+            "duration": 1.3200000000000216,
+            "absoluteStart": 192.04,
+            "absoluteEnd": 193.36,
+            "words": [
+              {
+                "id": "D0WgZHqJXopNBu5z",
+                "text": "the",
+                "absoluteStart": 192.04,
+                "absoluteEnd": 192.2,
+                "start": 0,
+                "end": 0.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.98876953
+              },
+              {
+                "id": "WTFOZ5y6F6SoaWu9",
+                "text": "whole",
+                "absoluteStart": 192.2,
+                "absoluteEnd": 192.52,
+                "start": 0.1599999999999966,
+                "end": 0.4800000000000182,
+                "duration": 0.3200000000000216,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "RBEjp4qi2FoARf5g",
+                "text": "world",
+                "absoluteStart": 192.52,
+                "absoluteEnd": 192.84,
+                "start": 0.4800000000000182,
+                "end": 0.8000000000000114,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "vB8F9p0ZaDhRhRcz",
+                "text": "clicks",
+                "absoluteStart": 192.84,
+                "absoluteEnd": 193.36,
+                "start": 0.8000000000000114,
+                "end": 1.3200000000000216,
+                "duration": 0.5200000000000102,
+                "confidence": 0.9863281
+              }
+            ],
+            "metadata": {
+              "keyword": "clicks",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-wT5Mb2LUjn4whW4J",
+            "text": "and the tumblers finally turn",
+            "start": 193.36,
+            "end": 198.28,
+            "duration": 4.9199999999999875,
+            "absoluteStart": 193.36,
+            "absoluteEnd": 198.28,
+            "words": [
+              {
+                "id": "UkhVeh6Dxrw6STTI",
+                "text": "and",
+                "absoluteStart": 193.36,
+                "absoluteEnd": 193.52,
+                "start": 0,
+                "end": 0.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "ziYHTREma2QsDVbp",
+                "text": "the",
+                "absoluteStart": 193.52,
+                "absoluteEnd": 193.72,
+                "start": 0.1599999999999966,
+                "end": 0.3599999999999852,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "OkKNXaZuDqyxCA26",
+                "text": "tumblers",
+                "absoluteStart": 193.72,
+                "absoluteEnd": 194.6,
+                "start": 0.3599999999999852,
+                "end": 1.2399999999999807,
+                "duration": 0.8799999999999955,
+                "confidence": 0.86608887
+              },
+              {
+                "id": "bncBnW1oiJ6Axhl6",
+                "text": "finally",
+                "absoluteStart": 194.6,
+                "absoluteEnd": 195.12,
+                "start": 1.2399999999999807,
+                "end": 1.759999999999991,
+                "duration": 0.5200000000000102,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "wjCoMDIQ8tnqesIW",
+                "text": "turn",
+                "absoluteStart": 195.12,
+                "absoluteEnd": 198.28,
+                "start": 1.759999999999991,
+                "end": 4.9199999999999875,
+                "duration": 3.1599999999999966,
+                "confidence": 0.99853516
+              }
+            ],
+            "metadata": {
+              "keyword": "finally",
+              "strength": 8,
+              "keywordFeel": "triumphant",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-DrgFj3xAWxbMNtG1",
+            "text": "the final vital lesson",
+            "start": 198.28,
+            "end": 199.76,
+            "duration": 1.4799999999999898,
+            "absoluteStart": 198.28,
+            "absoluteEnd": 199.76,
+            "words": [
+              {
+                "id": "otUE3lT92i6Y8lbj",
+                "text": "the",
+                "absoluteStart": 198.28,
+                "absoluteEnd": 198.56,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.98291016
+              },
+              {
+                "id": "IED9Eb1ISPQwcaYx",
+                "text": "final",
+                "absoluteStart": 198.56,
+                "absoluteEnd": 198.84,
+                "start": 0.28000000000000114,
+                "end": 0.5600000000000023,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "f4UvJQg2fV7LEIxa",
+                "text": "vital",
+                "absoluteStart": 198.84,
+                "absoluteEnd": 199.4,
+                "start": 0.5600000000000023,
+                "end": 1.1200000000000045,
+                "duration": 0.5600000000000023,
+                "confidence": 0.99658203
+              },
+              {
+                "id": "8xCxUHINbjM8DLBg",
+                "text": "lesson",
+                "absoluteStart": 199.4,
+                "absoluteEnd": 199.76,
+                "start": 1.1200000000000045,
+                "end": 1.4799999999999898,
+                "duration": 0.3599999999999852,
+                "confidence": 0.9995117
+              }
+            ],
+            "metadata": {
+              "keyword": "final",
+              "strength": 8,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-YqM3EU0mUqDn2IdM",
+            "text": "that they could never learn",
+            "start": 199.76,
+            "end": 203.96171875000002,
+            "duration": 4.201718750000026,
+            "absoluteStart": 199.76,
+            "absoluteEnd": 203.96171875000002,
+            "words": [
+              {
+                "id": "Q5e9uKZemSggifVf",
+                "text": "that",
+                "absoluteStart": 199.76,
+                "absoluteEnd": 199.96,
+                "start": 0,
+                "end": 0.20000000000001705,
+                "duration": 0.20000000000001705,
+                "confidence": 0.9941406
+              },
+              {
+                "id": "Hm7UhbOh3ECRfTCX",
+                "text": "they",
+                "absoluteStart": 199.96,
+                "absoluteEnd": 200.28,
+                "start": 0.20000000000001705,
+                "end": 0.5200000000000102,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "AerIHXbVnsZd2AEq",
+                "text": "could",
+                "absoluteStart": 200.28,
+                "absoluteEnd": 200.68,
+                "start": 0.5200000000000102,
+                "end": 0.9200000000000159,
+                "duration": 0.4000000000000057,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "ncykyYXmZLWHXBcP",
+                "text": "never",
+                "absoluteStart": 200.68,
+                "absoluteEnd": 201.48,
+                "start": 0.9200000000000159,
+                "end": 1.7199999999999989,
+                "duration": 0.799999999999983,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "Qc87AmMofKbTHre3",
+                "text": "learn",
+                "absoluteStart": 201.48,
+                "absoluteEnd": 203.96171875000002,
+                "start": 1.7199999999999989,
+                "end": 4.201718750000026,
+                "duration": 2.4817187500000273,
+                "confidence": 0.7607422
+              }
+            ],
+            "metadata": {
+              "keyword": "never",
+              "strength": 8,
+              "keywordFeel": "sorrowful",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-2htU07Ierdtyex55",
+            "text": "One piece changes everything",
+            "start": 214.44,
+            "end": 217.64,
+            "duration": 3.1999999999999886,
+            "absoluteStart": 214.44,
+            "absoluteEnd": 217.64,
+            "words": [
+              {
+                "id": "V2m1uXExFmu8kkbx",
+                "text": "One",
+                "absoluteStart": 214.44,
+                "absoluteEnd": 214.8,
+                "start": 0,
+                "end": 0.36000000000001364,
+                "duration": 0.36000000000001364,
+                "confidence": 0.98828125
+              },
+              {
+                "id": "edJBJP6fPzhKDdno",
+                "text": "piece",
+                "absoluteStart": 214.8,
+                "absoluteEnd": 215.32,
+                "start": 0.36000000000001364,
+                "end": 0.8799999999999955,
+                "duration": 0.5199999999999818,
+                "confidence": 0.8776042
+              },
+              {
+                "id": "sLpwnA8ekv349ccE",
+                "text": "changes",
+                "absoluteStart": 215.32,
+                "absoluteEnd": 216.04,
+                "start": 0.8799999999999955,
+                "end": 1.5999999999999943,
+                "duration": 0.7199999999999989,
+                "confidence": 0.9970703
+              },
+              {
+                "id": "R7e04HlGAlxdF7z4",
+                "text": "everything",
+                "absoluteStart": 216.04,
+                "absoluteEnd": 217.64,
+                "start": 1.5999999999999943,
+                "end": 3.1999999999999886,
+                "duration": 1.5999999999999943,
+                "confidence": 0.99316406
+              }
+            ],
+            "metadata": {
+              "keyword": "everything",
+              "strength": 9,
+              "keywordFeel": "dramatic",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-9w22PJQ8cvYTZiFV",
+            "text": "One truth changes the light",
+            "start": 217.64,
+            "end": 220.44,
+            "duration": 2.8000000000000114,
+            "absoluteStart": 217.64,
+            "absoluteEnd": 220.44,
+            "words": [
+              {
+                "id": "JlGe3TuMY1XfMREC",
+                "text": "One",
+                "absoluteStart": 217.64,
+                "absoluteEnd": 218,
+                "start": 0,
+                "end": 0.36000000000001364,
+                "duration": 0.36000000000001364,
+                "confidence": 0.99853516
+              },
+              {
+                "id": "EjLDU19fRgXX6gAH",
+                "text": "truth",
+                "absoluteStart": 218,
+                "absoluteEnd": 218.44,
+                "start": 0.36000000000001364,
+                "end": 0.8000000000000114,
+                "duration": 0.4399999999999977,
+                "confidence": 0.8211263
+              },
+              {
+                "id": "Y0fbK6oqI1OSbA8F",
+                "text": "changes",
+                "absoluteStart": 218.44,
+                "absoluteEnd": 218.96,
+                "start": 0.8000000000000114,
+                "end": 1.3200000000000216,
+                "duration": 0.5200000000000102,
+                "confidence": 0.9992676
+              },
+              {
+                "id": "JDEwvekOUN8fxVMl",
+                "text": "the",
+                "absoluteStart": 218.96,
+                "absoluteEnd": 219.16,
+                "start": 1.3200000000000216,
+                "end": 1.5200000000000102,
+                "duration": 0.19999999999998863,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "aqZHppc7M7e95pBM",
+                "text": "light",
+                "absoluteStart": 219.16,
+                "absoluteEnd": 220.44,
+                "start": 1.5200000000000102,
+                "end": 2.8000000000000114,
+                "duration": 1.2800000000000011,
+                "confidence": 0.6538086
+              }
+            ],
+            "metadata": {
+              "keyword": "light",
+              "strength": 8,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-BvaqOvvKO9YMeaRU",
+            "text": "One spark can change the darkness",
+            "start": 220.44,
+            "end": 223.46,
+            "duration": 3.0200000000000102,
+            "absoluteStart": 220.44,
+            "absoluteEnd": 223.46,
+            "words": [
+              {
+                "id": "FpoNZLKQtUdgmMO8",
+                "text": "One",
+                "absoluteStart": 220.44,
+                "absoluteEnd": 220.8,
+                "start": 0,
+                "end": 0.36000000000001364,
+                "duration": 0.36000000000001364,
+                "confidence": 0.9975586
+              },
+              {
+                "id": "VTn2k302ZuDxot9f",
+                "text": "spark",
+                "absoluteStart": 220.8,
+                "absoluteEnd": 221.32,
+                "start": 0.36000000000001364,
+                "end": 0.8799999999999955,
+                "duration": 0.5199999999999818,
+                "confidence": 0.98999023
+              },
+              {
+                "id": "Be0P6vqzbAbAK3XE",
+                "text": "can",
+                "absoluteStart": 221.32,
+                "absoluteEnd": 221.64,
+                "start": 0.8799999999999955,
+                "end": 1.1999999999999886,
+                "duration": 0.3199999999999932,
+                "confidence": 0.99316406
+              },
+              {
+                "id": "PfpVH8rP9yMArilo",
+                "text": "change",
+                "absoluteStart": 221.64,
+                "absoluteEnd": 221.96,
+                "start": 1.1999999999999886,
+                "end": 1.5200000000000102,
+                "duration": 0.3200000000000216,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "LIFiyIx0hqgJkxUw",
+                "text": "the",
+                "absoluteStart": 221.96,
+                "absoluteEnd": 222.36,
+                "start": 1.5200000000000102,
+                "end": 1.920000000000016,
+                "duration": 0.4000000000000057,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "JSRfRifWXq9IsIhJ",
+                "text": "darkness",
+                "absoluteStart": 222.36,
+                "absoluteEnd": 223.46,
+                "start": 1.920000000000016,
+                "end": 3.0200000000000102,
+                "duration": 1.0999999999999943,
+                "confidence": 0.99853516
+              }
+            ],
+            "metadata": {
+              "keyword": "spark",
+              "strength": 9,
+              "keywordFeel": "hopeful",
+              "confidence": 0.95
+            }
+          },
+          {
+            "id": "sentence-g6uP7nsKkkpY6LET",
+            "text": "in the corner of your eye",
+            "start": 223.46,
+            "end": 228.18,
+            "duration": 4.719999999999999,
+            "absoluteStart": 223.46,
+            "absoluteEnd": 228.18,
+            "words": [
+              {
+                "id": "n4jmIdJf2vel30T9",
+                "text": "in",
+                "absoluteStart": 223.46,
+                "absoluteEnd": 223.62,
+                "start": 0,
+                "end": 0.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.97265625
+              },
+              {
+                "id": "R17wBQeygTlFr3xA",
+                "text": "the",
+                "absoluteStart": 223.62,
+                "absoluteEnd": 223.9,
+                "start": 0.1599999999999966,
+                "end": 0.4399999999999977,
+                "duration": 0.28000000000000114,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "Z0K7qeABmbQd6reD",
+                "text": "corner",
+                "absoluteStart": 223.9,
+                "absoluteEnd": 224.5,
+                "start": 0.4399999999999977,
+                "end": 1.039999999999992,
+                "duration": 0.5999999999999943,
+                "confidence": 0.93310547
+              },
+              {
+                "id": "hdibaIyzywUXgYCa",
+                "text": "of",
+                "absoluteStart": 224.5,
+                "absoluteEnd": 225.06,
+                "start": 1.039999999999992,
+                "end": 1.5999999999999943,
+                "duration": 0.5600000000000023,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "vBFljAG7h6b56d7D",
+                "text": "your",
+                "absoluteStart": 225.06,
+                "absoluteEnd": 225.46,
+                "start": 1.5999999999999943,
+                "end": 2,
+                "duration": 0.4000000000000057,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "gCOY3TnGcRzT2IBH",
+                "text": "eye",
+                "absoluteStart": 225.46,
+                "absoluteEnd": 228.18,
+                "start": 2,
+                "end": 4.719999999999999,
+                "duration": 2.719999999999999,
+                "confidence": 0.8769531
+              }
+            ],
+            "metadata": {
+              "keyword": "eye",
+              "strength": 6,
+              "keywordFeel": "mysterious",
+              "confidence": 0.85
+            }
+          },
+          {
+            "id": "sentence-2TqrdssE1wVojt1v",
+            "text": "it was the keystone",
+            "start": 228.18,
+            "end": 230.98,
+            "duration": 2.799999999999983,
+            "absoluteStart": 228.18,
+            "absoluteEnd": 230.98,
+            "words": [
+              {
+                "id": "kEIVysKJYfX417eG",
+                "text": "it",
+                "absoluteStart": 228.18,
+                "absoluteEnd": 228.46,
+                "start": 0,
+                "end": 0.28000000000000114,
+                "duration": 0.28000000000000114,
+                "confidence": 0.9511719
+              },
+              {
+                "id": "6CQxFraKv6KpmQrG",
+                "text": "was",
+                "absoluteStart": 228.46,
+                "absoluteEnd": 228.66,
+                "start": 0.28000000000000114,
+                "end": 0.47999999999998977,
+                "duration": 0.19999999999998863,
+                "confidence": 0.6513672
+              },
+              {
+                "id": "nZm29kz6t5FkLrBf",
+                "text": "the",
+                "absoluteStart": 228.66,
+                "absoluteEnd": 228.9,
+                "start": 0.47999999999998977,
+                "end": 0.7199999999999989,
+                "duration": 0.2400000000000091,
+                "confidence": 0.81591797
+              },
+              {
+                "id": "l2uTNdXbR8ZWhgX4",
+                "text": "keystone",
+                "absoluteStart": 228.9,
+                "absoluteEnd": 230.98,
+                "start": 0.7199999999999989,
+                "end": 2.799999999999983,
+                "duration": 2.079999999999984,
+                "confidence": 0.5197754
+              }
+            ],
+            "metadata": {
+              "keyword": "keystone",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-OZKdeHWedUtBPPD6",
+            "text": "the answer in the stone",
+            "start": 230.98,
+            "end": 234.58,
+            "duration": 3.6000000000000227,
+            "absoluteStart": 230.98,
+            "absoluteEnd": 234.58,
+            "words": [
+              {
+                "id": "vAIz2ZcvIlBbxmc5",
+                "text": "the",
+                "absoluteStart": 230.98,
+                "absoluteEnd": 231.3,
+                "start": 0,
+                "end": 0.3200000000000216,
+                "duration": 0.3200000000000216,
+                "confidence": 0.9980469
+              },
+              {
+                "id": "0ALVOAYt5qiyVn1y",
+                "text": "answer",
+                "absoluteStart": 231.3,
+                "absoluteEnd": 231.78,
+                "start": 0.3200000000000216,
+                "end": 0.8000000000000114,
+                "duration": 0.47999999999998977,
+                "confidence": 0.8618164
+              },
+              {
+                "id": "dUz1z5EXcMamRU4m",
+                "text": "in",
+                "absoluteStart": 231.78,
+                "absoluteEnd": 231.98,
+                "start": 0.8000000000000114,
+                "end": 1,
+                "duration": 0.19999999999998863,
+                "confidence": 0.9951172
+              },
+              {
+                "id": "7UqiPuqRlq4qZlRo",
+                "text": "the",
+                "absoluteStart": 231.98,
+                "absoluteEnd": 232.14,
+                "start": 1,
+                "end": 1.1599999999999966,
+                "duration": 0.1599999999999966,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "AnZhbZ4ub9Ol4nTe",
+                "text": "stone",
+                "absoluteStart": 232.14,
+                "absoluteEnd": 234.58,
+                "start": 1.1599999999999966,
+                "end": 3.6000000000000227,
+                "duration": 2.440000000000026,
+                "confidence": 0.7663574
+              }
+            ],
+            "metadata": {
+              "keyword": "stone",
+              "strength": 7,
+              "keywordFeel": "mysterious",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-FJkHMnoxamk9gDr4",
+            "text": "it was the key stone",
+            "start": 234.58,
+            "end": 237.28089843749999,
+            "duration": 2.7008984374999727,
+            "absoluteStart": 234.58,
+            "absoluteEnd": 237.28089843749999,
+            "words": [
+              {
+                "id": "C6onSyjDnjDppztM",
+                "text": "it",
+                "absoluteStart": 234.58,
+                "absoluteEnd": 234.9,
+                "start": 0,
+                "end": 0.3199999999999932,
+                "duration": 0.3199999999999932,
+                "confidence": 0.9765625
+              },
+              {
+                "id": "YziBE8ysw6KoVO0f",
+                "text": "was",
+                "absoluteStart": 234.9,
+                "absoluteEnd": 235.14,
+                "start": 0.3199999999999932,
+                "end": 0.5599999999999739,
+                "duration": 0.23999999999998067,
+                "confidence": 0.9995117
+              },
+              {
+                "id": "NLvaEobwFd2zrw3e",
+                "text": "the",
+                "absoluteStart": 235.14,
+                "absoluteEnd": 235.34,
+                "start": 0.5599999999999739,
+                "end": 0.7599999999999909,
+                "duration": 0.20000000000001705,
+                "confidence": 0.64746094
+              },
+              {
+                "id": "iATNRPjpJ1oZHe0C",
+                "text": "key",
+                "absoluteStart": 235.34,
+                "absoluteEnd": 235.74,
+                "start": 0.7599999999999909,
+                "end": 1.1599999999999966,
+                "duration": 0.4000000000000057,
+                "confidence": 0.5546875
+              },
+              {
+                "id": "QjrMC8EeVB7Lc2rE",
+                "text": "stone",
+                "absoluteStart": 235.74,
+                "absoluteEnd": 237.28089843749999,
+                "start": 1.1599999999999966,
+                "end": 2.7008984374999727,
+                "duration": 1.5408984374999761,
+                "confidence": 0.9243164
+              }
+            ],
+            "metadata": {
+              "keyword": "keystone",
+              "strength": 8,
+              "keywordFeel": "intense",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": "sentence-Si4FrrTc03TXa8A2",
+            "text": "to build a brand new throne",
+            "start": 237.28089843749999,
+            "end": 242.2640234375,
+            "duration": 4.983125000000001,
+            "absoluteStart": 237.28089843749999,
+            "absoluteEnd": 242.2640234375,
+            "words": [
+              {
+                "id": "stRywaP0tcXrG25J",
+                "text": "to",
+                "absoluteStart": 237.28089843749999,
+                "absoluteEnd": 237.58441406250003,
+                "start": 0,
+                "end": 0.3035156250000455,
+                "duration": 0.3035156250000455,
+                "confidence": 0.99902344
+              },
+              {
+                "id": "RO9EWF7P1GyIhG8r",
+                "text": "build",
+                "absoluteStart": 237.58441406250003,
+                "absoluteEnd": 237.90550781250002,
+                "start": 0.3035156250000455,
+                "end": 0.6246093750000341,
+                "duration": 0.32109374999998863,
+                "confidence": 0.99609375
+              },
+              {
+                "id": "yBpXvmR9GkP6u1oE",
+                "text": "a",
+                "absoluteStart": 237.90550781250002,
+                "absoluteEnd": 238.20750000000004,
+                "start": 0.6246093750000341,
+                "end": 0.9266015625000534,
+                "duration": 0.3019921875000193,
+                "confidence": 1
+              },
+              {
+                "id": "er8x4fd4UKydW6dL",
+                "text": "brand",
+                "absoluteStart": 238.20750000000004,
+                "absoluteEnd": 238.57890625000002,
+                "start": 0.9266015625000534,
+                "end": 1.2980078125000318,
+                "duration": 0.3714062499999784,
+                "confidence": 1
+              },
+              {
+                "id": "Ddkkmus6RuFQS0fS",
+                "text": "new",
+                "absoluteStart": 238.57890625000002,
+                "absoluteEnd": 238.8638107638889,
+                "start": 1.2980078125000318,
+                "end": 1.5829123263889073,
+                "duration": 0.2849045138888755,
+                "confidence": 1
+              },
+              {
+                "id": "doeWDWDl9BRFL6W7",
+                "text": "throne",
+                "absoluteStart": 238.8638107638889,
+                "absoluteEnd": 242.2640234375,
+                "start": 1.5829123263889073,
+                "end": 4.983125000000001,
+                "duration": 3.400212673611094,
+                "confidence": 1
+              }
+            ],
+            "metadata": {
+              "keyword": "throne",
+              "strength": 8,
+              "keywordFeel": "dramatic",
+              "confidence": 0.9
+            }
+          }
+        ],
+        "avgFontSize": 100,
+        "colorChoices": [
+          {
+            "primary": "#FFF",
+            "secondary": "#00775F",
+            "accent": "#FFDF14"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDo
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PresetMetadata } from "./types";
+import { toJSONSchema } from "zod"
 
 interface SchemaFormProps {
     metadata: PresetMetadata;
@@ -210,7 +211,7 @@ function renderField(
 
 // Nested form component for objects
 function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema }: NestedFormProps & { parentSchema?: any }) {
-    const [isOpen, setIsOpen] = useState(depth < 2); // Auto-open first 2 levels
+    const [isOpen, setIsOpen] = useState(false); // Collapse all objects by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
     const getFieldsFromSchema = (schema: any): FormField[] => {
@@ -297,7 +298,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
 
 // Array management component
 function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any }) {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false); // Collapse all arrays by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
     const addItem = () => {
@@ -411,13 +412,26 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { sch
                                             </Tooltip>
                                         )}
                                     </div>
-                                    {renderField(
-                                        { key: `item-${index}`, type: itemSchema?.type || "string", ...itemSchema },
-                                        `item-${index}`,
-                                        item,
-                                        (newValue: any) => updateItem(index, newValue),
-                                        1,
-                                        itemSchema
+                                    {itemSchema?.type === 'object' && itemSchema?.properties ? (
+                                        <NestedForm
+                                            schema={itemSchema}
+                                            value={item || {}}
+                                            onChange={(val) => updateItem(index, val)}
+                                            fieldKey={`item-${index}`}
+                                            depth={1}
+                                            parentSchema={itemSchema}
+                                        />
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {renderField(
+                                                { key: `item-${index}`, type: itemSchema?.type || "string", ...itemSchema },
+                                                `item-${index}`,
+                                                item,
+                                                (key: string, newValue: any) => updateItem(index, newValue),
+                                                1,
+                                                itemSchema
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -475,6 +489,9 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
     const [formData, setFormData] = useState(value || {});
     const [activeTab, setActiveTab] = useState<"form" | "json">("form");
 
+    // Convert zod schema to JSON schema
+    const jsonSchema = schema && typeof schema === 'object' && schema._def ? toJSONSchema(schema) : schema;
+
     useEffect(() => {
         setFormData(value || {});
     }, [value]);
@@ -490,7 +507,7 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
             setFormData(metadata.defaultInputParams);
             onChange(metadata.defaultInputParams);
         } else {
-            const defaultValues = getDefaultValues(schema);
+            const defaultValues = getDefaultValues(jsonSchema);
             setFormData(defaultValues);
             onChange(defaultValues);
         }
@@ -513,9 +530,9 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
         }));
     };
 
-    const fields = getFieldsFromSchema(schema);
+    const fields = getFieldsFromSchema(jsonSchema);
 
-    if (!schema || !schema.properties) {
+    if (!jsonSchema || !jsonSchema.properties) {
         return (
             <Card className={className}>
                 <CardHeader>

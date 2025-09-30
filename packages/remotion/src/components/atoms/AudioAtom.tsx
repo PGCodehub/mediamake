@@ -138,6 +138,29 @@ export const AudioDatahelper = {
 
         // Default: not muted
         return false;
+    },
+
+    /**
+     * Calculates the effective duration of an audio track after trimming and playback rate adjustment
+     * 
+     * @param data - Audio configuration data
+     * @param originalDuration - Original audio duration in seconds
+     * @returns Effective duration in seconds after applying trim settings and playback rate
+     */
+    getEffectiveDuration: (data: AudioAtomDataProps, originalDuration: number) => {
+        let effectiveDuration = originalDuration;
+
+        // Apply trimming if specified
+        if (data.startFrom || data.endAt) {
+            const startTime = data.startFrom || 0;
+            const endTime = data.endAt || originalDuration;
+            effectiveDuration = Math.max(0, endTime - startTime);
+        }
+
+        // Factor in playback rate - if playback rate is > 1, duration is shorter
+        // if playback rate is < 1, duration is longer
+        const playbackRate = data.playbackRate || 1;
+        return effectiveDuration / playbackRate;
     }
 }
 

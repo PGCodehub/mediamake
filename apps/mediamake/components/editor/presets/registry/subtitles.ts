@@ -12,8 +12,26 @@ const presetParams = z.object({
   inputCaptions: z.array(z.any()),
   position: z.enum(['bottom', 'top']),
   padding: z.string().optional(),
-  negativeOffset: z.number().optional(),
-  wordAnimationDuration: z.number().optional(),
+  negativeOffset: z
+    .number()
+    .optional()
+    .describe(
+      'negative offset to adjust the subtitle appearance - 0.15 is standard',
+    ),
+  wordAnimationDuration: z
+    .number()
+    .optional()
+    .describe('time to animate in the word - 0.15 is standard'),
+  font: z
+    .string()
+    .optional()
+    .default('Inter')
+    .describe('font family - Inter, BebasNeue'),
+  fontSize: z
+    .number()
+    .optional()
+    .default(50)
+    .describe('font size - 50 is standard'),
 });
 
 const presetExecution = (
@@ -25,6 +43,8 @@ const presetExecution = (
     padding,
     negativeOffset,
     wordAnimationDuration,
+    font,
+    fontSize,
   } = params;
   const captionsCHildrenData = inputCaptions.map(
     (caption: Transcription['captions'][number], _i: number) => {
@@ -38,7 +58,7 @@ const presetExecution = (
             // word.start is already relative to scentence, so no need to readjust
             // start: word.start,
             // make it stay until the entire duration of the subtitle.
-            duration: caption.duration + (negativeOffset ?? 0.5),
+            duration: caption.duration + (negativeOffset ?? 0.15),
           },
         };
 
@@ -74,11 +94,11 @@ const presetExecution = (
             text: word.text,
             className: 'rounded-xl text-xl',
             style: {
-              fontSize: 50,
+              fontSize: fontSize ?? 50,
               fontWeight: 100,
             },
             font: {
-              family: 'BebasNeue',
+              family: font ?? 'BebasNeue',
             },
           } as TextAtomData,
           context: wordContext,
@@ -106,8 +126,8 @@ const presetExecution = (
         },
         context: {
           timing: {
-            start: caption.absoluteStart - (negativeOffset ?? 0.5),
-            duration: caption.duration + (negativeOffset ?? 0.5),
+            start: caption.absoluteStart - (negativeOffset ?? 0.15),
+            duration: caption.duration + (negativeOffset ?? 0.15),
           },
         },
         childrenData: wordsData,

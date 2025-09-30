@@ -298,8 +298,8 @@ function TranscriptionContentInner({
     }
 
     return (
-        <ScrollArea className="h-[calc(100vh-8rem)] overflow-y-auto w-full">
-            <div className="flex-1 px-4 space-y-4 w-full">
+        <div className="flex-1 flex flex-col h-full overflow-y-scoll overflow-x-hidden">
+            <div className="flex-1 px-4 space-y-4 w-full flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -391,7 +391,7 @@ function TranscriptionContentInner({
                 </div>
 
                 {/* Step Content */}
-                <div className="min-h-[400px]">
+                <div className="flex-1 min-h-0">
                     {currentStep === 1 && transcriptionData && (
                         <Step1AudioInput
                             transcriptionData={transcriptionData}
@@ -424,7 +424,7 @@ function TranscriptionContentInner({
                     )}
                 </div>
             </div>
-        </ScrollArea>
+        </div>
     );
 }
 

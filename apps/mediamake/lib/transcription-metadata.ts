@@ -6,7 +6,7 @@ import { ToolResultPart, ToolUIPart, UIMessage } from 'ai';
 export interface SentenceMetadata {
   keyword: string;
   strength: number; // 1-10 scale
-  feel:
+  keywordFeel:
     | 'joyful'
     | 'melancholic'
     | 'energetic'
@@ -22,15 +22,6 @@ export interface SentenceMetadata {
     | 'playful'
     | 'intense'
     | 'peaceful';
-  shouldSplit: boolean;
-  splitReason:
-    | 'high_impact_keyword'
-    | 'complete_thought'
-    | 'emotional_peak'
-    | 'rhythmic_break'
-    | 'continuation_needed'
-    | 'low_impact'
-    | 'incomplete_thought';
   confidence: number; // 0-1 scale
 }
 
@@ -105,19 +96,6 @@ export function extractSentencesFromTranscription(
 }
 
 /**
- * Filters sentences that are recommended for splitting
- * @param analysisResult The metadata analysis result
- * @returns Array of sentences recommended for splitting
- */
-export function getRecommendedSplits(
-  analysisResult: TranscriptionMetadataResult,
-): SentenceAnalysis[] {
-  return analysisResult.sentences.filter(
-    sentence => sentence.metadata.shouldSplit,
-  );
-}
-
-/**
  * Gets sentences with high emotional strength (7+)
  * @param analysisResult The metadata analysis result
  * @returns Array of high-impact sentences
@@ -142,7 +120,7 @@ export function groupSentencesByFeel(
 ): Record<string, SentenceAnalysis[]> {
   return analysisResult.sentences.reduce(
     (acc, sentence) => {
-      const feel = sentence.metadata.feel;
+      const feel = sentence.metadata.keywordFeel;
       if (!acc[feel]) {
         acc[feel] = [];
       }
@@ -177,7 +155,6 @@ export function createAnalysisSummary(
 ): string {
   const dominantFeel = getDominantFeel(analysisResult);
   const highImpactCount = getHighImpactSentences(analysisResult).length;
-  const splitCount = analysisResult.splitRecommendations;
 
   const usageAccumulated = analysisResult.sentences.reduce(
     (acc, sentence) => {
@@ -203,9 +180,9 @@ export function createAnalysisSummary(
   return `Analysis Summary:
 • Total sentences: ${analysisResult.totalSentences}
 • High impact sentences: ${highImpactCount}
-• Recommended splits: ${splitCount}
 • Dominant feel: ${dominantFeel}
 • Average strength: ${analysisResult.averageStrength.toFixed(1)}/10
+• Average confidence: ${analysisResult.confidence?.toFixed(2) || 'N/A'}
 • Overall Usage: ${usageAccumulated.totalTokens} tokens
 • Input tokens: ${usageAccumulated.inputTokens}
 • Output tokens: ${usageAccumulated.outputTokens}

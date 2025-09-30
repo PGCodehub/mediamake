@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { delayRender, continueRender } from 'remotion';
 import {
   loadGoogleFont,
   loadMultipleFonts as loadMultipleFontsUtil,
@@ -230,7 +231,7 @@ export const useFontLoader = (options: UseFontLoaderOptions = {}) => {
 };
 
 /**
- * Hook for loading a single font with automatic loading
+ * Hook for loading a single font with automatic loading and delayRender support
  */
 export const useFont = (
   fontFamily: string,
@@ -240,6 +241,9 @@ export const useFont = (
     useFontLoader(options);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [renderHandle] = useState(() =>
+    delayRender(`Loading font: ${fontFamily}`)
+  );
 
   // Initialize fontFamilyValue from cache if available, otherwise use fallback
   const initialFontFamily =
@@ -254,9 +258,13 @@ export const useFont = (
         setFontFamilyValue(cssValue);
         setIsLoaded(true);
         setError(null);
+        // Continue render once font is loaded
+        continueRender(renderHandle);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoaded(false);
+        // Continue render even on error to prevent hanging
+        continueRender(renderHandle);
       }
     };
 
@@ -268,8 +276,10 @@ export const useFont = (
         setFontFamilyValue(cachedValue);
       }
       setIsLoaded(true);
+      // Continue render immediately if font is already ready
+      continueRender(renderHandle);
     }
-  }, [fontFamily, loadFont, isFontReady, getFontFamily, options]);
+  }, [fontFamily, loadFont, isFontReady, getFontFamily, options, renderHandle]);
 
   return {
     isLoaded,

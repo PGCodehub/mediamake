@@ -15,6 +15,7 @@ export const VideoAtomDataProps = z.object({
     src: z.string(),                    // Video source URL
     srcDuration: z.number().optional(), // Video duration in seconds
     style: z.record(z.string(), z.any()).optional(), // CSS styles object
+    containerClassName: z.string().optional(),   // CSS class names
     className: z.string().optional(),   // CSS class names
     startFrom: z.number().optional(),   // Start playback from this time (seconds)
     endAt: z.number().optional(),       // End playback at this time (seconds)
@@ -72,42 +73,57 @@ export const Atom: React.FC<VideoAtomProps> = ({ data, id, context }) => {
         return data.endAt ? data.endAt * fps : undefined;
     }, [data.endAt, fps]);
 
-    // Combine styles with object fit if specified
-    const combinedStyle = useMemo(() => {
-        const baseStyle = data.style || {};
-        const objectFit = data.fit ? { objectFit: data.fit } : {};
-        return { ...baseStyle, ...objectFit, ...overrideStyles };
-    }, [data.style, data.fit, overrideStyles]);
+    // Note: Animated styles (overrideStyles) are now applied to the wrapper div
+    // while video-specific styles are applied directly to OffthreadVideo
 
-    if (data.loop) {
-
-        return (
-            <Loop times={Infinity} durationInFrames={data.srcDuration * fps} layout="none">
-                <OffthreadVideo
-                    className={data.className}
-                    src={source}
-                    style={combinedStyle}
-                    trimBefore={trimBefore}
-                    trimAfter={trimAfter}
-                    playbackRate={data.playbackRate}
-                    volume={data.volume}
-                    muted={data.muted}
-                />
-            </Loop>
-        );
-    }
-
-    return (
+    // Create the video component with proper styles
+    const videoComponent = (
         <OffthreadVideo
             className={data.className}
             src={source}
-            style={combinedStyle}
+            style={data.style ? { ...data.style, ...(data.fit ? { objectFit: data.fit } : {}) } : {}}
             trimBefore={trimBefore}
             trimAfter={trimAfter}
             playbackRate={data.playbackRate}
             volume={data.volume}
             muted={data.muted}
         />
+    );
+
+    // Apply animated styles directly to video if no container className is provided
+    const videoWithStyles = data.containerClassName ? videoComponent : (
+        <OffthreadVideo
+            className={data.className}
+            src={source}
+            style={data.style ? { ...data.style, ...(data.fit ? { objectFit: data.fit } : {}), ...overrideStyles } : overrideStyles}
+            trimBefore={trimBefore}
+            trimAfter={trimAfter}
+            playbackRate={data.playbackRate}
+            volume={data.volume}
+            muted={data.muted}
+        />
+    );
+
+    if (data.loop) {
+        return (
+            <Loop times={Infinity} durationInFrames={data.srcDuration * fps} layout="none">
+                {data.containerClassName ? (
+                    <div className={data.containerClassName} style={overrideStyles}>
+                        {videoComponent}
+                    </div>
+                ) : (
+                    videoWithStyles
+                )}
+            </Loop>
+        );
+    }
+
+    return data.containerClassName ? (
+        <div className={data.containerClassName} style={overrideStyles}>
+            {videoComponent}
+        </div>
+    ) : (
+        videoWithStyles
     );
 };
 
@@ -149,19 +165,26 @@ export const VideoDataHelper = {
     },
 
     /**
-     * Calculates the effective duration of a video after trimming
+     * Calculates the effective duration of a video after trimming and playback rate adjustment
      * 
      * @param data - Video configuration data
      * @param originalDuration - Original video duration in seconds
-     * @returns Effective duration in seconds after applying trim settings
+     * @returns Effective duration in seconds after applying trim settings and playback rate
      */
     getEffectiveDuration: (data: VideoAtomDataProps, originalDuration: number) => {
-        if (!data.startFrom || !data.endAt) return originalDuration;
+        let effectiveDuration = originalDuration;
 
-        const startTime = data.startFrom || 0;
-        const endTime = data.endAt || originalDuration;
+        // Apply trimming if specified
+        if (data.startFrom || data.endAt) {
+            const startTime = data.startFrom || 0;
+            const endTime = data.endAt || originalDuration;
+            effectiveDuration = Math.max(0, endTime - startTime);
+        }
 
-        return Math.max(0, endTime - startTime);
+        // Factor in playback rate - if playback rate is > 1, duration is shorter
+        // if playback rate is < 1, duration is longer
+        const playbackRate = data.playbackRate || 1;
+        return effectiveDuration / playbackRate;
     },
 
     /**

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { delayRender, continueRender } from 'remotion';
 import { BaseRenderableProps } from '../../core/types';
 import { ComponentConfig } from '../../core/types';
 import { useFont } from '../../hooks/useFontLoader';
@@ -54,8 +55,11 @@ interface TextAtomProps extends BaseRenderableProps {
 export const Atom: React.FC<TextAtomProps> = ({ id, data }) => {
     const overrideStyles = useAnimatedStyles(id);
     const [isFontLoading, setIsFontLoading] = useState(false);
+    const [renderHandle] = useState(() =>
+        delayRender(`Loading font: ${data.font?.family}`)
+    );
 
-    // Font loading logic - now returns fontFamily CSS value directly
+    // Font loading logic with delayRender support
     const { isLoaded, error, isReady, fontFamily } = useFont(
         data.font?.family || 'Inter',
         {
@@ -64,12 +68,14 @@ export const Atom: React.FC<TextAtomProps> = ({ id, data }) => {
             display: data.font?.display || 'swap',
             preload: data.font?.preload !== false,
             onLoad: (family, cssValue) => {
-                console.log(`Font ${family} loaded successfully with CSS value: ${cssValue}`);
+                // console.log(`Font ${family} loaded successfully with CSS value: ${cssValue}`);
                 setIsFontLoading(false);
+                continueRender(renderHandle);
             },
             onError: (family, error) => {
-                console.warn(`Font ${family} failed to load:`, error);
+                // console.warn(`Font ${family} failed to load:`, error);
                 setIsFontLoading(false);
+                continueRender(renderHandle);
             },
         }
     );
@@ -88,11 +94,9 @@ export const Atom: React.FC<TextAtomProps> = ({ id, data }) => {
     // Enhanced style with font loading support
     const enhancedStyle: React.CSSProperties = useMemo(() => ({
         fontFamily,
-        opacity: isFontLoading ? 0.8 : 1,
-        transition: 'opacity 0.3s ease-in-out, font-family 0.2s ease-in-out',
         ...data.style,
         ...overrideStyles,
-    }), [fontFamily, isFontLoading, data.style, overrideStyles]);
+    }), [fontFamily, data.style, overrideStyles]);
 
     // Loading state
     if (isFontLoading && data.loadingState?.showLoadingIndicator) {

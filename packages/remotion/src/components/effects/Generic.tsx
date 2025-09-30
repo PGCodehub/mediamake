@@ -18,6 +18,7 @@ export interface GenericEffectData {
     ranges?: AnimationRange[]; // Animation keyframes
     targetIds?: string[]; // IDs of child components to target (for provider mode)
     mode?: 'wrapper' | 'provider'; // How the effect is applied
+    props?: any; // Additional properties for the effect
 }
 
 // Context for provider mode
@@ -96,6 +97,106 @@ const getEasingFunction = (type: string) => {
     }
 };
 
+// Color parsing and interpolation utilities
+interface ColorRGBA {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+}
+
+// Parse hex color to RGBA
+const parseHexColor = (hex: string): ColorRGBA => {
+    // Remove # if present and normalize
+    hex = hex.replace('#', '').toLowerCase();
+
+    // Validate hex characters
+    if (!/^[0-9a-f]+$/.test(hex)) {
+        return { r: 0, g: 0, b: 0, a: 1 };
+    }
+
+    // Handle 3-digit hex
+    if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+    }
+
+    // Handle 6-digit hex
+    if (hex.length === 6) {
+        return {
+            r: Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16))),
+            g: Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16))),
+            b: Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16))),
+            a: 1
+        };
+    }
+
+    // Handle 8-digit hex (with alpha)
+    if (hex.length === 8) {
+        return {
+            r: Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16))),
+            g: Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16))),
+            b: Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16))),
+            a: Math.max(0, Math.min(1, parseInt(hex.substr(6, 2), 16) / 255))
+        };
+    }
+
+    // Default fallback
+    return { r: 0, g: 0, b: 0, a: 1 };
+};
+
+// Parse rgba color to RGBA
+const parseRgbaColor = (rgba: string): ColorRGBA => {
+    // More robust regex that handles both rgb() and rgba() with optional alpha
+    const match = rgba.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+    if (match) {
+        return {
+            r: Math.max(0, Math.min(255, parseInt(match[1], 10))),
+            g: Math.max(0, Math.min(255, parseInt(match[2], 10))),
+            b: Math.max(0, Math.min(255, parseInt(match[3], 10))),
+            a: match[4] ? Math.max(0, Math.min(1, parseFloat(match[4]))) : 1
+        };
+    }
+    return { r: 0, g: 0, b: 0, a: 1 };
+};
+
+// Parse any color format to RGBA
+const parseColor = (color: string): ColorRGBA => {
+    const trimmedColor = color.trim();
+
+    if (trimmedColor.startsWith('#')) {
+        return parseHexColor(trimmedColor);
+    } else if (trimmedColor.toLowerCase().startsWith('rgb')) {
+        return parseRgbaColor(trimmedColor);
+    }
+
+    // Default fallback
+    return { r: 0, g: 0, b: 0, a: 1 };
+};
+
+// Convert RGBA back to CSS color string
+const rgbaToString = (color: ColorRGBA): string => {
+    if (color.a === 1) {
+        return `rgb(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)})`;
+    } else {
+        return `rgba(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)}, ${color.a})`;
+    }
+};
+
+// Interpolate between two colors
+const interpolateColors = (color1: string, color2: string, progress: number): string => {
+    const parsedColor1 = parseColor(color1);
+    const parsedColor2 = parseColor(color2);
+
+    const interpolatedColor: ColorRGBA = {
+        r: interpolate(progress, [0, 1], [parsedColor1.r, parsedColor2.r]),
+        g: interpolate(progress, [0, 1], [parsedColor1.g, parsedColor2.g]),
+        b: interpolate(progress, [0, 1], [parsedColor1.b, parsedColor2.b]),
+        a: interpolate(progress, [0, 1], [parsedColor1.a, parsedColor2.a])
+    };
+
+    return rgbaToString(interpolatedColor);
+};
+
 // Calculate animated value based on ranges and progress
 const calculateAnimatedValue = (
     ranges: AnimationRange[],
@@ -132,8 +233,29 @@ const calculateAnimatedValue = (
 
             // Handle different value types
             if (typeof currentValue === 'number' && typeof nextValue === 'number') {
-                return interpolate(localProgress, [0, 1], [currentValue, nextValue]);
+                // Ensure both values are finite and valid before interpolating
+                if (isFinite(currentValue) && isFinite(nextValue) && !isNaN(currentValue) && !isNaN(nextValue)) {
+                    // For numbers, use simple linear interpolation to avoid double interpolation
+                    const interpolatedValue = currentValue + (nextValue - currentValue) * localProgress;
+                    // Ensure interpolated value is valid
+                    if (isFinite(interpolatedValue) && !isNaN(interpolatedValue)) {
+                        return interpolatedValue;
+                    }
+                }
+                // Return current value if interpolation fails
+                return currentValue;
             } else if (typeof currentValue === 'string' && typeof nextValue === 'string') {
+                // Check if both values are colors (hex or rgba)
+                const isColor = (str: string) => {
+                    const trimmed = str.trim().toLowerCase();
+                    return trimmed.startsWith('#') || trimmed.startsWith('rgb');
+                };
+
+                if (isColor(currentValue) && isColor(nextValue)) {
+                    // Interpolate colors
+                    return interpolateColors(currentValue, nextValue, localProgress);
+                }
+
                 // Extract unit and value from both strings
                 const getUnitAndValue = (str: string) => {
                     // Check for units in order of specificity (longer units first)
@@ -141,16 +263,18 @@ const calculateAnimatedValue = (
 
                     for (const unit of units) {
                         if (str.endsWith(unit)) {
+                            const value = parseFloat(str.slice(0, -unit.length));
                             return {
-                                value: parseFloat(str.slice(0, -unit.length)),
+                                value: isNaN(value) ? 0 : value,
                                 unit: unit
                             };
                         }
                     }
 
                     // If no unit found, treat as number
+                    const value = parseFloat(str);
                     return {
-                        value: parseFloat(str),
+                        value: isNaN(value) ? 0 : value,
                         unit: ''
                     };
                 };
@@ -158,14 +282,17 @@ const calculateAnimatedValue = (
                 const current = getUnitAndValue(currentValue);
                 const next = getUnitAndValue(nextValue);
 
-                // Only interpolate if units match
-                if (current.unit === next.unit) {
+                // Only interpolate if units match and values are finite
+                if (current.unit === next.unit && isFinite(current.value) && isFinite(next.value)) {
                     const interpolatedValue = interpolate(localProgress, [0, 1], [current.value, next.value]);
-                    return current.unit ? `${interpolatedValue}${current.unit}` : interpolatedValue;
-                } else {
-                    // Units don't match, return current value
-                    return currentValue;
+                    // Ensure interpolated value is finite
+                    if (isFinite(interpolatedValue)) {
+                        return current.unit ? `${interpolatedValue}${current.unit}` : interpolatedValue;
+                    }
                 }
+
+                // Fallback: return current value if interpolation fails
+                return currentValue;
             }
 
             return currentValue; // Fallback
@@ -214,7 +341,12 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
                 styles.transform = `${styles.transform || ''} translateY(${translateYValue})`.trim();
                 break;
             case 'opacity':
-                styles.opacity = value;
+                // Ensure opacity is always a valid number between 0 and 1
+                // Use Math.round to prevent floating point precision issues that cause flickering
+                const opacityValue = typeof value === 'number'
+                    ? Math.max(0, Math.min(1, isFinite(value) && !isNaN(value) ? Math.round(value * 1000) / 1000 : 1))
+                    : 1;
+                styles.opacity = opacityValue;
                 break;
             case 'blur':
                 // Handle both number and string values for blur
@@ -226,6 +358,12 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
                 break;
             case 'contrast':
                 styles.filter = `${styles.filter || ''} contrast(${value})`.trim();
+                break;
+            case 'color':
+                styles.color = value;
+                break;
+            case 'backgroundColor':
+                styles.backgroundColor = value;
                 break;
             default:
                 // For custom CSS properties, set them directly
@@ -259,62 +397,88 @@ export const GenericEffect: React.FC<BaseRenderableProps> = ({
     const mode = effectData?.mode || 'wrapper';
 
     // Calculate animation progress
-    const progress = useMemo(() => {
-        if (type === 'spring') {
-            return spring({
-                frame,
-                fps,
-                config: {
-                    stiffness: 100,
-                    damping: 10,
-                    mass: 1,
-                },
-                durationInFrames: duration,
-                delay: start,
-            });
-        } else {
-            const animationFrame = frame - start;
-            const easing = getEasingFunction(type);
 
-            return interpolate(
-                animationFrame,
-                [0, duration],
-                [0, 1],
-                {
-                    easing,
-                    extrapolateLeft: 'clamp',
-                    extrapolateRight: 'clamp',
-                }
-            );
+    const easing = getEasingFunction(type);
+
+    const progress = interpolate(
+        frame - start,
+        [0, duration],
+        [0, 1],
+        {
+            easing,
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
         }
-    }, [frame, fps, start, duration, type]);
+    );
+    // useMemo(() => {
+    //     if (type === 'spring') {
+    //         return spring({
+    //             frame,
+    //             fps,
+    //             config: {
+    //                 stiffness: 100,
+    //                 damping: 10,
+    //                 mass: 1,
+    //             },
+    //             durationInFrames: duration,
+    //             delay: start,
+    //         });
+    //     } else {
+    //         const animationFrame = frame - start;
+    //         const easing = getEasingFunction(type);
 
-    // Calculate animated styles
-    const animatedStyles: React.CSSProperties = useMemo(() => {
-        if (ranges.length === 0) return {};
-        return rangesToCSSProperties(ranges, progress);
-    }, [ranges, progress, frame]);
+    //         return interpolate(
+    //             animationFrame,
+    //             [0, duration],
+    //             [0, 1],
+    //             {
+    //                 easing,
+    //                 extrapolateLeft: 'clamp',
+    //                 extrapolateRight: 'clamp',
+    //             }
+    //         );
+    //     }
+    // }, [frame, fps, start, duration, type]);
+
+
 
     // Provider mode: Create context for child components
-    if (mode === 'provider') {
-        const contextValue: GenericEffectContextType = {
-            animatedStyles,
-            targetIds,
-        };
+    const parentContext = useGenericEffectOptional();
 
+    // Calculate animated styles once with proper dependencies
+    const animatedStyles: React.CSSProperties = useMemo(() => {
+        if (ranges.length === 0) return {};
+
+        const currentStyles = rangesToCSSProperties(ranges, progress);
+
+        // If we have a parent context and we're in provider mode, merge styles
+        if (parentContext && mode === 'provider') {
+            return { ...parentContext.animatedStyles, ...currentStyles };
+        }
+
+        return currentStyles;
+    }, [ranges, progress, parentContext?.animatedStyles, mode]);
+
+    // Create context value once to prevent unnecessary re-renders
+    const contextValue: GenericEffectContextType = useMemo(() => ({
+        animatedStyles,
+        targetIds,
+    }), [animatedStyles, targetIds]);
+
+    if (mode === 'provider') {
         return (
             <GenericEffectContext.Provider value={contextValue}>
                 {children}
             </GenericEffectContext.Provider>
         );
+    } else {
+        return (
+            <div {...effectData.props} style={animatedStyles}>
+                {children}
+            </div>
+        );
     }
 
-    // Wrapper mode: Apply styles directly to wrapper div
-    return (
-        <div style={animatedStyles}>
-            {children}
-        </div>
-    );
 };
 
 // Provider component for standalone use

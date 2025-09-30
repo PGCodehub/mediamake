@@ -3,18 +3,158 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Trash2, Play, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ChevronRight, Trash2, Play, Loader2, RefreshCw, GripVertical, Copy, Save, Upload } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset } from "./types";
 import { SchemaForm } from "./schema-form";
 import { usePresetContext } from "./preset-provider";
 import { OutputCard } from "./output-card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { getPresetById } from "./registry/presets-registry";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Types for applied presets
 
+interface SortablePresetItemProps {
+    appliedPreset: AppliedPreset;
+    onToggleExpansion: (id: string) => void;
+    onUpdateInputData: (id: string, inputData: PresetInputData) => void;
+    onRefresh: (id: string) => void;
+    onRemove: (id: string) => void;
+}
+
+function SortablePresetItem({
+    appliedPreset,
+    onToggleExpansion,
+    onUpdateInputData,
+    onRefresh,
+    onRemove
+}: SortablePresetItemProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: appliedPreset.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="w-full">
+            <Card className="w-full p-0">
+                <CardHeader className="pb-2 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onToggleExpansion(appliedPreset.id)}
+                                className="p-1 h-5 w-5"
+                            >
+                                {appliedPreset.isExpanded ? (
+                                    <ChevronDown className="h-3 w-3" />
+                                ) : (
+                                    <ChevronRight className="h-3 w-3" />
+                                )}
+                            </Button>
+                            <div
+                                {...attributes}
+                                {...listeners}
+                                className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+                            >
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm truncate">{appliedPreset.preset.metadata.title}</h4>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                        {appliedPreset.preset.metadata.presetType}
+                                    </Badge>
+                                    {appliedPreset.preset.metadata.tags?.slice(0, 2).map((tag) => (
+                                        <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0.5">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onRefresh(appliedPreset.id)}
+                                className="text-blue-500 hover:text-blue-700 p-1 h-6 w-6"
+                                title="Refresh preset (reloads function and schema)"
+                            >
+                                <RefreshCw className="h-3 w-3" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onRemove(appliedPreset.id)}
+                                className="text-red-500 hover:text-red-700 p-1 h-6 w-6"
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                {appliedPreset.isExpanded && (
+                    <CardContent className="pt-0 px-3 pb-3">
+                        <SchemaForm
+                            metadata={appliedPreset.preset.metadata}
+                            schema={appliedPreset.preset.presetParams}
+                            value={appliedPreset.inputData}
+                            onChange={(inputData) => onUpdateInputData(appliedPreset.id, inputData)}
+                            className=""
+                        />
+                    </CardContent>
+                )}
+            </Card>
+        </div>
+    );
+}
 
 interface PresetListProps {
     onGenerateOutput: () => void;
+}
+
+interface SavedPresetData {
+    id: string;
+    name: string;
+    createdAt: string;
+    presetData: {
+        presets: Array<{
+            presetId: string;
+            presetType: string;
+            presetInputData: any;
+        }>;
+    };
 }
 
 // Helper function to get default values from schema
@@ -47,24 +187,247 @@ export function PresetList({
 }: PresetListProps) {
     const {
         appliedPresets,
+        setAppliedPresets,
         togglePresetExpansion,
         updatePresetInputData,
         removePreset,
+        refreshPreset,
+        reorderPresets,
         isGenerating
     } = usePresetContext();
+
+    const [savedPresets, setSavedPresets] = useState<SavedPresetData[]>([]);
+    const [isLoadingSaved, setIsLoadingSaved] = useState(false);
+
+    // Load saved presets on component mount
+    useEffect(() => {
+        loadSavedPresets();
+    }, []);
+
+    const loadSavedPresets = async () => {
+        try {
+            setIsLoadingSaved(true);
+            const response = await fetch('/api/preset-data');
+            if (response.ok) {
+                const data = await response.json();
+                setSavedPresets(data);
+            }
+        } catch (error) {
+            console.error('Failed to load saved presets:', error);
+        } finally {
+            setIsLoadingSaved(false);
+        }
+    };
+
+    const copyPresetData = async () => {
+        try {
+            const presetData = {
+                presets: appliedPresets.presets.map(appliedPreset => ({
+                    presetId: appliedPreset.preset.metadata.id,
+                    presetType: appliedPreset.preset.metadata.presetType,
+                    presetInputData: appliedPreset.inputData
+                }))
+            };
+
+            await navigator.clipboard.writeText(JSON.stringify(presetData, null, 2));
+            toast.success('Preset data copied to clipboard');
+        } catch (error) {
+            console.error('Failed to copy preset data:', error);
+            toast.error('Failed to copy preset data');
+        }
+    };
+
+    const savePresetData = async () => {
+        try {
+            const presetData = {
+                presets: appliedPresets.presets.map(appliedPreset => ({
+                    presetId: appliedPreset.preset.metadata.id,
+                    presetType: appliedPreset.preset.metadata.presetType,
+                    presetInputData: appliedPreset.inputData
+                }))
+            };
+
+            // Generate name in format: DATE - preset[0].id + preset[1].id + preset[2].id (max 3)
+            const date = new Date().toLocaleDateString();
+            const presetIds = appliedPresets.presets
+                .slice(0, 3) // Max 3 presets
+                .map(preset => preset.preset.metadata.id)
+                .join(' + ');
+            const name = `${date} - ${presetIds}`;
+
+            const response = await fetch('/api/preset-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    presetData
+                })
+            });
+
+            if (response.ok) {
+                toast.success('Preset data saved successfully');
+                loadSavedPresets(); // Refresh the list
+            } else {
+                throw new Error('Failed to save preset data');
+            }
+        } catch (error) {
+            console.error('Failed to save preset data:', error);
+            toast.error('Failed to save preset data');
+        }
+    };
+
+    const loadPresetData = async (savedPreset: SavedPresetData) => {
+        try {
+            // Clear current applied presets
+            setAppliedPresets({
+                presets: [],
+                activePresetId: null
+            });
+
+            // Load the saved preset data
+            const newAppliedPresets: AppliedPreset[] = [];
+
+            for (const presetItem of savedPreset.presetData.presets) {
+                let actualPreset: Preset | DatabasePreset | null = null;
+
+                // Determine if this is a predefined or database preset based on the presetId format
+                // Database presets have MongoDB ObjectId format, predefined have string IDs
+                const isDatabasePreset = /^[0-9a-fA-F]{24}$/.test(presetItem.presetId);
+
+                if (isDatabasePreset) {
+                    // Fetch from database
+                    try {
+                        const response = await fetch(`/api/presets/${presetItem.presetId}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            actualPreset = data.preset;
+                        } else {
+                            console.warn(`Database preset ${presetItem.presetId} not found`);
+                            continue;
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to fetch database preset ${presetItem.presetId}:`, error);
+                        continue;
+                    }
+                } else {
+                    // Fetch from local registry
+                    const foundPreset = getPresetById(presetItem.presetId);
+                    if (!foundPreset) {
+                        console.warn(`Predefined preset ${presetItem.presetId} not found`);
+                        continue;
+                    }
+                    actualPreset = foundPreset;
+                }
+
+                if (actualPreset) {
+                    const appliedPreset: AppliedPreset = {
+                        id: `loaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        preset: actualPreset,
+                        inputData: presetItem.presetInputData,
+                        isExpanded: true
+                    };
+
+                    newAppliedPresets.push(appliedPreset);
+                }
+            }
+
+            // Set the loaded presets
+            setAppliedPresets({
+                presets: newAppliedPresets,
+                activePresetId: newAppliedPresets[0]?.id || null
+            });
+
+            if (newAppliedPresets.length > 0) {
+                toast.success(`Loaded preset: ${savedPreset.name} (${newAppliedPresets.length} presets)`);
+            } else {
+                toast.error('No valid presets found in saved data');
+            }
+        } catch (error) {
+            console.error('Failed to load preset data:', error);
+            toast.error('Failed to load preset data');
+        }
+    };
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+
+        if (active.id !== over?.id) {
+            const oldIndex = appliedPresets.presets.findIndex((preset) => preset.id === active.id);
+            const newIndex = appliedPresets.presets.findIndex((preset) => preset.id === over?.id);
+
+            reorderPresets(oldIndex, newIndex);
+        }
+    }
     if (appliedPresets.presets.length === 0) {
         return (
-            <div className="h-full flex items-center justify-center">
-                <Card className="w-full max-w-md">
-                    <CardHeader className="text-center">
-                        <h3 className="text-lg font-semibold">No Presets Applied</h3>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                        <p className="text-muted-foreground">
-                            Select presets from the sidebar to add them to your composition
-                        </p>
-                    </CardContent>
-                </Card>
+            <div className="h-full flex flex-col">
+                <div className="p-4 border-b">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold">Applied Presets</h3>
+                            <p className="text-sm text-muted-foreground">
+                                No presets applied yet
+                            </p>
+                        </div>
+
+                        {/* Load Preset Data Dropdown - Available even with no presets */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex items-center gap-1"
+                                    title="Load saved preset data"
+                                    disabled={isLoadingSaved}
+                                >
+                                    <Upload className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                {savedPresets.length === 0 ? (
+                                    <DropdownMenuItem disabled>
+                                        No saved presets
+                                    </DropdownMenuItem>
+                                ) : (
+                                    savedPresets.map((savedPreset) => (
+                                        <DropdownMenuItem
+                                            key={savedPreset.id}
+                                            onClick={() => loadPresetData(savedPreset)}
+                                            className="flex flex-col items-start"
+                                        >
+                                            <div className="font-medium">{savedPreset.name}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {new Date(savedPreset.createdAt).toLocaleString()}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    ))
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+
+                <div className="flex-1 flex items-center justify-center">
+                    <Card className="w-full max-w-md">
+                        <CardHeader className="text-center">
+                            <h3 className="text-lg font-semibold">No Presets Applied</h3>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <p className="text-muted-foreground">
+                                Select presets from the sidebar to add them to your composition
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         );
     }
@@ -79,77 +442,103 @@ export function PresetList({
                             Configure your applied presets
                         </p>
                     </div>
-                    <Button
-                        onClick={onGenerateOutput}
-                        disabled={isGenerating}
-                        className="flex items-center gap-2"
-                    >
-                        {isGenerating ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Play className="h-4 w-4" />
-                        )}
-                        {isGenerating ? 'Generating...' : 'Generate Output'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={onGenerateOutput}
+                            disabled={isGenerating}
+                            className="flex items-center gap-2"
+                        >
+                            {isGenerating ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Play className="h-4 w-4" />
+                            )}
+                            {isGenerating ? 'Generating...' : 'Generate Output'}
+                        </Button>
+
+                        {/* Copy Preset Data Button */}
+                        <Button
+                            onClick={copyPresetData}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            title="Copy preset data to clipboard"
+                        >
+                            <Copy className="h-4 w-4" />
+                        </Button>
+
+                        {/* Save Preset Data Button */}
+                        <Button
+                            onClick={savePresetData}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            title="Save preset data to database"
+                        >
+                            <Save className="h-4 w-4" />
+                        </Button>
+
+                        {/* Load Preset Data Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex items-center gap-1"
+                                    title="Load saved preset data"
+                                    disabled={isLoadingSaved}
+                                >
+                                    <Upload className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                {savedPresets.length === 0 ? (
+                                    <DropdownMenuItem disabled>
+                                        No saved presets
+                                    </DropdownMenuItem>
+                                ) : (
+                                    savedPresets.map((savedPreset) => (
+                                        <DropdownMenuItem
+                                            key={savedPreset.id}
+                                            onClick={() => loadPresetData(savedPreset)}
+                                            className="flex flex-col items-start"
+                                        >
+                                            <div className="font-medium">{savedPreset.name}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {new Date(savedPreset.createdAt).toLocaleString()}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    ))
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
-                <div className="p-4 space-y-4">
-                    {appliedPresets.presets.map((appliedPreset) => (
-                        <Card key={appliedPreset.id} className="w-full">
-                            <CardHeader className="pb-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => togglePresetExpansion(appliedPreset.id)}
-                                            className="p-1 h-6 w-6"
-                                        >
-                                            {appliedPreset.isExpanded ? (
-                                                <ChevronDown className="h-4 w-4" />
-                                            ) : (
-                                                <ChevronRight className="h-4 w-4" />
-                                            )}
-                                        </Button>
-                                        <div>
-                                            <h4 className="font-medium">{appliedPreset.preset.metadata.title}</h4>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant="secondary" className="text-xs">
-                                                    {appliedPreset.preset.metadata.presetType}
-                                                </Badge>
-                                                {appliedPreset.preset.metadata.tags?.map((tag) => (
-                                                    <Badge key={tag} variant="outline" className="text-xs">
-                                                        {tag}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removePreset(appliedPreset.id)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            {appliedPreset.isExpanded && (
-                                <CardContent className="pt-0">
-                                    <SchemaForm
-                                        metadata={appliedPreset.preset.metadata}
-                                        schema={appliedPreset.preset.presetParams}
-                                        value={appliedPreset.inputData}
-                                        onChange={(inputData) => updatePresetInputData(appliedPreset.id, inputData)}
-                                        className=""
-                                    />
-                                </CardContent>
-                            )}
-                        </Card>
-                    ))}
+                <div className="p-3 space-y-2">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={appliedPresets.presets.map(preset => preset.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {appliedPresets.presets.map((appliedPreset) => (
+                                <SortablePresetItem
+                                    key={appliedPreset.id}
+                                    appliedPreset={appliedPreset}
+                                    onToggleExpansion={togglePresetExpansion}
+                                    onUpdateInputData={updatePresetInputData}
+                                    onRefresh={refreshPreset}
+                                    onRemove={removePreset}
+                                />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
 
                     {/* Output Card - appears at the end of the list */}
                     <OutputCard />

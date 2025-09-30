@@ -23,6 +23,7 @@ export type CalculatedBoundaries = {
   width?: number;
   height?: number;
   zIndex?: number;
+  reset?: boolean;
 };
 
 export type CalculatedTiming = {

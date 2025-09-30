@@ -72,6 +72,8 @@ export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<Input
     const fps = props.config.fps ?? defaultProps.config.fps;
     const durationInFrames = Math.round(duration * fps);
 
+    console.log('durationInFrames', durationInFrames, updatedProps);
+
 
     return {
         // Change the metadata

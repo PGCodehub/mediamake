@@ -19,7 +19,26 @@ const SentenceMetadataSchema = z.object({
     .min(1)
     .max(10)
     .describe('The emotional/impact strength of the keyword (1-10 scale)'),
-  feel: z
+  // fullFeel: z
+  //   .enum([
+  //     'joyful',
+  //     'melancholic',
+  //     'energetic',
+  //     'calm',
+  //     'dramatic',
+  //     'romantic',
+  //     'aggressive',
+  //     'hopeful',
+  //     'nostalgic',
+  //     'mysterious',
+  //     'triumphant',
+  //     'sorrowful',
+  //     'playful',
+  //     'intense',
+  //     'peaceful',
+  //   ])
+  //   .describe('The emotional feel/mood of the sentence'),
+  keywordFeel: z
     .enum([
       'joyful',
       'melancholic',
@@ -37,23 +56,12 @@ const SentenceMetadataSchema = z.object({
       'intense',
       'peaceful',
     ])
-    .describe('The emotional feel/mood of the sentence'),
-  shouldSplit: z
-    .boolean()
-    .describe(
-      'Whether this sentence should be split for lyricography (true if it has enough impact and makes sense as a standalone lyric)',
-    ),
-  splitReason: z
-    .enum([
-      'high_impact_keyword',
-      'complete_thought',
-      'emotional_peak',
-      'rhythmic_break',
-      'continuation_needed',
-      'low_impact',
-      'incomplete_thought',
-    ])
-    .describe('The reason for the split recommendation'),
+    .describe('The emotional feel/mood of the keyword'),
+  // parts: z
+  //   .array(z.string())
+  //   .describe(
+  //     'The scentence split into multiple parts if it make sense to split for impact/readability.',
+  //   ),
   confidence: z
     .number()
     .min(0)
@@ -93,8 +101,8 @@ const TranscriptionMetadataSchema = z.object({
   ),
   overallAnalysis: OverallAnalysisSchema.optional(),
   totalSentences: z.number(),
-  splitRecommendations: z.number(),
   averageStrength: z.number(),
+  confidence: z.number(),
   dominantFeel: z.record(z.string(), z.number()),
 });
 
@@ -121,10 +129,7 @@ export const transcriptionMetaAgent = aiRouter
           try {
             const result = await generateObject({
               model: google('gemini-2.5-flash'),
-              schema: SentenceMetadataSchema.omit({
-                shouldSplit: true,
-                splitReason: true,
-              }),
+              schema: SentenceMetadataSchema,
               prompt: `Analyze this sentence for lyricography metadata:
 
 Sentence: "${sentence}"
@@ -132,28 +137,21 @@ Sentence: "${sentence}"
 Please analyze this sentence and provide:
 1. The most impactful keyword that would resonate in a song lyric
 2. The emotional strength/power of that keyword (1-10 scale)
-3. The overall emotional feel/mood of the sentence
-4. Whether this sentence should be split for lyricography (consider if it's a complete thought, has emotional impact, or if it's just a continuation)
-5. The reason for your split recommendation
-6. Your confidence in this analysis
+3. The emotional feel/mood of the keyword
+4. Your confidence in this analysis
 
 Consider:
-- Is this a complete thought that can stand alone as a lyric?
-- Does it have emotional impact or significance?
-- Is it a natural break point in the flow?
-- Would it work well as a standalone line in a song?
-- Is it just a connecting word or phrase that needs context?`,
+- What is the most emotionally resonant word in this sentence?
+- How strong is the emotional impact of that keyword?
+- What emotional tone does this keyword convey?
+- How confident are you in this analysis?`,
               maxRetries: 2,
             });
 
             return {
               sentenceIndex: index,
               originalText: sentence,
-              metadata: {
-                ...result.object,
-                shouldSplit: false,
-                splitReason: 'disabled_ai_splitting' as const,
-              },
+              metadata: result.object,
               usage: result.usage,
             };
           } catch (error) {
@@ -165,9 +163,7 @@ Consider:
               metadata: {
                 keyword: sentence.split(' ')[0] || 'unknown',
                 strength: 5,
-                feel: 'calm' as const,
-                shouldSplit: false,
-                splitReason: 'low_impact' as const,
+                keywordFeel: 'calm' as const,
                 confidence: 0.3,
               },
               usage: {
@@ -196,9 +192,8 @@ ${analysisResults
       `Sentence ${result.sentenceIndex}: "${result.originalText}"
    - Keyword: ${result.metadata.keyword}
    - Strength: ${result.metadata.strength}/10
-   - Feel: ${result.metadata.feel}
-   - Should Split: ${result.metadata.shouldSplit}
-   - Reason: ${result.metadata.splitReason}`,
+   - Keyword Feel: ${result.metadata.keywordFeel}
+   - Confidence: ${result.metadata.confidence}`,
   )
   .join('\n\n')}
 
@@ -212,17 +207,16 @@ Provide an overall analysis of the transcription's mood, structure recommendatio
         sentences: analysisResults,
         overallAnalysis: overallAnalysisObject,
         totalSentences: sentences.length,
-        splitRecommendations: analysisResults.filter(
-          r =>
-            r.metadata.shouldSplit &&
-            r.metadata.splitReason !== 'disabled_ai_splitting',
-        ).length,
         averageStrength:
           analysisResults.reduce((sum, r) => sum + r.metadata.strength, 0) /
           analysisResults.length,
+        confidence:
+          analysisResults.reduce((sum, r) => sum + r.metadata.confidence, 0) /
+          analysisResults.length,
         dominantFeel: analysisResults.reduce(
           (acc, r) => {
-            acc[r.metadata.feel] = (acc[r.metadata.feel] || 0) + 1;
+            acc[r.metadata.keywordFeel] =
+              (acc[r.metadata.keywordFeel] || 0) + 1;
             return acc;
           },
           {} as Record<string, number>,

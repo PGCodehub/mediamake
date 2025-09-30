@@ -162,6 +162,7 @@ export function PresetPlayer({ }: PresetPlayerProps) {
                             className="w-fit h-full"
                             controls
                             loop
+
                         />
                     ) : (
                         <div className="flex items-center justify-center h-full">

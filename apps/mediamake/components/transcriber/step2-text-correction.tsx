@@ -159,7 +159,7 @@ export function Step2TextCorrection({ transcriptionData, onTextCorrectionComplet
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-h-[600px] overflow-auto">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
