@@ -2,6 +2,7 @@
 import { Ripple } from './Ripple';
 import { Waveform } from './Waveform';
 import { DataMotion, ExampleDataMotion } from './DataMotion';
+import { Composition } from '@microfox/remotion';
 
 
 

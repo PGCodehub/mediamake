@@ -55,6 +55,13 @@ const nextConfig: NextConfig = {
       '@rollup/rollup-linux-x64-gnu': false,
     };
 
+    // Suppress warnings for optional dependencies
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      /Module not found.*@remotion\/google-fonts/,
+      /Can't resolve '@remotion\/google-fonts'/,
+    ];
+
     return config;
   },
 };

@@ -50,6 +50,7 @@ export function NewTranscriptionModal({ isOpen, onClose, onStartTranscription }:
         setError(null);
 
         try {
+            console.log('Starting transcription with audio URL:', audioUrl.trim(), 'and language:', language.trim() || undefined);
             await onStartTranscription(audioUrl.trim(), language.trim() || undefined);
             setIsSuccess(true);
             // Close modal after a brief success display

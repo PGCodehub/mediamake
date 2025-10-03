@@ -183,7 +183,7 @@ Consider:
       if (overallAnalysis) {
         const overallAnalysisResult = await generateObject({
           model: google('gemini-2.5-flash'),
-          schema: OverallAnalysisSchema,
+          schema: OverallAnalysisSchema as any,
           prompt: `Based on the following sentence analysis, provide an overall assessment:
 
 ${analysisResults
@@ -241,7 +241,7 @@ Provide an overall analysis of the transcription's mood, structure recommendatio
       overallAnalysis: z
         .boolean()
         .describe('Whether to generated overall analysis'),
-    }) as any,
+    }),
     outputSchema: TranscriptionMetadataSchema,
     metadata: {
       category: 'transcription',

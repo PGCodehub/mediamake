@@ -61,7 +61,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 const CustomParagraph = Paragraph.extend({
     addAttributes() {
         return {
-            ...this.parent?.(),
+            //...this.parent?.(),
             'data-sentence-id': {
                 default: null,
             },

@@ -1,7 +1,6 @@
 "use client"
 
 import { calculateCompositionLayoutMetadata, CompositionLayout, InputCompositionProps, RenderableComponentData } from "@microfox/remotion";
-import { Player } from "@remotion/player";
 import { Loader2, Copy, Check, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RenderButton } from "./render-button";
@@ -9,6 +8,7 @@ import { JsonEditor } from "./json-editor";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RenderProvider, RenderSettings, useRender } from "./render-provider";
+import { Player } from "@microfox/remotion";
 
 const AudioScene = {
     "childrenData": [
@@ -55,8 +55,7 @@ const AudioScene = {
         "fps": 30,
         "width": 1920,
         "height": 1080,
-        "duration": 20,
-        "fitDurationTo": "video-scene"
+        "duration": 20
     },
     "style": {
         "backgroundColor": "black"
@@ -193,7 +192,6 @@ export const MediaMakePlayerPlain: React.FC = () => {
                 </div>
             </div>
             <Player
-                component={CompositionLayout}
                 inputProps={calculatedMetadata.props}
                 durationInFrames={calculatedMetadata?.durationInFrames ?? 20}
                 fps={calculatedMetadata?.fps ?? 30}

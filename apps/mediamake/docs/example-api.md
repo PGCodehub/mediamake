@@ -149,7 +149,7 @@ GET Request
 				"type": "payload",
 				"payload": "{\"childrenData\":[{\"id\":\"video-scene\",\"componentId\":\"BaseLayout\",\"type\":\"scene\",\"data\":{},\"context\":{},\"childrenData\":[{\"id\":\"video-0\",\"componentId\":\"VideoAtom\",\"type\":\"atom\",\"data\":{\"src\":\"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4\",\"className\":\"w-full h-auto object-cover bg-black\",\"fit\":\"cover\"}},{\"id\":\"video-1\",\"componentId\":\"VideoAtom\",\"type\":\"atom\",\"data\":{\"src\":\"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4\",\"className\":\"w-full h-auto object-cover bg-black\",\"fit\":\"cover\"}},{\"id\":\"video-2\",\"componentId\":\"VideoAtom\",\"type\":\"atom\",\"data\":{\"src\":\"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4\",\"className\":\"w-full h-auto object-cover bg-black\",\"fit\":\"cover\"}}]}],\"config\":{\"width\":1920,\"height\":1080,\"fps\":30,\"duration\":20,\"fitDurationTo\":\"video-scene\"},\"style\":{}}"
 			},
-			"lambdaVersion": "4.0.347",
+			"lambdaVersion": "4.0.355",
 			"framesPerLambda": 20,
 			"memorySizeInMb": 3000,
 			"region": "us-east-2",

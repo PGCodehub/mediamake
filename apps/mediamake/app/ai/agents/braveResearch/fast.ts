@@ -86,7 +86,7 @@ export const fastResearchAgent = aiRouter
       .refine(data => !!data.query || !!data.queries?.length, {
         message: 'Either a single query or a list of queries must be provided.',
         path: ['query'],
-      }),
+      }) as any,
     outputSchema: z.object({
       searchInput: z.object({
         type: z.enum(['web', 'image', 'video', 'news']),
@@ -95,7 +95,7 @@ export const fastResearchAgent = aiRouter
         freshness: z.string().optional(),
       }),
       response: z.any().or(z.array(z.any())),
-    }),
+    }) as any,
     metadata: {
       icon: 'https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/brave.svg',
       title: 'Fast Researcher',

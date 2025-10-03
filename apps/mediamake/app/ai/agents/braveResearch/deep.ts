@@ -1,5 +1,5 @@
 import { AiRouter } from '@microfox/ai-router';
-import z from 'zod/v4';
+import { z } from 'zod';
 
 const aiRouter = new AiRouter<any, any>();
 
@@ -14,7 +14,7 @@ export const deepResearchAgent = aiRouter
     description: 'Deep Search the web for information',
     inputSchema: z.object({
       query: z.string(),
-    }),
+    }) as any,
     outputSchema: z.object({
       searchInput: z.object({
         type: z.enum(['web', 'image', 'video', 'news']),
@@ -23,7 +23,7 @@ export const deepResearchAgent = aiRouter
         freshness: z.string().optional(),
       }),
       response: z.any(),
-    }),
+    }) as any,
     metadata: {
       icon: 'https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/brave.svg',
       title: 'Deep Search',

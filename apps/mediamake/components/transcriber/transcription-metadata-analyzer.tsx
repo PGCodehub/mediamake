@@ -186,12 +186,6 @@ export function TranscriptionMetadataAnalyzer({
                                     <div className="text-sm text-muted-foreground">Total Sentences</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-2xl font-bold text-green-600">
-                                        {analysisResult.splitRecommendations}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">Recommended Splits</div>
-                                </div>
-                                <div className="text-center">
                                     <div className="text-2xl font-bold text-orange-600">
                                         {analysisResult.averageStrength.toFixed(1)}
                                     </div>
@@ -261,10 +255,7 @@ export function TranscriptionMetadataAnalyzer({
                                         <div
                                             key={index}
                                             className={cn(
-                                                "p-4 border rounded-lg",
-                                                sentence.metadata.shouldSplit
-                                                    ? "border-green-200 bg-green-50"
-                                                    : "border-gray-200 bg-gray-50"
+                                                "p-4 border rounded-lg b-gray-200 bg-gray-50"
                                             )}
                                         >
                                             <div className="flex items-start justify-between mb-2">
@@ -276,14 +267,11 @@ export function TranscriptionMetadataAnalyzer({
                                                         "{sentence.originalText}"
                                                     </p>
                                                 </div>
-                                                {sentence.metadata.shouldSplit && (
-                                                    <CheckCircle className="h-4 w-4 text-green-600 ml-2" />
-                                                )}
                                             </div>
 
                                             <div className="flex flex-wrap gap-2 mb-2">
-                                                <Badge className={getFeelColor(sentence.metadata.feel)}>
-                                                    {sentence.metadata.feel}
+                                                <Badge className={getFeelColor(sentence.metadata.keywordFeel)}>
+                                                    {sentence.metadata.keywordFeel}
                                                 </Badge>
                                                 <Badge variant="outline">
                                                     <Zap className="h-3 w-3 mr-1" />
@@ -294,15 +282,6 @@ export function TranscriptionMetadataAnalyzer({
                                                 <Badge variant="outline">
                                                     Keyword: {sentence.metadata.keyword}
                                                 </Badge>
-                                            </div>
-
-                                            <div className="text-xs text-muted-foreground">
-                                                <p>
-                                                    <strong>Split Reason:</strong> {sentence.metadata.splitReason.replace('_', ' ')}
-                                                </p>
-                                                <p>
-                                                    <strong>Confidence:</strong> {(sentence.metadata.confidence * 100).toFixed(0)}%
-                                                </p>
                                             </div>
                                         </div>
                                     ))}

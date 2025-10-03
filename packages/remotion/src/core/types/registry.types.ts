@@ -1,3 +1,4 @@
+import React from 'react';
 import { ComponentType } from './renderable.types';
 import { BaseRenderableProps } from './renderable.types';
 

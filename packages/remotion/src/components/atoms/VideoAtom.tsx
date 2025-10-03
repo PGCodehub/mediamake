@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { experimental_Video as Video } from '@remotion/media';
 import { staticFile, useCurrentFrame, useVideoConfig, OffthreadVideo, Loop, delayRender } from 'remotion';
 import { BaseRenderableProps, ComponentConfig } from '../../core/types';
 import { z } from 'zod';

@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonEditor } from "../player/json-editor";
-import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw } from "lucide-react";
+import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PresetMetadata } from "./types";
-import { toJSONSchema } from "zod"
+import { toJSONSchema } from "zod";
+import { MediaPicker } from "../media/media-picker";
+import { MediaFile } from "@/app/types/media";
 
 interface SchemaFormProps {
     metadata: PresetMetadata;
@@ -42,6 +44,123 @@ interface NestedFormProps {
     onChange: (value: any) => void;
     fieldKey: string;
     depth?: number;
+}
+
+// Helper function to detect if a field is URL/src related
+function isUrlField(fieldKey: string, field: FormField): boolean {
+    const urlKeywords = ['url', 'src', 'source', 'image', 'video', 'audio', 'media', 'file', 'path', 'link'];
+    const keyLower = fieldKey.toLowerCase();
+    const titleLower = (field.title || '').toLowerCase();
+    const descLower = (field.description || '').toLowerCase();
+
+    return urlKeywords.some(keyword =>
+        keyLower.includes(keyword) ||
+        titleLower.includes(keyword) ||
+        descLower.includes(keyword)
+    );
+}
+
+// Helper function to map MediaFile to field value based on field type and structure
+function mapMediaFileToFieldValue(mediaFiles: MediaFile | MediaFile[], field: FormField, currentValue: any): any {
+    const files = Array.isArray(mediaFiles) ? mediaFiles : [mediaFiles];
+
+    if (field.type === 'string') {
+        // For string fields, use filePath
+        return files[0]?.filePath || '';
+    }
+
+    if (field.type === 'array') {
+        if (field.items?.type === 'string') {
+            // Array of strings - return filePaths
+            return files.map(file => file.filePath).filter(Boolean);
+        } else if (field.items?.type === 'object') {
+            // Array of objects - map each file to object structure
+            return files.map(file => mapMediaFileToObject(file, field.items?.properties || {}));
+        }
+        // Default array handling
+        return files.map(file => file.filePath).filter(Boolean);
+    }
+
+    if (field.type === 'object') {
+        // For object fields, map file to object structure
+        return mapMediaFileToObject(files[0], field.properties || {});
+    }
+
+    return files[0]?.filePath || '';
+}
+
+// Helper function to map MediaFile to object structure
+function mapMediaFileToObject(mediaFile: MediaFile, properties: Record<string, any>): any {
+    const result: any = {};
+
+    // Map common properties
+    const propertyMap: Record<string, string> = {
+        'src': 'filePath',
+        'url': 'filePath',
+        'path': 'filePath',
+        'fileName': 'fileName',
+        'contentType': 'contentType',
+        'fileSize': 'fileSize',
+        'createdAt': 'createdAt',
+        'updatedAt': 'updatedAt'
+    };
+
+    // Handle each property in the schema
+    Object.keys(properties).forEach(propKey => {
+        const propSchema = properties[propKey];
+        const mappedKey = propertyMap[propKey];
+
+        if (mappedKey && mediaFile[mappedKey as keyof MediaFile] !== undefined) {
+            result[propKey] = mediaFile[mappedKey as keyof MediaFile];
+        } else if (mediaFile.metadata && typeof mediaFile.metadata === 'object') {
+            // Try to get from metadata using dynamic property access
+            const metadataValue = getNestedProperty(mediaFile.metadata, propKey);
+            if (metadataValue !== undefined) {
+                result[propKey] = metadataValue;
+            }
+        }
+    });
+
+    return result;
+}
+
+// Helper function to get nested properties from metadata
+function getNestedProperty(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => {
+        return current && current[key] !== undefined ? current[key] : undefined;
+    }, obj);
+}
+
+// MediaPickerButton component
+function MediaPickerButton({ onSelect, singular = true }: { onSelect: (files: MediaFile | MediaFile[]) => void; singular?: boolean }) {
+    const [showPicker, setShowPicker] = useState(false);
+
+    const handleSelect = (files: MediaFile | MediaFile[]) => {
+        onSelect(files);
+        setShowPicker(false);
+    };
+
+    return (
+        <>
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPicker(true)}
+                className="px-3"
+            >
+                <Image className="h-4 w-4" />
+            </Button>
+            {showPicker && (
+                <MediaPicker
+                    pickerMode={true}
+                    singular={singular}
+                    onSelect={handleSelect}
+                    onClose={() => setShowPicker(false)}
+                />
+            )}
+        </>
+    );
 }
 
 // Global renderField function that can be used by nested components
@@ -75,6 +194,29 @@ function renderField(
                         </Select>
                     );
                 }
+
+                const isUrl = isUrlField(fieldKey, field);
+
+                if (isUrl) {
+                    return (
+                        <div className="flex gap-2">
+                            <Input
+                                value={typeof fieldValue === 'string' ? fieldValue : ""}
+                                onChange={(e) => handleChange(fieldKey, e.target.value)}
+                                placeholder={field.description || `Enter ${field.title || fieldKey}`}
+                                className="flex-1"
+                            />
+                            <MediaPickerButton
+                                onSelect={(files) => {
+                                    const newValue = mapMediaFileToFieldValue(files, field, fieldValue);
+                                    handleChange(fieldKey, newValue);
+                                }}
+                                singular={true}
+                            />
+                        </div>
+                    );
+                }
+
                 return (
                     <Input
                         value={typeof fieldValue === 'string' ? fieldValue : ""}
@@ -108,6 +250,36 @@ function renderField(
 
             case "object":
                 if (field.properties) {
+                    const hasUrlProperties = Object.keys(field.properties || {}).some(propKey =>
+                        isUrlField(propKey, { ...(field.properties?.[propKey] || {}), title: field.properties?.[propKey]?.title || '' })
+                    );
+
+                    if (hasUrlProperties) {
+                        return (
+                            <div className="space-y-2">
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <NestedForm
+                                            schema={field}
+                                            value={fieldValue || {}}
+                                            onChange={(val) => handleChange(fieldKey, val)}
+                                            fieldKey={fieldKey}
+                                            depth={depth}
+                                            parentSchema={parentSchema}
+                                        />
+                                    </div>
+                                    <MediaPickerButton
+                                        onSelect={(files) => {
+                                            const newValue = mapMediaFileToFieldValue(files, field, fieldValue);
+                                            handleChange(fieldKey, newValue);
+                                        }}
+                                        singular={true}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    }
+
                     return (
                         <NestedForm
                             schema={field}
@@ -132,6 +304,34 @@ function renderField(
 
             case "array":
                 if (field.items) {
+                    const isUrlArray = isUrlField(fieldKey, field) ||
+                        (field.items.type === 'string' && isUrlField('item', { ...field.items, title: field.items.title || '' }));
+
+                    if (isUrlArray) {
+                        return (
+                            <div className="space-y-2">
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <ArrayManager
+                                            schema={field}
+                                            value={fieldValue || []}
+                                            onChange={(val) => handleChange(fieldKey, val)}
+                                            fieldKey={fieldKey}
+                                            parentSchema={parentSchema}
+                                        />
+                                    </div>
+                                    <MediaPickerButton
+                                        onSelect={(files) => {
+                                            const newValue = mapMediaFileToFieldValue(files, field, fieldValue);
+                                            handleChange(fieldKey, newValue);
+                                        }}
+                                        singular={false}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    }
+
                     return (
                         <ArrayManager
                             schema={field}

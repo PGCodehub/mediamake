@@ -24,7 +24,7 @@ export const braveResearchAgent = aiRouter
           .describe('Whether to use deep search which will take more time'),
         count: z.number().describe('The number of results to return'),
         freshness: z.enum(['pd', 'pw', 'pm', 'py']),
-      }),
+      }) as any,
       prompt: 'Generate a query for the brave research',
     });
     console.log('RESEARCH PARAM USAGE', queryObject.usage);

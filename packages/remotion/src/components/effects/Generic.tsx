@@ -381,8 +381,19 @@ export const GenericEffect: React.FC<BaseRenderableProps> = ({
     children,
     context
 }) => {
-    const frame = useCurrentFrame();
-    const { fps } = useVideoConfig();
+    // Safely get Remotion context with fallbacks
+    let frame = 0;
+    let fps = 30;
+
+    try {
+        frame = useCurrentFrame();
+        const videoConfig = useVideoConfig();
+        fps = videoConfig.fps;
+    } catch (error) {
+        // If we're not in a Remotion context, use fallback values
+        console.warn('GenericEffect used outside Remotion context, using fallback values');
+    }
+
     const effectData = data as GenericEffectData;
 
     const { timing } = context ?? {};

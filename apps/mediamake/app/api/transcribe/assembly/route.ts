@@ -71,8 +71,13 @@ async function transcribeAudio(
     };
 
     if (language) {
-      params.language_code = language;
-      console.log(`Using language hint: ${language}`);
+      if (language === 'auto') {
+        params.language_detection = true;
+        console.log('Using language detection');
+      } else {
+        params.language_code = language;
+        console.log(`Using language hint: ${language}`);
+      }
     }
 
     const transcript = await client.transcripts.transcribe(params);
@@ -95,7 +100,7 @@ async function transcribeAudio(
     return {
       id: transcript.id,
       language_code: transcript.language_code,
-      captions: z.array(TranscriptionSentenceSchema).parse(captions),
+      captions: captions,
     };
   } catch (error) {
     console.error('An error occurred during AssemblyAI transcription:', error);
@@ -118,12 +123,12 @@ export const POST = async (req: NextRequest) => {
     );
 
     // Return successful response
-    const response = TranscriptionResponseSchema.parse({
+    const response = {
       success: true,
       id,
       language_code,
       captions,
-    });
+    };
 
     return NextResponse.json(response);
   } catch (error) {

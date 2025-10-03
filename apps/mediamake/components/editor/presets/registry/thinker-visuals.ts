@@ -3,6 +3,8 @@ import {
   InputCompositionProps,
   VideoAtomDataProps,
   PanEffectData,
+  WaveformConfig,
+  WaveformHistogramRangedDataProps,
 } from '@microfox/remotion';
 import z from 'zod';
 import { PresetMetadata } from '../types';
@@ -10,7 +12,6 @@ import { Layout } from 'lucide-react';
 
 const presetParams = z.object({
   imageUrl: z.string().describe('Background image URL'),
-  videoUrl: z.string().optional().describe('Background video URL'),
   titleText: z.string().describe("Main title text (e.g., 'Get into Zone')"),
   keystoneText: z.string().describe("Keystone text (e.g., 'keystone')"),
   titleColor: z.string().optional().describe('Title text color (hex)'),
@@ -25,12 +26,35 @@ const presetParams = z.object({
     .describe(
       'Keystone font family (e.g., "Roboto:600:italic" or "BebasNeue")',
     ),
+  aspectRatio: z
+    .string()
+    .optional()
+    .describe('Aspect ratio (e.g., "16:9" or "9:16")'),
+  background: z
+    .object({
+      imageUrl: z.string().describe('Background image URL'),
+      videoUrl: z.string().optional().describe('Background video URL'),
+      opacity: z.number().optional().describe('Background opacity'),
+    })
+    .optional(),
+  bottomArtWork: z
+    .object({
+      src: z.string(),
+      text: z.string(),
+      audioUrl: z.string(),
+    })
+    .optional(),
 });
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
 ): Partial<InputCompositionProps> => {
   // Parse aspect ratio
+  const [widthRatio, heightRatio] = params.aspectRatio
+    ?.split(':')
+    .map(Number) ?? [16, 9];
+  const aspectRatio = widthRatio / heightRatio;
+  const isVertical = aspectRatio < 1;
 
   // 1st slowed out video track.
   const video = {
@@ -55,7 +79,7 @@ const presetExecution = (
             },
             {
               key: 'opacity',
-              val: 0.35,
+              val: params.background?.opacity ?? 0.35,
               prog: 1,
             },
           ],
@@ -64,7 +88,7 @@ const presetExecution = (
     ],
     data: {
       src:
-        params.videoUrl ||
+        params.background?.videoUrl ||
         'https://aidev.blr1.cdn.digitaloceanspaces.com/mediamake/social_u6251845547_httpss.mj.run9l2KyQUVPrM_camera_rotates_around._-_e8d79e2e-6ed9-4fc6-946d-b182e6f84b88_0.mp4',
       className: 'w-full h-full object-cover bg-black',
       fit: 'cover' as const,
@@ -453,10 +477,97 @@ const presetExecution = (
       },
     ],
     data: {
-      src: params.imageUrl,
-      className: 'w-full h-auto object-cover',
+      src: params.background?.imageUrl,
+      className: isVertical
+        ? 'w-[100%] h-[130%] object-cover'
+        : 'w-full h-auto object-cover',
       style: {
-        transform: 'translateX(25%)',
+        opacity: params.background?.opacity ?? 0.5,
+        transform: isVertical ? 'translateX(0%)' : 'translateX(25%)',
+      },
+    },
+  };
+
+  const histogramStatic = {
+    id: 'histogram-static-alkefn',
+    componentId: 'WaveformHistogramRanged',
+    type: 'atom' as const,
+    data: {
+      config: {
+        audioSrc: params.bottomArtWork?.audioUrl,
+        numberOfSamples: 64,
+        windowInSeconds: 1 / 30,
+        amplitude: 1,
+        width: 1920,
+        height: 300,
+        dataOffsetInSeconds: 0,
+        useFrequencyData: true,
+      } as WaveformConfig,
+      barSpacing: 10,
+      barBorderRadius: 8,
+      barWidth: 4,
+      multiplier: 1,
+      horizontalSymmetry: false,
+      verticalMirror: true,
+      histogramStyle: 'full-width',
+      amplitude: 0.75,
+      gradientStartColor: '#FFF',
+      gradientEndColor: params.keystoneColor ?? '#FDCE99',
+      gradientDirection: 'vertical',
+      gradientStyle: 'mirrored',
+      className: 'rounded-lg absolute bottom-0',
+      waveDirection: 'right-to-left',
+      style: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        height: '30%',
+      },
+    } as WaveformHistogramRangedDataProps,
+  };
+
+  const image3 = {
+    id: `image-3-alkefn`,
+    componentId: 'ImageAtom',
+    type: 'atom' as const,
+    data: {
+      src: params.bottomArtWork?.src,
+      className: 'w-[400px] h-[400px] object-cover',
+      style: {
+        opacity: 1,
+        borderRadius: 40,
+        position: 'absolute',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        bottom: '15%',
+        filter: 'drop-shadow(0 0 10px #000)',
+      },
+    },
+  };
+
+  const text = {
+    id: `text-1-alkefn`,
+    componentId: 'TextAtom',
+    type: 'atom' as const,
+    data: {
+      text: params.bottomArtWork?.text,
+      className: 'text-white text-2xl font-bold',
+      style: {
+        fontSize: 45,
+        color: '#FFF',
+        textTransform: 'uppercase',
+        letterSpacing: 10,
+        fontWeight: 900,
+        position: 'absolute',
+        bottom: '10%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+      },
+      font: {
+        family: 'Inter',
+        weights: ['100', '400', '700'],
       },
     },
   };
@@ -480,8 +591,11 @@ const presetExecution = (
       },
     },
     childrenData: [
-      ...(params.videoUrl ? [video] : []),
-      ...(params.imageUrl ? [image2] : []),
+      ...(params.background?.videoUrl ? [video] : []),
+      ...(params.background?.imageUrl ? [image2] : []),
+      ...(params.bottomArtWork?.audioUrl ? [histogramStatic] : []),
+      ...(params.bottomArtWork?.src ? [image3] : []),
+      ...(params.bottomArtWork?.text ? [text] : []),
     ],
   };
 

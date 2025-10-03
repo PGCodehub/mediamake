@@ -69,7 +69,7 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
-    "@remotion/google-fonts": "4.0.347",
+    "@remotion/google-fonts": "4.0.355",
     "@tiptap/extension-bubble-menu": "^3.4.4",
     "@types/diff": "^7.0.2",
     "@use-gesture/react": "^10.3.1",

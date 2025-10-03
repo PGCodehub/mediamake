@@ -6,6 +6,7 @@
 // Font names are automatically normalized (spaces to hyphens, lowercase)
 // For example: "WaterBrush" becomes "waterbrush", "Open Sans" becomes "open-sans"
 // Use isFontAvailable() to check if a font is supported before loading
+import * as fontUtils from '@remotion/google-fonts';
 
 // Dynamic import to avoid bundling issues with peer dependencies
 let availableFonts: any[] = [];
@@ -13,10 +14,7 @@ let availableFonts: any[] = [];
 const getAvailableFonts = async () => {
   if (availableFonts.length === 0) {
     try {
-      const { getAvailableFonts: getFonts } = await import(
-        '@remotion/google-fonts'
-      );
-      availableFonts = getFonts();
+      availableFonts = fontUtils.getAvailableFonts();
     } catch (error) {
       console.warn('Failed to load @remotion/google-fonts:', error);
       availableFonts = [];

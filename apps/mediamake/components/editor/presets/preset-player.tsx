@@ -1,7 +1,7 @@
 "use client";
 
 import { calculateCompositionLayoutMetadata, CompositionLayout, InputCompositionProps } from "@microfox/remotion";
-import { Player } from "@remotion/player";
+import { Player } from "@microfox/remotion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -34,8 +34,6 @@ export function PresetPlayer({ }: PresetPlayerProps) {
             if (!generatedOutput.childrenData) return;
             if (generatedOutput.childrenData.length === 0) return;
 
-            console.log('generatedOutput', generatedOutput);
-
             const metadata = await calculateCompositionLayoutMetadata({
                 defaultProps: {},
                 props: generatedOutput,
@@ -43,6 +41,7 @@ export function PresetPlayer({ }: PresetPlayerProps) {
                 compositionId: 'DataMotion',
                 isRendering: false,
             });
+            console.log("gen metadat", metadata);
             setCalculatedMetadata(metadata);
         };
         calculateMetadata();
@@ -152,9 +151,8 @@ export function PresetPlayer({ }: PresetPlayerProps) {
                 <div className="relative flex flex-row items-stretch w-full h-full p-4 flex items-center justify-center">
                     {calculatedMetadata ? (
                         <Player
-                            component={CompositionLayout}
                             inputProps={calculatedMetadata.props}
-                            durationInFrames={calculatedMetadata?.durationInFrames ?? 20}
+                            durationInFrames={calculatedMetadata?.durationInFrames && calculatedMetadata?.durationInFrames > 0 ? calculatedMetadata?.durationInFrames : 20}
                             fps={calculatedMetadata?.fps ?? 30}
                             compositionHeight={calculatedMetadata?.height ?? 1920}
                             compositionWidth={calculatedMetadata?.width ?? 1920}

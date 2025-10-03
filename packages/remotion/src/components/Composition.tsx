@@ -1,13 +1,10 @@
+import { Player as RemotionPlayer } from '@remotion/player';
 import React from 'react';
-import { AbsoluteFill, Composition as RemotionComposition, useVideoConfig, useCurrentFrame, CalculateMetadataFunction } from 'remotion';
-import { BaseRenderableData, RenderableComponentData } from '../core/types';
-import { ComponentRenderer } from './base/ComponentRenderer';
+import { AbsoluteFill, CalculateMetadataFunction, Composition as RemotionComposition } from 'remotion';
 import { CompositionProvider } from '../core/context/CompositionContext';
-import { Input, ALL_FORMATS, UrlSource, BlobSource, FilePathSource } from 'mediabunny';
-import { calculateDuration, findMatchingComponents, setDurationsInContext } from '../core/context/timing';
-import { parseMedia } from '@remotion/media-parser';
-import { nodeReader } from '@remotion/media-parser/node';
-import z from 'zod';
+import { calculateDuration, setDurationsInContext } from '../core/context/timing';
+import { BaseRenderableData, RenderableComponentData } from '../core/types';
+import { ComponentRenderer } from './base';
 
 
 interface CompositionProps extends BaseRenderableData {
@@ -59,6 +56,7 @@ export const CompositionLayout = ({ childrenData, style, config }: InputComposit
 
 export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<InputCompositionProps> = async ({ props, defaultProps, abortSignal, isRendering }) => {
 
+    console.log('calculateCompositionLayoutMetadata', props, defaultProps, abortSignal, isRendering);
     const updatedProps = await setDurationsInContext(props);
     let calculatedDuration: number | undefined = undefined;
 
@@ -72,8 +70,7 @@ export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<Input
     const fps = props.config.fps ?? defaultProps.config.fps;
     const durationInFrames = Math.round(duration * fps);
 
-    console.log('durationInFrames', durationInFrames, updatedProps);
-
+    console.log('durationInFrames', durationInFrames, duration, updatedProps);
 
     return {
         // Change the metadata
@@ -100,15 +97,29 @@ export const Composition = ({
     style
 }: CompositionProps) => {
 
-
-
+    console.log('Composition', id, childrenData, config, style);
     return <RemotionComposition
         id={id}
         component={CompositionLayout}
         durationInFrames={Math.round(config.duration * config.fps)}
         fps={config.fps}
+        width={config.width ?? 1080}
+        height={config.height ?? 1920}
         defaultProps={{ childrenData, style, config: config }}
         calculateMetadata={calculateCompositionLayoutMetadata}
-        schema={z.object({}).loose()}
+    //schema={z.object({})}
     />
+}
+
+
+export const Player = (props: any) => {
+    return (
+        <RemotionPlayer
+            component={CompositionLayout}
+            durationInFrames={props.durationInFrames > 0 ? props.durationInFrames : 20}
+            compositionWidth={props.compositionWidth > 0 ? props.compositionWidth : 1920}
+            compositionHeight={props.compositionHeight > 0 ? props.compositionHeight : 1080}
+            fps={props.fps > 0 ? props.fps : 30}
+            {...props} />
+    )
 }

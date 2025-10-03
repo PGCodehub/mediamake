@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Space, AWS_REGION } from '@microfox/s3-space';
+import { getClientId } from '@/lib/auth-utils';
 
 const s3 = new S3Space({
   forcePathStyle: false,
@@ -15,10 +16,13 @@ const s3 = new S3Space({
 
 export async function POST(req: NextRequest) {
   try {
+    const clientId = getClientId(req);
     const formData = await req.formData();
     const files = formData.getAll('file') as File[];
     const folderName =
-      formData.get('folderName')?.toString() || 'mediamake/files';
+      formData.get('folderName')?.toString() ||
+      'mediamake/' + clientId?.replaceAll(' ', '') ||
+      'mediamake/files';
 
     let mediaPayload: {
       mediaName: string;
@@ -71,11 +75,14 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const clientId = getClientId(req);
     const { searchParams } = new URL(req.url);
     const fileName = searchParams.get('fileName');
     const userId = searchParams.get('userId');
     const folderName =
-      searchParams.get('folderName') || 'customBots/clientMessages';
+      searchParams.get('folderName') ||
+      'mediamake/' + clientId?.replaceAll(' ', '') ||
+      'mediamake/files';
 
     if (!fileName || !userId) {
       return NextResponse.json(

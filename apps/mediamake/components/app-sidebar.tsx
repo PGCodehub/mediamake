@@ -35,7 +35,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { StudioConfig } from "@/microfox.config"
-import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon } from "lucide-react"
+import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon, FolderOpenIcon } from "lucide-react"
 
 const data = {
   user: {
@@ -68,6 +68,11 @@ const data = {
       title: "Presets",
       url: "/presets",
       icon: <MagnetIcon />,
+    },
+    {
+      title: "Media",
+      url: "/media",
+      icon: <FolderOpenIcon />,
     }
     // {
     //   title: "Analytics",

@@ -72,10 +72,6 @@ export const ComponentRenderer: React.FC<BaseRenderableData> = ({
     let newTiming: CalculatedTiming = calculateTimingWithInheritance(componentData, root, videoConfig);
 
 
-    if (id === "BaseScene") {
-        console.log('newTiming', newTiming, videoConfig);
-    }
-
     const newContext: InternalRenderableContext = {
         ...context,
         boundaries: (context?.boundaries) as CalculatedBoundaries,
