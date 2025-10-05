@@ -139,7 +139,10 @@ export const POST = async (req: NextRequest) => {
       }
 
       // Execute the preset
-      const presetOutput = runPreset(presetInputData, preset.presetFunction);
+      const presetOutput = runPreset(presetInputData, preset.presetFunction, {
+        config: finalComposition.config,
+        style: finalComposition.style,
+      });
       if (!presetOutput) {
         return NextResponse.json(
           { error: `Failed to execute preset '${presetId}'` },

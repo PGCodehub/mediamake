@@ -5,6 +5,11 @@ import {
   visualizeAudio,
 } from '@remotion/media-utils';
 import { staticFile } from 'remotion';
+import {
+  findMatchingComponents,
+  findMatchingComponentsByQuery,
+  useComposition,
+} from '../../../core';
 
 // Hook configuration interface
 export interface UseWaveformDataConfig {
@@ -76,6 +81,8 @@ export const useWaveformData = (
     maxDb = -30,
   } = config;
 
+  const { root } = useComposition();
+
   // Validate and adjust numberOfSamples
   const validatedNumberOfSamples = useMemo(() => {
     if (!isValidPowerOfTwo(numberOfSamples)) {
@@ -87,11 +94,43 @@ export const useWaveformData = (
     return numberOfSamples;
   }, [numberOfSamples]);
 
-  const source = useMemo(() => {
+  const { source, audioStartsFrom } = useMemo(() => {
     if (audioSrc.startsWith('http')) {
-      return audioSrc;
+      return { source: audioSrc, audioStartsFrom: undefined };
     }
-    return staticFile(audioSrc);
+    if (audioSrc.startsWith('ref:')) {
+      const matchingComponent = findMatchingComponents(root, [
+        audioSrc.replace('ref:', ''),
+      ]);
+      if (matchingComponent.length > 0) {
+        const firstMatchingComponent = matchingComponent[0];
+        if (firstMatchingComponent.componentId === 'AudioAtom') {
+          return {
+            source: firstMatchingComponent.data.src,
+            audioStartsFrom:
+              firstMatchingComponent.data?.startFrom ?? undefined,
+          };
+        }
+        if (
+          firstMatchingComponent.type === 'layout' ||
+          firstMatchingComponent.type === 'scene'
+        ) {
+          const audioComponents = findMatchingComponentsByQuery(
+            firstMatchingComponent.childrenData,
+            { componentId: 'AudioAtom' }
+          );
+          if (audioComponents.length > 0) {
+            return {
+              source: audioComponents[0].data.src,
+              audioStartsFrom: audioComponents[0].data?.startFrom ?? undefined,
+            };
+          }
+          // look for all child componenet that are of type audioAtom
+          //return firstMatchingComponent.data.src;
+        }
+      }
+    }
+    return { source: staticFile(audioSrc), audioStartsFrom: undefined };
   }, [audioSrc]);
 
   // Get audio data
@@ -102,11 +141,15 @@ export const useWaveformData = (
     if (posterize && posterize > 1) {
       return Math.round(frame / posterize) * posterize;
     }
-    if (dataOffsetInSeconds != 0) {
-      return frame + Math.round(dataOffsetInSeconds * fps);
+    let offset = 0;
+    if (audioStartsFrom && audioStartsFrom != 0) {
+      offset += Math.round(audioStartsFrom * fps);
     }
-    return frame;
-  }, [frame, posterize, dataOffsetInSeconds]);
+    if (dataOffsetInSeconds != 0) {
+      offset += Math.round(dataOffsetInSeconds * fps);
+    }
+    return frame + offset;
+  }, [frame, posterize, dataOffsetInSeconds, audioStartsFrom]);
 
   // Generate waveform data
   const waveformData = useMemo(() => {

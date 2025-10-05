@@ -359,6 +359,10 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
             case 'contrast':
                 styles.filter = `${styles.filter || ''} contrast(${value})`.trim();
                 break;
+            case 'filter':
+                // Handle filter property directly, including drop-shadow
+                styles.filter = value;
+                break;
             case 'color':
                 styles.color = value;
                 break;

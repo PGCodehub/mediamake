@@ -18,7 +18,9 @@ export function OutputCard({ className }: OutputCardProps) {
         generatedOutput,
         editableOutput,
         setEditableOutput,
-        setGeneratedOutput
+        setGeneratedOutput,
+        configuration,
+        setConfiguration
     } = usePresetContext();
 
     const [isExpanded, setIsExpanded] = useState(false);
@@ -26,8 +28,11 @@ export function OutputCard({ className }: OutputCardProps) {
     const [jsonEditorValue, setJsonEditorValue] = useState<InputCompositionProps | null>(generatedOutput);
 
     useEffect(() => {
-        setJsonEditorValue(generatedOutput);
-    }, [generatedOutput]);
+        // Only update if user is not actively editing
+        if (!isUserEditing) {
+            setJsonEditorValue(generatedOutput);
+        }
+    }, [generatedOutput, isUserEditing]);
 
 
     const handleOutputChange = (newOutput: InputCompositionProps) => {
@@ -96,6 +101,14 @@ export function OutputCard({ className }: OutputCardProps) {
                                             setIsUserEditing(false);
                                             setEditableOutput(jsonEditorValue);
                                             setGeneratedOutput(jsonEditorValue);
+
+                                            // Update configuration with the new values
+                                            if (jsonEditorValue) {
+                                                setConfiguration({
+                                                    config: jsonEditorValue.config,
+                                                    style: jsonEditorValue.style
+                                                });
+                                            }
                                         }}
                                     >
                                         Save

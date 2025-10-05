@@ -11,13 +11,63 @@ import { CSSProperties } from 'react';
 
 const presetParams = z.object({
   inputCaptions: z.array(z.any()),
-  position: z.enum(['left', 'center', 'right']),
-  negativeOffset: z.number().optional(),
+  position: z.object({
+    align: z.enum(['left', 'center', 'right', 'circle', 'random', 'fixed']),
+    top: z
+      .number()
+      .optional()
+      .describe('top position - used only when align is fixed'),
+    left: z
+      .number()
+      .optional()
+      .describe('left position - used only when align is fixed'),
+    right: z
+      .number()
+      .optional()
+      .describe('right position - used only when align is fixed'),
+    bottom: z
+      .number()
+      .optional()
+      .describe('bottom position - used only when align is fixed'),
+    radius: z
+      .number()
+      .optional()
+      .describe(
+        'radius for circle positioning - used only when align is circle',
+      ),
+    randomize: z
+      .boolean()
+      .optional()
+      .describe('randomize position if alignment is not fixed'),
+    textAlign: z
+      .enum(['left', 'center', 'right'])
+      .optional()
+      .describe('text alignment within parts'),
+  }),
+  subtitleSync: z.object({
+    negativeOffset: z.number().optional(),
+    maxLines: z.number().optional(),
+    noGaps: z.object({
+      enabled: z.boolean().optional().describe('enable no gaps'),
+      maxLength: z
+        .number()
+        .default(3)
+        .optional()
+        .describe('max duration it can extend'),
+    }),
+    floatThreshold: z.number().optional(),
+    disableMetadata: z
+      .boolean()
+      .optional()
+      .describe('ignore all metadata provided in captions'),
+  }),
   fontChoices: z
     .array(
       z.object({
-        primary: z.string().describe('primary font family'),
-        header: z.string().describe('impact font family'),
+        primaryFont: z
+          .string()
+          .describe('small text font family like Roboto:600:italic'),
+        headerFont: z.string().describe('impact font family like BebasNeue'),
       }),
     )
     .optional()
@@ -33,15 +83,6 @@ const presetParams = z.object({
     .optional()
     .describe('color choices - primary and secondary colors'),
   avgFontSize: z.number().optional().describe('average font size'),
-  randomizePosition: z.boolean().optional().describe('randomize position'),
-  noGaps: z.object({
-    enabled: z.boolean().optional().describe('enable no gaps'),
-    maxLength: z
-      .number()
-      .default(3)
-      .optional()
-      .describe('max duration it can extend'),
-  }),
 });
 
 const presetExecution = (
@@ -50,10 +91,9 @@ const presetExecution = (
   const {
     inputCaptions,
     position,
-    negativeOffset,
+    subtitleSync,
     avgFontSize,
     colorChoices,
-    randomizePosition,
     fontChoices,
   } = params;
 
@@ -63,8 +103,8 @@ const presetExecution = (
       ? fontChoices
       : [
           {
-            primary: 'Roboto:600:italic',
-            header: 'BebasNeue',
+            primaryFont: 'Roboto:600:italic',
+            headerFont: 'BebasNeue',
           },
         ];
 
@@ -77,19 +117,138 @@ const presetExecution = (
     };
   };
 
-  // Splits sentence into parts based on character count for better layout
-  const splitSentenceIntoParts = (words: any[]) => {
-    const totalCharacters = words.reduce(
-      (sum, word) => sum + word.text.trim().length,
-      0,
-    );
+  // Pre-processes captions to split combined words
+  const preprocessCaptions = (captions: any[]) => {
+    return captions.map(caption => {
+      const processedWords: any[] = [];
+      let originalWordIndex = 0;
 
+      for (const word of caption.words) {
+        // Check if word contains multiple words (has spaces)
+        if (word.text.includes(' ')) {
+          const subWords = word.text.split(' ');
+          const wordDuration = word.duration;
+          const wordStart = word.start;
+          const wordAbsoluteStart = word.absoluteStart;
+
+          // Distribute timing evenly among sub-words
+          const subWordDuration = wordDuration / subWords.length;
+
+          subWords.forEach((subWord: string, index: number) => {
+            const subWordStart = wordStart + index * subWordDuration;
+            const subWordAbsoluteStart =
+              wordAbsoluteStart + index * subWordDuration;
+            const subWordAbsoluteEnd = subWordAbsoluteStart + subWordDuration;
+
+            processedWords.push({
+              ...word,
+              text: subWord.trim(),
+              start: subWordStart,
+              duration: subWordDuration,
+              absoluteStart: subWordAbsoluteStart,
+              absoluteEnd: subWordAbsoluteEnd,
+              originalWordIndex: originalWordIndex, // Track original word index
+              isSubWord: true, // Mark as sub-word
+            } as any);
+          });
+        } else {
+          processedWords.push({
+            ...word,
+            originalWordIndex: originalWordIndex,
+            isSubWord: false,
+          } as any);
+        }
+        originalWordIndex++;
+      }
+
+      return {
+        ...caption,
+        words: processedWords,
+      };
+    });
+  };
+
+  // Splits sentence into parts using metadata.splitParts if available
+  const splitSentenceIntoParts = (
+    words: any[],
+    maxLines?: number,
+    splitParts?: string[],
+  ) => {
+    // If splitParts is provided, use it for splitting
+    if (splitParts && splitParts.length > 0) {
+      const parts: any[][] = [];
+      let currentWordIndex = 0;
+
+      for (const splitPart of splitParts) {
+        const partWords: any[] = [];
+        const targetText = splitPart.trim().toLowerCase();
+
+        // Find words that match this split part
+        while (currentWordIndex < words.length) {
+          const word = words[currentWordIndex];
+          const wordText = word.text.toLowerCase();
+
+          // Check if this word could be part of the current split part
+          if (
+            targetText.includes(wordText) ||
+            wordText.includes(targetText.split(' ')[0])
+          ) {
+            partWords.push(word);
+            currentWordIndex++;
+
+            // If we've matched all words in the split part, break
+            if (partWords.length >= splitPart.split(' ').length) {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+
+        if (partWords.length > 0) {
+          parts.push(partWords);
+        }
+      }
+
+      // Add any remaining words to the last part
+      if (currentWordIndex < words.length) {
+        const lastPart = parts[parts.length - 1];
+        if (lastPart) {
+          lastPart.push(...words.slice(currentWordIndex));
+        } else {
+          parts.push(words.slice(currentWordIndex));
+        }
+      }
+
+      return parts.length > 0 ? parts : [words];
+    }
+
+    // Fallback to simple character-based distribution
+    return splitSentenceIntoPartsSimple(words, maxLines);
+  };
+
+  // Simple character-based splitting (fallback)
+  const splitSentenceIntoPartsSimple = (words: any[], maxLines?: number) => {
     // Very short sentences: don't split
-    if (totalCharacters < 8 || words.length <= 1) {
+    if (words.length <= 1) {
       return [words];
     }
 
-    // Distribute by character count constraint: max 8 characters per part
+    // If no maxLines specified, use default smart splitting
+    const targetLines = maxLines || 5;
+
+    // If we have only 1 word, return as single part
+    if (words.length <= 1) {
+      return [words];
+    }
+
+    // Calculate total characters and target characters per line
+    const totalCharacters = words.reduce(
+      (sum, word) => sum + word.text.length,
+      0,
+    );
+    const targetCharsPerLine = Math.ceil(totalCharacters / targetLines);
+
     const parts: any[][] = [];
     let currentPart: any[] = [];
     let currentCharCount = 0;
@@ -98,20 +257,24 @@ const presetExecution = (
       const word = words[i];
       const wordLength = word.text.length;
 
-      // If adding this word would exceed 8 characters and we have words in current part, start a new part
-      if (currentCharCount + wordLength > 8 && currentPart.length > 0) {
+      currentPart.push(word);
+      currentCharCount += wordLength;
+
+      // Break if we've reached target characters per line or we're at the last word
+      if (currentCharCount >= targetCharsPerLine || i === words.length - 1) {
         parts.push([...currentPart]);
-        currentPart = [word];
-        currentCharCount = wordLength;
-      } else {
-        currentPart.push(word);
-        currentCharCount += wordLength;
+        currentPart = [];
+        currentCharCount = 0;
       }
     }
 
-    // Add any remaining words to the last part
-    if (currentPart.length > 0) {
-      parts.push(currentPart);
+    // Ensure we don't exceed target lines
+    if (parts.length > targetLines) {
+      const lastPart = parts.pop();
+      const secondLastPart = parts.pop();
+      if (secondLastPart && lastPart) {
+        parts.push([...secondLastPart, ...lastPart]);
+      }
     }
 
     return parts;
@@ -147,7 +310,7 @@ const presetExecution = (
     shouldAnimate: boolean,
   ): GenericEffectData => ({
     type: 'ease-out',
-    start: word.start - 0.1,
+    start: word.start,
     duration: shouldAnimate ? syncDuration || 8 : 3,
     mode: 'provider',
     targetIds: [wordId],
@@ -173,7 +336,7 @@ const presetExecution = (
 
     return {
       type: 'ease-in',
-      start: word.start - 0.1,
+      start: word.start,
       duration: shouldAnimate ? syncDuration || word.duration : 0.1,
       mode: 'provider',
       targetIds: [wordId],
@@ -186,7 +349,12 @@ const presetExecution = (
             },
             {
               key: 'filter',
-              val: `drop-shadow(0 0 8px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.4))` as any,
+              val: `drop-shadow(0 0 12px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8)) drop-shadow(0 0 24px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.4))` as any,
+              prog: 0.5,
+            },
+            {
+              key: 'filter',
+              val: `drop-shadow(0 0 24px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.6))` as any,
               prog: 1,
             },
           ]
@@ -198,7 +366,7 @@ const presetExecution = (
             },
             {
               key: 'filter',
-              val: `drop-shadow(0 0 2px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.4))` as any,
+              val: `drop-shadow(0 0 6px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8))` as any,
               prog: 1,
             },
           ],
@@ -273,14 +441,19 @@ const presetExecution = (
         ? fontSize * 1.35
         : fontSize * 0.85;
       const font = isHighlight
-        ? selectedFontChoice.header
-        : selectedFontChoice.primary;
-      const fontFamily = font.includes(':') ? font.split(':')[0] : font;
+        ? selectedFontChoice.headerFont
+        : selectedFontChoice.primaryFont;
+
+      // Ensure font is defined before using includes
+      const fontString = font || 'Roboto';
+      const fontFamily = fontString.includes(':')
+        ? fontString.split(':')[0]
+        : fontString;
 
       // Parse font style from font string
       let fontStyle: CSSProperties = {};
-      if (font.includes(':')) {
-        const _fontStyle = font.split(':');
+      if (fontString.includes(':')) {
+        const _fontStyle = fontString.split(':');
         if (_fontStyle.length > 2) {
           fontStyle.fontStyle = _fontStyle[2];
           fontStyle.fontWeight = parseInt(_fontStyle[1]);
@@ -311,9 +484,6 @@ const presetExecution = (
             fontSize: fontCalculatedSize,
             color: textColor,
             ...fontStyle,
-            ...(isHighlight && {
-              textShadow: `0 0 10px ${textShadowColor}50`,
-            }),
           },
           font: {
             family: fontFamily,
@@ -454,24 +624,89 @@ const presetExecution = (
     return extendedCaptions;
   };
 
-  // Generates random position for captions when randomizePosition is enabled
-  const getRandomPosition = (height: number, randomizePosition: boolean) => {
-    if (!randomizePosition) {
-      return {};
+  // Generates position based on alignment type
+  const getPosition = (height: number, positionConfig: any) => {
+    const { align, top, left, right, bottom, radius, randomize } =
+      positionConfig;
+
+    // Handle fixed positioning
+    if (align === 'fixed') {
+      const style: any = { position: 'absolute' as const };
+
+      if (top !== undefined) style.top = `${top}px`;
+      if (left !== undefined) style.left = `${left}px`;
+      if (right !== undefined) style.right = `${right}px`;
+      if (bottom !== undefined) style.bottom = `${bottom}px`;
+
+      return style;
     }
 
-    // Generate random position within 1920x1080 constraints
-    const maxTop = 1080 - (height || 600);
-    const maxLeft = 1920 - 1000;
+    // Handle circle positioning
+    if (align === 'circle') {
+      const circleRadius = radius || 200; // Default radius
+      const centerX = 960; // Center of 1920px width
+      const centerY = 540; // Center of 1080px height
 
-    const randomTop = 100 + Math.random() * maxTop;
-    const randomLeft = 100 + Math.random() * maxLeft;
+      // Generate random angle for position on circle circumference
+      const angle = Math.random() * 2 * Math.PI;
+      const circleX = centerX + circleRadius * Math.cos(angle);
+      const circleY = centerY + circleRadius * Math.sin(angle);
 
-    return {
-      position: 'absolute' as const,
-      top: `${randomTop}px`,
-      left: `${randomLeft}px`,
-    };
+      return {
+        position: 'absolute' as const,
+        left: `${Math.max(0, Math.min(1920 - 200, circleX))}px`,
+        top: `${Math.max(0, Math.min(1080 - (height || 600), circleY))}px`,
+      };
+    }
+
+    // Handle random positioning
+    if (align === 'random' || randomize) {
+      const maxTop = 1080 - (height || 600);
+      const maxLeft = 1920 - 1000;
+
+      const randomTop = 100 + Math.random() * maxTop;
+      const randomLeft = 100 + Math.random() * maxLeft;
+
+      return {
+        position: 'absolute' as const,
+        top: `${randomTop}px`,
+        left: `${randomLeft}px`,
+      };
+    }
+
+    // Handle left, center, right alignments
+    const baseStyle: any = { position: 'absolute' as const };
+
+    switch (align) {
+      case 'left':
+        return {
+          ...baseStyle,
+          left: '80px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        };
+      case 'center':
+        return {
+          ...baseStyle,
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+        };
+      case 'right':
+        return {
+          ...baseStyle,
+          right: '80px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        };
+      default:
+        return {
+          ...baseStyle,
+          left: '80px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        };
+    }
   };
 
   // Creates part-specific layout with animations
@@ -485,6 +720,8 @@ const presetExecution = (
     selectedColorChoice: any,
     partId: string,
     scentenceId: string,
+    floatThreshold?: number,
+    textAlign?: string,
   ) => {
     const wordsData = generateWordsData(
       partWords,
@@ -496,10 +733,30 @@ const presetExecution = (
       scentenceId,
     );
 
+    // Calculate displacement based on character count or floatThreshold
+    const partCharacterCount = partWords.reduce(
+      (sum, word) => sum + word.text.length,
+      0,
+    );
+
+    // If floatThreshold is provided, use it; otherwise calculate based on character count
+    const displacement =
+      floatThreshold !== undefined
+        ? floatThreshold
+        : Math.max(5, Math.min(30, partCharacterCount * 1.5)); // Scale with character count, min 5, max 30
+
     // Create part-specific effects using provider mode
     const partRanges = [
-      { key: 'translateX', val: partIndex % 2 === 0 ? 20 : -20, prog: 0 },
-      { key: 'translateX', val: partIndex % 2 === 0 ? -20 : 20, prog: 1 },
+      {
+        key: 'translateX',
+        val: partIndex % 2 === 0 ? displacement : -displacement,
+        prog: 0,
+      },
+      {
+        key: 'translateX',
+        val: partIndex % 2 === 0 ? -displacement : displacement,
+        prog: 1,
+      },
     ];
 
     const partEffect: GenericEffectData = {
@@ -548,9 +805,16 @@ const presetExecution = (
     avgFontSize: number | undefined,
     selectedFontChoice: any,
     selectedColorChoice: any,
+    maxLines?: number,
+    floatThreshold?: number,
+    textAlign?: string,
+    disableMetadata?: boolean,
   ) => {
+    // Pre-process captions to split combined words
+    const preprocessedCaptions = preprocessCaptions(inputCaptions);
+
     // Apply negative offset to all captions
-    const offsetCaptions = inputCaptions.map(caption => ({
+    const offsetCaptions = preprocessedCaptions.map(caption => ({
       ...caption,
       absoluteStart: caption.absoluteStart - (negativeOffset ?? 0.15),
       absoluteEnd: caption.absoluteEnd - (negativeOffset ?? 0.15),
@@ -566,19 +830,23 @@ const presetExecution = (
       (caption: Transcription['captions'][number], _i: number) => {
         const scentenceId = `caption-${_i}`;
 
-        // Split sentence into parts first
-        const sentenceParts = splitSentenceIntoParts(caption.words);
+        // Split sentence into parts first (use metadata.splitParts if available)
+        const sentenceParts = splitSentenceIntoParts(
+          caption.words,
+          maxLines,
+          caption.metadata?.splitParts,
+        );
 
         // Determine which part to highlight
         let highlightedPartIndex = -1;
         let highlightedWordIndex = -1;
 
-        if (caption.metadata?.keyword?.length > 0) {
+        if (!disableMetadata && caption.metadata?.keyword?.length > 0) {
           // Find the word index that contains the keyword
           const keywordWordIndex = caption.words.findIndex(word =>
             word.text
-              .toLowerCase()
-              .includes(caption.metadata?.keyword.toLowerCase()),
+              ?.toLowerCase()
+              ?.includes(caption.metadata?.keyword?.toLowerCase() || ''),
           );
           if (keywordWordIndex !== -1) {
             // Find which part contains this word
@@ -586,8 +854,23 @@ const presetExecution = (
             for (let i = 0; i < sentenceParts.length; i++) {
               const part = sentenceParts[i];
               if (keywordWordIndex < wordCount + part.length) {
-                highlightedPartIndex = i;
-                highlightedWordIndex = keywordWordIndex;
+                // Check if the part is too long (more than 2 words or 10 characters)
+                const partCharacterCount = part.reduce(
+                  (sum, word) => sum + word.text.length,
+                  0,
+                );
+                const isPartTooLong =
+                  part.length > 2 || partCharacterCount > 10;
+
+                if (isPartTooLong) {
+                  // Only highlight the specific word containing the keyword
+                  highlightedPartIndex = -1; // Don't highlight entire part
+                  highlightedWordIndex = keywordWordIndex;
+                } else {
+                  // Highlight the entire part if it's short enough
+                  highlightedPartIndex = i;
+                  highlightedWordIndex = keywordWordIndex;
+                }
                 break;
               }
               wordCount += part.length;
@@ -595,55 +878,59 @@ const presetExecution = (
           }
         }
 
-        if (sentenceParts.length > 1 && highlightedPartIndex === -1) {
-          // Calculate impact for first and last parts
-          const firstPart = sentenceParts[0];
-          const lastPart = sentenceParts[sentenceParts.length - 1];
+        // Only apply fallback logic if no keyword was found in metadata
+        if (highlightedPartIndex === -1 && highlightedWordIndex === -1) {
+          // Always select a single word to highlight, never entire parts
+          const allWords = caption.words;
+          const wordDurations = allWords.map(word => word.duration);
+          const avgDuration =
+            wordDurations.reduce((sum, dur) => sum + dur, 0) / allWords.length;
+          const maxDuration = Math.max(...wordDurations);
 
-          const firstPartDuration = firstPart.reduce(
-            (sum, word) => sum + word.duration,
-            0,
-          );
-          const firstPartCharLength = firstPart.reduce(
-            (sum, word) => sum + word.text.length,
-            0,
-          );
-          const lastPartDuration = lastPart.reduce(
-            (sum, word) => sum + word.duration,
-            0,
-          );
-          const lastPartCharLength = lastPart.reduce(
-            (sum, word) => sum + word.text.length,
-            0,
-          );
+          // Find the word with the longest duration that's above average
+          const significantWords = allWords
+            .map((word, index) => ({ word, index, duration: word.duration }))
+            .filter(
+              w =>
+                w.duration >= avgDuration * 0.8 ||
+                w.duration >= maxDuration * 0.7,
+            )
+            .sort((a, b) => b.duration - a.duration);
 
-          // Determine which part is more impactful
-          const durationDifference = Math.abs(
-            firstPartDuration - lastPartDuration,
-          );
-          const durationThreshold =
-            Math.max(firstPartDuration, lastPartDuration) * 0.2;
-
-          if (durationDifference <= durationThreshold) {
-            highlightedPartIndex =
-              firstPartCharLength >= lastPartCharLength
-                ? 0
-                : sentenceParts.length - 1;
+          if (significantWords.length > 0) {
+            // Select the most significant word
+            highlightedWordIndex = significantWords[0].index;
           } else {
-            highlightedPartIndex =
-              firstPartDuration >= lastPartDuration
-                ? 0
-                : sentenceParts.length - 1;
+            // Fallback: select the word with maximum duration
+            highlightedWordIndex = wordDurations.indexOf(maxDuration);
           }
-        } else {
-          highlightedPartIndex = 0;
+        }
+
+        // Ensure at least one word is highlighted
+        if (highlightedPartIndex === -1 && highlightedWordIndex === -1) {
+          highlightedWordIndex = 0; // Fallback to first word
         }
 
         // Apply highlighting logic to words
         const captionWords = caption.words.map((word, _j: number) => {
           let isHighlight = false;
 
-          if (highlightedPartIndex >= 0) {
+          // If we have a specific word to highlight (from keyword metadata or fallback)
+          if (highlightedWordIndex >= 0 && highlightedPartIndex === -1) {
+            // Check if this word should be highlighted (including sub-words)
+            if ((word as any).originalWordIndex === highlightedWordIndex) {
+              isHighlight = true;
+            } else {
+              isHighlight = _j === highlightedWordIndex;
+            }
+          } else if (highlightedWordIndex >= 0) {
+            // If we have both part and word index, prioritize word index
+            if ((word as any).originalWordIndex === highlightedWordIndex) {
+              isHighlight = true;
+            } else {
+              isHighlight = _j === highlightedWordIndex;
+            }
+          } else if (highlightedPartIndex >= 0) {
             const highlightedPart = sentenceParts[highlightedPartIndex];
             const isLastPart =
               highlightedPartIndex === sentenceParts.length - 1;
@@ -718,6 +1005,8 @@ const presetExecution = (
             selectedColorChoice,
             partId,
             scentenceId,
+            floatThreshold,
+            textAlign,
           );
         });
 
@@ -728,8 +1017,13 @@ const presetExecution = (
           componentId: 'BaseLayout',
           data: {
             containerProps: {
-              className:
-                'h-full flex flex-col items-start justify-center text-white gap-2 pl-10',
+              className: `h-full flex flex-col ${
+                textAlign === 'left'
+                  ? 'items-start'
+                  : textAlign === 'right'
+                    ? 'items-end'
+                    : 'items-center'
+              } justify-center text-white gap-2 pl-10`,
             },
           },
           context: {
@@ -755,18 +1049,22 @@ const presetExecution = (
       ? colorChoices[Math.floor(Math.random() * colorChoices.length)]
       : {
           primary: '#ffffff',
-          secondary: '#ffffff',
-          accent: '#ffffff',
+          secondary: '#cccccc',
+          accent: '#ff6b6b',
         };
 
   // Process all captions with highlighting and effects
   const captionsChildrenData = processCaptions(
     inputCaptions,
-    negativeOffset,
-    params.noGaps,
+    subtitleSync?.negativeOffset,
+    subtitleSync?.noGaps,
     avgFontSize,
     selectedFontChoice,
     selectedColorChoice,
+    subtitleSync?.maxLines,
+    subtitleSync?.floatThreshold,
+    position?.textAlign,
+    subtitleSync?.disableMetadata,
   );
 
   // Generate final composition structure
@@ -804,38 +1102,15 @@ const presetExecution = (
                   className: 'absolute',
                 })
                 .map((child, _j) => {
-                  // Get random position if enabled
-                  const randomPos = getRandomPosition(
+                  // Get position based on position configuration
+                  const positionStyle = getPosition(
                     inputCaptions[_j].text.length > 20 ? 800 : 600,
-                    randomizePosition ?? false,
+                    position,
                   );
-
-                  // Determine horizontal positioning based on position parameter
-                  let horizontalStyle: any = {};
-                  // Use position parameter for consistent alignment
-                  switch (position) {
-                    case 'left':
-                      horizontalStyle = { left: 80 };
-                      break;
-                    case 'center':
-                      horizontalStyle = {
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                      };
-                      break;
-                    case 'right':
-                      horizontalStyle = { right: 80 };
-                      break;
-                    default:
-                      horizontalStyle = { left: 80 };
-                  }
 
                   return {
                     ...child,
-                    style: {
-                      top: randomPos.top || 50, // Use random top if available, otherwise default
-                      ...horizontalStyle,
-                    },
+                    style: positionStyle,
                   };
                 }),
             },
@@ -866,9 +1141,21 @@ const presetMetadata: PresetMetadata = {
   presetType: 'children',
   tags: ['subtitles', 'vertical', 'float', 'zigzag'],
   defaultInputParams: {
-    negativeOffset: 0.5,
-    position: 'left',
-    randomizePosition: false,
+    subtitleSync: {
+      negativeOffset: 0.5,
+      maxLines: 3,
+      floatThreshold: undefined, // Will use character-based calculation
+      disableMetadata: false,
+      noGaps: {
+        enabled: false,
+        maxLength: 3,
+      },
+    },
+    position: {
+      align: 'left',
+      randomize: false,
+      textAlign: 'center',
+    },
     inputCaptions: [
       {
         id: 'caption-1',

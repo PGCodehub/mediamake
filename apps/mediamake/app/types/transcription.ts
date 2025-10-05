@@ -117,4 +117,25 @@ export interface TranscriptionFilters {
   limit?: number;
   sortBy?: 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
+  fields?: string; // Comma-separated list of fields to include
+}
+
+// Lightweight transcription for list views
+export interface TranscriptionListItem {
+  _id?: ObjectId;
+  clientId?: string;
+  assemblyId: string;
+  audioUrl: string;
+  language?: string;
+  status: Transcription['status'];
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  error?: string;
+  // Only include essential processing data for display
+  processingData?: {
+    step1?: {
+      rawText?: string;
+    };
+  };
 }

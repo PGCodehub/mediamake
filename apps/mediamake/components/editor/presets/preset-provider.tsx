@@ -34,6 +34,10 @@ interface PresetContextType {
     isGenerating: boolean;
     setIsGenerating: (generating: boolean) => void;
 
+    // Currently loaded preset tracking
+    currentLoadedPreset: string | null;
+    setCurrentLoadedPreset: (presetId: string | null) => void;
+
     // Actions
     generateOutput: () => void;
 }
@@ -54,6 +58,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
     const [editableOutput, setEditableOutput] = useLocalState<InputCompositionProps | null>('preset-editable-output', null);
 
     const [isGenerating, setIsGenerating] = useState(false);
+    const [currentLoadedPreset, setCurrentLoadedPreset] = useLocalState<string | null>('preset-current-loaded', null);
     const { updateSetting } = useRender();
 
     useEffect(() => {
@@ -66,7 +71,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
             presets: [...prev.presets, preset],
             activePresetId: preset.id
         }));
-    }, []);
+    }, [setAppliedPresets]);
 
     const removePreset = useCallback((presetId: string) => {
         setAppliedPresets((prev: AppliedPresetsState) => ({
@@ -74,7 +79,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
             presets: prev.presets.filter((p: AppliedPreset) => p.id !== presetId),
             activePresetId: prev.activePresetId === presetId ? null : prev.activePresetId
         }));
-    }, []);
+    }, [setAppliedPresets]);
 
     const updatePresetInputData = useCallback((presetId: string, inputData: PresetInputData) => {
         setAppliedPresets((prev: AppliedPresetsState) => ({
@@ -83,7 +88,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
                 p.id === presetId ? { ...p, inputData } : p
             )
         }));
-    }, []);
+    }, [setAppliedPresets]);
 
     const togglePresetExpansion = useCallback((presetId: string) => {
         setAppliedPresets((prev: AppliedPresetsState) => ({
@@ -92,7 +97,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
                 p.id === presetId ? { ...p, isExpanded: !p.isExpanded } : p
             )
         }));
-    }, []);
+    }, [setAppliedPresets]);
 
     const refreshPreset = useCallback((presetId: string) => {
         setAppliedPresets((prev: AppliedPresetsState) => {
@@ -143,7 +148,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
                 return preset;
             })
         }));
-    }, []);
+    }, [setAppliedPresets]);
 
     const generateOutput = useCallback(() => {
         // This will be implemented by the parent component that uses the provider
@@ -168,6 +173,8 @@ export function PresetProvider({ children }: PresetProviderProps) {
         setEditableOutput,
         isGenerating,
         setIsGenerating,
+        currentLoadedPreset,
+        setCurrentLoadedPreset,
         generateOutput
     };
 

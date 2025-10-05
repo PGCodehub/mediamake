@@ -7,6 +7,7 @@ import { PresetProvider, PresetList, PresetPlayer, createAppliedPreset, usePrese
 import { runPreset, insertPresetToComposition } from "./preset-helpers";
 import AudioScene from "../../remotion/test.json";
 import { RenderProvider } from "../player";
+import { config } from "process";
 
 interface PresetEditorWithProviderProps {
     selectedPresets: (Preset | DatabasePreset)[];
@@ -31,8 +32,15 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
     // Default composition props
     const defaultInputProps: InputCompositionProps = {
         childrenData: AudioScene.childrenData as RenderableComponentData[],
-        config: AudioScene.config,
-        style: { ...AudioScene.style }
+        config: {
+            fps: 30,
+            width: 1920,
+            height: 1080,
+            duration: 20
+        },
+        style: {
+            backgroundColor: "black"
+        }
     };
 
     // Add new presets to applied list when selectedPresets changes
@@ -49,8 +57,8 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
                 activePresetId: newAppliedPreset.id
             }));
 
-            // Initialize configuration if not set
-            if (!configuration.style && !configuration.config) {
+            // Initialize configuration if not set (only if completely empty)
+            if (!configuration || (!configuration.style && !configuration.config)) {
                 setConfiguration({
                     style: defaultInputProps.style,
                     config: defaultInputProps.config
@@ -78,30 +86,42 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
 
         setIsGenerating(true);
         try {
-            // Create base composition with configuration
+            // Start with user's configuration as base, or defaults if no user config
             let baseComposition: InputCompositionProps = {
                 childrenData: defaultInputProps.childrenData,
-                config: configuration.config || defaultInputProps.config,
-                style: configuration.style || defaultInputProps.style
+                config: {
+                    ...defaultInputProps.config,
+                    ...configuration.config
+                },
+                style: {
+                    ...defaultInputProps.style,
+                    ...configuration.style
+                }
             };
 
-            console.log('appliedPresets', appliedPresets.presets.length);
             // Apply all presets in sequence
             for (const appliedPreset of appliedPresets.presets) {
                 // Run the preset function with input data
                 const presetOutput = runPreset(
                     appliedPreset.inputData,
-                    appliedPreset.preset.presetFunction
+                    appliedPreset.preset.presetFunction,
+                    {
+                        config: baseComposition.config,
+                        style: baseComposition.style
+                    }
                 );
 
                 if (presetOutput) {
-                    // Insert preset output into composition
+                    // Insert preset output into composition (this handles childrenData, config, and style)
                     baseComposition = insertPresetToComposition(baseComposition, {
                         presetOutput: presetOutput,
                         presetType: appliedPreset.preset.metadata.presetType
                     });
                 }
             }
+
+            // Note: User configuration is now applied as the base before preset processing
+            // This ensures presets can override user settings when generating output
 
             setGeneratedOutput(baseComposition);
         } catch (error) {

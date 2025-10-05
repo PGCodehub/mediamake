@@ -12,7 +12,7 @@ import { PresetMetadata } from '../types';
 
 const presetParams = z.object({
   backgroundColor: z.string(),
-  duaration: z.number().optional(),
+  duration: z.number().optional(),
   fitDurationTo: z.string().optional(),
   aspectRatio: z.string().optional(),
   clip: z
@@ -26,7 +26,7 @@ const presetParams = z.object({
 const presetExecution = (
   params: z.infer<typeof presetParams>,
 ): Partial<InputCompositionProps> => {
-  const { backgroundColor, duaration, fitDurationTo } = params;
+  const { backgroundColor, duration, fitDurationTo } = params;
 
   const [widthRatio, heightRatio] = params.aspectRatio
     ?.split(':')
@@ -37,11 +37,19 @@ const presetExecution = (
   const baseWidth = aspectRatio > 1 ? 1920 : 1080;
   const baseHeight = Math.round(baseWidth / aspectRatio);
 
-  const sceneDuration = params.clip?.duration ?? duaration ?? 20;
-  const sceneFitDuration = !params.clip ? { fitDurationTo: 'BaseScene' } : {};
+  const sceneDuration =
+    params.clip?.duration && params.clip?.duration > 0
+      ? params.clip.duration
+      : duration && duration > 0
+        ? duration
+        : 20;
+  const sceneFitDuration =
+    params.clip?.duration && params.clip?.duration > 0
+      ? {}
+      : { fitDurationTo: 'BaseScene' };
 
   const start = params.clip?.start ? -params.clip.start : 0;
-  const duration = params.clip ? {} : { duration: 20 };
+  const durationData = params.clip ? {} : { duration: 20 };
   return {
     childrenData: [
       {
@@ -50,7 +58,7 @@ const presetExecution = (
         type: fitDurationTo ? 'layout' : ('scene' as const),
         data: {
           containerProps: {
-            className: 'flex items-center justify-center bg-black',
+            className: 'flex items-center justify-center',
             style: {
               backgroundColor: backgroundColor,
             },
@@ -60,7 +68,7 @@ const presetExecution = (
         context: {
           timing: {
             start: start,
-            ...duration,
+            ...durationData,
             fitDurationTo: fitDurationTo ?? 'this',
           },
         },
@@ -86,7 +94,7 @@ const presetMetadata: PresetMetadata = {
   tags: ['base', 'scene'],
   defaultInputParams: {
     backgroundColor: 'black',
-    duaration: 20,
+    duration: 20,
     fitDurationTo: 'BaseScene',
   },
 };

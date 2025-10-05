@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const collection = db.collection<PresetDataDocument>('presetData');
 
     const body = await request.json();
-    const { name, presetData, clientId } = body;
+    const { name, presetData, clientId, overwriteId } = body;
 
     if (!name || !presetData) {
       return NextResponse.json(
@@ -59,6 +59,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If overwriteId is provided, update existing document
+    if (overwriteId) {
+      try {
+        const objectId = new ObjectId(overwriteId);
+        const updateResult = await collection.updateOne(
+          { _id: objectId },
+          {
+            $set: {
+              name,
+              presetData,
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        if (updateResult.matchedCount === 0) {
+          return NextResponse.json(
+            { error: 'Preset not found' },
+            { status: 404 },
+          );
+        }
+
+        return NextResponse.json({
+          id: overwriteId,
+          message: 'Preset data updated successfully',
+        });
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Invalid preset ID' },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Otherwise, create new document
     const document: Omit<PresetDataDocument, '_id'> = {
       clientId,
       name,

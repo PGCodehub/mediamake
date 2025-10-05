@@ -5,6 +5,7 @@ import { CompositionProvider } from '../core/context/CompositionContext';
 import { calculateDuration, setDurationsInContext } from '../core/context/timing';
 import { BaseRenderableData, RenderableComponentData } from '../core/types';
 import { ComponentRenderer } from './base';
+import z from 'zod';
 
 
 interface CompositionProps extends BaseRenderableData {
@@ -55,8 +56,6 @@ export const CompositionLayout = ({ childrenData, style, config }: InputComposit
 };
 
 export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<InputCompositionProps> = async ({ props, defaultProps, abortSignal, isRendering }) => {
-
-    console.log('calculateCompositionLayoutMetadata', props, defaultProps, abortSignal, isRendering);
     const updatedProps = await setDurationsInContext(props);
     let calculatedDuration: number | undefined = undefined;
 
@@ -69,8 +68,6 @@ export const calculateCompositionLayoutMetadata: CalculateMetadataFunction<Input
     const duration = calculatedDuration ?? props.config.duration ?? defaultProps.config.duration;
     const fps = props.config.fps ?? defaultProps.config.fps;
     const durationInFrames = Math.round(duration * fps);
-
-    console.log('durationInFrames', durationInFrames, duration, updatedProps);
 
     return {
         // Change the metadata
@@ -96,8 +93,6 @@ export const Composition = ({
     config,
     style
 }: CompositionProps) => {
-
-    console.log('Composition', id, childrenData, config, style);
     return <RemotionComposition
         id={id}
         component={CompositionLayout}
@@ -107,7 +102,7 @@ export const Composition = ({
         height={config.height ?? 1920}
         defaultProps={{ childrenData, style, config: config }}
         calculateMetadata={calculateCompositionLayoutMetadata}
-    //schema={z.object({})}
+        schema={z.object({})}
     />
 }
 

@@ -17,6 +17,11 @@ import { PresetMetadata } from "./types";
 import { toJSONSchema } from "zod";
 import { MediaPicker } from "../media/media-picker";
 import { MediaFile } from "@/app/types/media";
+import { getAvailableFonts } from "@remotion/google-fonts";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const availableFonts = getAvailableFonts();
 
 interface SchemaFormProps {
     metadata: PresetMetadata;
@@ -54,6 +59,20 @@ function isUrlField(fieldKey: string, field: FormField): boolean {
     const descLower = (field.description || '').toLowerCase();
 
     return urlKeywords.some(keyword =>
+        keyLower.includes(keyword) ||
+        titleLower.includes(keyword) ||
+        descLower.includes(keyword)
+    );
+}
+
+// Helper function to detect if a field is font related
+function isFontField(fieldKey: string, field: FormField): boolean {
+    const fontKeywords = ['font', 'fontfamily', 'font-family', 'typeface', 'textstyle'];
+    const keyLower = fieldKey.toLowerCase();
+    const titleLower = (field.title || '').toLowerCase();
+    const descLower = (field.description || '').toLowerCase();
+
+    return fontKeywords.some(keyword =>
         keyLower.includes(keyword) ||
         titleLower.includes(keyword) ||
         descLower.includes(keyword)
@@ -163,6 +182,78 @@ function MediaPickerButton({ onSelect, singular = true }: { onSelect: (files: Me
     );
 }
 
+// FontDropdown component for font selection with editable text
+function FontDropdown({
+    value,
+    onChange,
+    placeholder = "Select or type font name"
+}: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+}) {
+    const [inputValue, setInputValue] = useState(value || "");
+    const [isOpen, setIsOpen] = useState(false);
+
+    // Filter fonts based on input
+    const filteredFonts = availableFonts.filter(font =>
+        font.fontFamily.toLowerCase().includes(inputValue.toLowerCase()) ||
+        font.importName.toLowerCase().includes(inputValue.toLowerCase())
+    );
+
+    const handleInputChange = (newValue: string) => {
+        setInputValue(newValue);
+        onChange(newValue);
+    };
+
+    const handleSelect = (selectedValue: string) => {
+        setInputValue(selectedValue);
+        onChange(selectedValue);
+        setIsOpen(false);
+    };
+
+    return (
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
+                <Input
+                    value={inputValue}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full"
+                    onFocus={() => setIsOpen(true)}
+                />
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                    <CommandInput
+                        placeholder="Search fonts..."
+                        value={inputValue}
+                        onValueChange={handleInputChange}
+                    />
+                    <CommandList>
+                        <CommandEmpty>No fonts found.</CommandEmpty>
+                        <CommandGroup>
+                            {filteredFonts.map((font) => (
+                                <CommandItem
+                                    key={font.importName}
+                                    value={font.importName}
+                                    onSelect={() => handleSelect(font.importName)}
+                                    className="cursor-pointer"
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">{font.fontFamily}</span>
+                                        <span className="text-xs text-muted-foreground">{font.importName}</span>
+                                    </div>
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 // Global renderField function that can be used by nested components
 function renderField(
     field: FormField,
@@ -196,6 +287,7 @@ function renderField(
                 }
 
                 const isUrl = isUrlField(fieldKey, field);
+                const isFont = isFontField(fieldKey, field);
 
                 if (isUrl) {
                     return (
@@ -214,6 +306,16 @@ function renderField(
                                 singular={true}
                             />
                         </div>
+                    );
+                }
+
+                if (isFont) {
+                    return (
+                        <FontDropdown
+                            value={typeof fieldValue === 'string' ? fieldValue : ""}
+                            onChange={(val) => handleChange(fieldKey, val)}
+                            placeholder={field.description || `Select or type font name`}
+                        />
                     );
                 }
 
@@ -696,8 +798,24 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
         setFormData(value || {});
     }, [value]);
 
+    // Sync formData with value when it changes externally
+    useEffect(() => {
+        const currentValue = value || {};
+        const currentFormData = formData || {};
+
+        // Only update if the values are actually different to prevent infinite loops
+        if (JSON.stringify(currentFormData) !== JSON.stringify(currentValue)) {
+            setFormData(currentValue);
+        }
+    }, [value]);
+
     const handleFieldChange = (key: string, fieldValue: any) => {
         const newData = { ...formData, [key]: fieldValue };
+        setFormData(newData);
+        onChange(newData);
+    };
+
+    const handleJsonChange = (newData: any) => {
         setFormData(newData);
         onChange(newData);
     };
@@ -800,7 +918,7 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
                     <TabsContent value="json">
                         <JsonEditor
                             value={formData}
-                            onChange={onChange}
+                            onChange={handleJsonChange}
                             height="400px"
                             className="border rounded-md"
                         />

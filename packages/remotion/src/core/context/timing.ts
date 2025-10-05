@@ -27,6 +27,50 @@ export const findMatchingComponents = (
   return matches;
 };
 
+export const findMatchingComponentsByQuery = (
+  childrenData: RenderableComponentData[],
+  query: {
+    type?: string;
+    componentId?: string;
+  }
+): RenderableComponentData[] => {
+  const matches: RenderableComponentData[] = [];
+
+  const searchRecursively = (components: RenderableComponentData[]) => {
+    for (const component of components) {
+      // Check if this component matches the query criteria
+      let matchesQuery = false;
+
+      if (query.type && component.type === query.type) {
+        matchesQuery = true;
+      }
+
+      if (query.componentId && component.componentId === query.componentId) {
+        matchesQuery = true;
+      }
+
+      // If both type and componentId are provided, both must match
+      if (query.type && query.componentId) {
+        matchesQuery =
+          component.type === query.type &&
+          component.componentId === query.componentId;
+      }
+
+      if (matchesQuery) {
+        matches.push(component);
+      }
+
+      // Recursively search in childrenData if it exists
+      if (component.childrenData && component.childrenData.length > 0) {
+        searchRecursively(component.childrenData);
+      }
+    }
+  };
+
+  searchRecursively(childrenData);
+  return matches;
+};
+
 export const calculateComponentDuration = async (
   component: Pick<RenderableComponentData, 'data' | 'componentId'>
 ): Promise<number | undefined> => {

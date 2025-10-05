@@ -12,6 +12,8 @@ import { OutputCard } from "./output-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { getPresetById } from "./registry/presets-registry";
+import { SavePresetDialog } from "./save-preset-dialog";
+import { LoadPresetDialog } from "./load-preset-dialog";
 import {
     DndContext,
     closestCenter,
@@ -193,11 +195,15 @@ export function PresetList({
         removePreset,
         refreshPreset,
         reorderPresets,
-        isGenerating
+        isGenerating,
+        currentLoadedPreset,
+        setCurrentLoadedPreset
     } = usePresetContext();
 
     const [savedPresets, setSavedPresets] = useState<SavedPresetData[]>([]);
     const [isLoadingSaved, setIsLoadingSaved] = useState(false);
+    const [showSaveDialog, setShowSaveDialog] = useState(false);
+    const [showLoadDialog, setShowLoadDialog] = useState(false);
 
     // Load saved presets on component mount
     useEffect(() => {
@@ -237,7 +243,20 @@ export function PresetList({
         }
     };
 
-    const savePresetData = async () => {
+    // Clear loaded preset when presets are modified manually
+    useEffect(() => {
+        if (appliedPresets.presets.length > 0 && currentLoadedPreset) {
+            // Check if any preset was added that's not from a loaded preset
+            const hasNewPresets = appliedPresets.presets.some(preset =>
+                !preset.id.startsWith('loaded-')
+            );
+            if (hasNewPresets) {
+                setCurrentLoadedPreset(null);
+            }
+        }
+    }, [appliedPresets.presets, currentLoadedPreset, setCurrentLoadedPreset]);
+
+    const savePresetData = async (name: string, overwriteId?: string) => {
         try {
             const presetData = {
                 presets: appliedPresets.presets.map(appliedPreset => ({
@@ -247,14 +266,6 @@ export function PresetList({
                 }))
             };
 
-            // Generate name in format: DATE - preset[0].id + preset[1].id + preset[2].id (max 3)
-            const date = new Date().toLocaleDateString();
-            const presetIds = appliedPresets.presets
-                .slice(0, 3) // Max 3 presets
-                .map(preset => preset.preset.metadata.id)
-                .join(' + ');
-            const name = `${date} - ${presetIds}`;
-
             const response = await fetch('/api/preset-data', {
                 method: 'POST',
                 headers: {
@@ -262,11 +273,17 @@ export function PresetList({
                 },
                 body: JSON.stringify({
                     name,
-                    presetData
+                    presetData,
+                    overwriteId // Include the ID to overwrite if provided
                 })
             });
 
             if (response.ok) {
+                const result = await response.json();
+                // If we're overwriting, update the current loaded preset
+                if (overwriteId) {
+                    setCurrentLoadedPreset(result.id || overwriteId);
+                }
                 toast.success('Preset data saved successfully');
                 loadSavedPresets(); // Refresh the list
             } else {
@@ -275,6 +292,7 @@ export function PresetList({
         } catch (error) {
             console.error('Failed to save preset data:', error);
             toast.error('Failed to save preset data');
+            throw error; // Re-throw to handle in dialog
         }
     };
 
@@ -340,6 +358,8 @@ export function PresetList({
             });
 
             if (newAppliedPresets.length > 0) {
+                // Track the loaded preset
+                setCurrentLoadedPreset(savedPreset.id);
                 toast.success(`Loaded preset: ${savedPreset.name} (${newAppliedPresets.length} presets)`);
             } else {
                 toast.error('No valid presets found in saved data');
@@ -379,40 +399,16 @@ export function PresetList({
                             </p>
                         </div>
 
-                        {/* Load Preset Data Dropdown - Available even with no presets */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex items-center gap-1"
-                                    title="Load saved preset data"
-                                    disabled={isLoadingSaved}
-                                >
-                                    <Upload className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64">
-                                {savedPresets.length === 0 ? (
-                                    <DropdownMenuItem disabled>
-                                        No saved presets
-                                    </DropdownMenuItem>
-                                ) : (
-                                    savedPresets.map((savedPreset) => (
-                                        <DropdownMenuItem
-                                            key={savedPreset.id}
-                                            onClick={() => loadPresetData(savedPreset)}
-                                            className="flex flex-col items-start"
-                                        >
-                                            <div className="font-medium">{savedPreset.name}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {new Date(savedPreset.createdAt).toLocaleString()}
-                                            </div>
-                                        </DropdownMenuItem>
-                                    ))
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* Load Preset Data Button - Available even with no presets */}
+                        <Button
+                            onClick={() => setShowLoadDialog(true)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            title="Load saved preset data"
+                        >
+                            <Upload className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
 
@@ -469,7 +465,7 @@ export function PresetList({
 
                         {/* Save Preset Data Button */}
                         <Button
-                            onClick={savePresetData}
+                            onClick={() => setShowSaveDialog(true)}
                             variant="outline"
                             size="sm"
                             className="flex items-center gap-1"
@@ -478,40 +474,16 @@ export function PresetList({
                             <Save className="h-4 w-4" />
                         </Button>
 
-                        {/* Load Preset Data Dropdown */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex items-center gap-1"
-                                    title="Load saved preset data"
-                                    disabled={isLoadingSaved}
-                                >
-                                    <Upload className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64">
-                                {savedPresets.length === 0 ? (
-                                    <DropdownMenuItem disabled>
-                                        No saved presets
-                                    </DropdownMenuItem>
-                                ) : (
-                                    savedPresets.map((savedPreset) => (
-                                        <DropdownMenuItem
-                                            key={savedPreset.id}
-                                            onClick={() => loadPresetData(savedPreset)}
-                                            className="flex flex-col items-start"
-                                        >
-                                            <div className="font-medium">{savedPreset.name}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {new Date(savedPreset.createdAt).toLocaleString()}
-                                            </div>
-                                        </DropdownMenuItem>
-                                    ))
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* Load Preset Data Button */}
+                        <Button
+                            onClick={() => setShowLoadDialog(true)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            title="Load saved preset data"
+                        >
+                            <Upload className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -544,6 +516,26 @@ export function PresetList({
                     <OutputCard />
                 </div>
             </div>
+
+            {/* Save Preset Dialog */}
+            <SavePresetDialog
+                open={showSaveDialog}
+                onOpenChange={setShowSaveDialog}
+                onSave={savePresetData}
+                currentLoadedPreset={currentLoadedPreset}
+                currentLoadedPresetName={
+                    currentLoadedPreset
+                        ? savedPresets.find(p => p.id === currentLoadedPreset)?.name || ""
+                        : ""
+                }
+            />
+
+            {/* Load Preset Dialog */}
+            <LoadPresetDialog
+                open={showLoadDialog}
+                onOpenChange={setShowLoadDialog}
+                onLoad={loadPresetData}
+            />
         </div>
     );
 }

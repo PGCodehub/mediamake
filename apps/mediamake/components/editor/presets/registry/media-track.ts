@@ -12,6 +12,30 @@ const presetParams = z.object({
           .enum(['cover', 'contain', 'fill', 'none', 'scale-down'])
           .optional(),
         duration: z.number().optional(),
+        loop: z.boolean().optional(),
+        blendMode: z
+          .enum([
+            'screen',
+            'multiply',
+            'overlay',
+            'darken',
+            'lighten',
+            'color-dodge',
+            'color-burn',
+            'hard-light',
+            'soft-light',
+            'difference',
+            'exclusion',
+            'hue',
+            'saturation',
+            'color',
+            'luminosity',
+          ])
+          .optional(),
+        mute: z.boolean().optional(),
+        playbackRate: z.number().optional(),
+        volume: z.number().optional(),
+        fitDurationTo: z.string().optional(),
       }),
     )
     .min(1)
@@ -44,12 +68,24 @@ const presetExecution = (
           type: 'atom' as const,
           data: {
             src: mediaItem.src,
-            className: 'w-full h-auto object-cover bg-black',
+            className: 'w-full h-auto object-cover',
             fit: mediaItem.fit ?? ('cover' as const),
+            loop: mediaItem.loop ?? false,
+            muted: mediaItem.mute ?? false,
+            volume: mediaItem.volume ?? 1,
+            playbackRate: mediaItem.playbackRate ?? 1,
+            style: {
+              ...(mediaItem.blendMode
+                ? { mixBlendMode: mediaItem.blendMode }
+                : {}),
+            },
           },
           context: {
             timing: {
               ...(mediaItem.duration ? { duration: mediaItem.duration } : {}),
+              ...(mediaItem.fitDurationTo
+                ? { fitDurationTo: mediaItem.fitDurationTo }
+                : {}),
             },
           },
         };
@@ -60,7 +96,7 @@ const presetExecution = (
           type: 'atom' as const,
           data: {
             src: mediaItem.src,
-            className: 'w-full h-auto object-cover bg-black',
+            className: 'w-full h-auto object-cover',
             fit: mediaItem.fit ?? ('cover' as const),
           },
           context: {
@@ -76,8 +112,9 @@ const presetExecution = (
           type: 'atom' as const,
           data: {
             src: mediaItem.src,
-            className: 'w-full h-auto object-cover bg-black',
+            className: 'w-full h-auto object-cover',
             fit: mediaItem.fit ?? ('cover' as const),
+            volume: mediaItem.volume ?? 1,
           },
           context: {
             timing: {

@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { Transcription } from "@/app/types/transcription";
+import { Transcription, TranscriptionListItem } from "@/app/types/transcription";
+import { fetchTranscriptionList } from "@/lib/transcription-utils";
 
 interface AssemblyTranscription {
     id: string;
@@ -43,21 +44,19 @@ interface TranscriptionSidebarProps {
 }
 
 export function TranscriptionSidebar({ selectedTranscription, onSelectTranscription, onNewTranscription }: TranscriptionSidebarProps) {
-    const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
+    const [transcriptions, setTranscriptions] = useState<TranscriptionListItem[]>([]);
     const [assemblyTranscriptions, setAssemblyTranscriptions] = useState<AssemblyTranscription[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isRefreshingAssembly, setIsRefreshingAssembly] = useState(false);
 
-    // Load transcriptions from MongoDB
+    // Load transcriptions from MongoDB with optimized fields
     useEffect(() => {
         const loadTranscriptions = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('/api/transcriptions');
-                if (response.ok) {
-                    const data = await response.json();
-                    setTranscriptions(data.transcriptions || []);
-                }
+                // Use utility function for optimized list data
+                const data = await fetchTranscriptionList(50);
+                setTranscriptions(data.transcriptions || []);
             } catch (error) {
                 console.error('Error loading transcriptions:', error);
             } finally {
@@ -68,7 +67,7 @@ export function TranscriptionSidebar({ selectedTranscription, onSelectTranscript
         loadTranscriptions();
     }, []);
 
-    const getStatusIcon = (status: Transcription["status"]) => {
+    const getStatusIcon = (status: TranscriptionListItem["status"]) => {
         switch (status) {
             case "completed":
                 return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -85,7 +84,7 @@ export function TranscriptionSidebar({ selectedTranscription, onSelectTranscript
         }
     };
 
-    const getStatusBadge = (status: Transcription["status"]) => {
+    const getStatusBadge = (status: TranscriptionListItem["status"]) => {
         const variants = {
             completed: "default",
             processing: "secondary",
@@ -170,12 +169,9 @@ export function TranscriptionSidebar({ selectedTranscription, onSelectTranscript
 
             if (saveResponse.ok) {
                 const savedTranscription = await saveResponse.json();
-                // Refresh the local transcriptions list
-                const refreshResponse = await fetch('/api/transcriptions');
-                if (refreshResponse.ok) {
-                    const refreshData = await refreshResponse.json();
-                    setTranscriptions(refreshData.transcriptions || []);
-                }
+                // Refresh the local transcriptions list with optimized fields
+                const refreshData = await fetchTranscriptionList(50);
+                setTranscriptions(refreshData.transcriptions || []);
                 onSelectTranscription(savedTranscription.transcription._id);
             }
         } catch (error) {
@@ -183,7 +179,9 @@ export function TranscriptionSidebar({ selectedTranscription, onSelectTranscript
         }
     };
 
-    const handleTranscriptionSelect = (transcriptionId: string) => {
+    const handleTranscriptionSelect = async (transcriptionId: string) => {
+        // For list view, we only need the ID to select
+        // The full transcription data will be loaded by the parent component
         onSelectTranscription(transcriptionId);
     };
 
@@ -249,7 +247,7 @@ export function TranscriptionSidebar({ selectedTranscription, onSelectTranscript
                                     <div className="flex items-start justify-between p-2">
                                         <h4 className="text-sm font-medium flex items-center gap-2">
                                             {getStatusIcon(transcription.status)}
-                                            {transcription.processingData.step1?.rawText?.slice(0, 20)}...
+                                            {transcription.processingData?.step1?.rawText?.slice(0, 20)}...
                                         </h4>
                                         {getStatusBadge(transcription.status)}
                                     </div>

@@ -5,6 +5,7 @@ import {
   CreateTranscriptionRequest,
   TranscriptionListResponse,
   TranscriptionFilters,
+  TranscriptionListItem,
 } from '@/app/types/transcription';
 
 // GET /api/transcriptions - List transcriptions with filtering and pagination
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
         (searchParams.get('sortBy') as 'createdAt' | 'updatedAt') ||
         'createdAt',
       sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+      fields: searchParams.get('fields') || undefined,
     };
 
     const db = await getDatabase();
@@ -42,10 +44,34 @@ export async function GET(req: NextRequest) {
     const sort: any = {};
     sort[filters.sortBy!] = filters.sortOrder === 'asc' ? 1 : -1;
 
+    // Build projection for field selection
+    let projection: any = {};
+    if (filters.fields) {
+      const fields = filters.fields.split(',').map(f => f.trim());
+      fields.forEach(field => {
+        projection[field] = 1;
+      });
+    } else {
+      // Default lightweight fields for list view
+      projection = {
+        _id: 1,
+        clientId: 1,
+        assemblyId: 1,
+        audioUrl: 1,
+        language: 1,
+        status: 1,
+        tags: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        error: 1,
+        'processingData.step1.rawText': 1,
+      };
+    }
+
     // Execute query
     const [transcriptions, total] = await Promise.all([
       collection
-        .find(query)
+        .find(query, { projection })
         .sort(sort)
         .skip(skip)
         .limit(filters.limit!)

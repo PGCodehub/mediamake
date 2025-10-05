@@ -9,3 +9,4 @@ import { webpackOverride } from './components/remotion/webpack-override.mjs';
 Config.setVideoImageFormat('jpeg');
 Config.overrideWebpackConfig(webpackOverride);
 Config.setMaxTimelineTracks(200);
+Config.setDelayRenderTimeoutInMilliseconds(100000);

@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const order = searchParams.get('order') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const fields = searchParams.get('fields');
 
     const query: any = {};
     if (clientId) query.clientId = clientId;
@@ -37,8 +38,41 @@ export async function GET(request: NextRequest) {
 
     const sortObject = { [sort]: order as 'asc' | 'desc' };
 
+    // Build projection for field selection
+    let projection: any = {};
+    if (fields) {
+      const fieldList = fields.split(',').map(f => f.trim());
+      fieldList.forEach(field => {
+        projection[field] = 1;
+      });
+    } else {
+      // Default lightweight fields for list view
+      projection = {
+        _id: 1,
+        tags: 1,
+        clientId: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        contentType: 1,
+        contentMimeType: 1,
+        contentSubType: 1,
+        contentSource: 1,
+        contentSourceUrl: 1,
+        fileName: 1,
+        fileSize: 1,
+        filePath: 1,
+        'metadata.description': 1,
+        'metadata.src': 1,
+        'metadata.width': 1,
+        'metadata.height': 1,
+        'metadata.aspectRatio': 1,
+        'metadata.platform': 1,
+        'metadata.keywords': 1,
+      };
+    }
+
     const files = await collection
-      .find(query)
+      .find(query, { projection })
       .sort(sortObject)
       .skip(offset)
       .limit(limit)

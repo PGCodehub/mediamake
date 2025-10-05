@@ -19,6 +19,9 @@ const SentenceMetadataSchema = z.object({
     .min(1)
     .max(10)
     .describe('The emotional/impact strength of the keyword (1-10 scale)'),
+  splitParts: z
+    .array(z.string())
+    .describe('The parts of the sentence split into'),
   // fullFeel: z
   //   .enum([
   //     'joyful',
@@ -135,10 +138,16 @@ export const transcriptionMetaAgent = aiRouter
 Sentence: "${sentence}"
 
 Please analyze this sentence and provide:
-1. The most impactful keyword that would resonate in a song lyric
+1. The most impactful keyword that would resonate in a song lyric ( it can also be a noun - name, place, thing, etc.)
 2. The emotional strength/power of that keyword (1-10 scale)
 3. The emotional feel/mood of the keyword
 4. Your confidence in this analysis
+
+For Split Parts:
+- Assume you are requested to write the scentenc on a screen in stylised form, divide the one scenten into parts to suit the needs.
+- Take the keyword into consideration as well, keyowords are usually shown twice the size of the other words.
+- Not every scentence need to be split, as some scentences are single words or very short.
+- MOST IMPORTANT: SPlit it so it is easy to read by human.
 
 Consider:
 - What is the most emotionally resonant word in this sentence?
