@@ -49,7 +49,7 @@ const useImageSource = (src: string, proxySrc?: string) => {
             return;
         }
 
-        console.log('Loading image', src);
+        // console.log('Loading image', src);
 
         setIsLoading(true);
         setHasError(false);

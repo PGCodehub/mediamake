@@ -18,6 +18,7 @@ import {
   runPreset,
   insertPresetToComposition,
 } from '@/components/editor/presets/preset-helpers';
+import { createCachedFetcher } from '@/lib/audio-cache';
 import {
   DatabasePreset,
   Preset,
@@ -141,11 +142,24 @@ export const POST = async (req: NextRequest) => {
       }
 
       // Execute the preset
-      const presetOutput = runPreset(presetInputData, preset.presetFunction, {
-        config: finalComposition.config,
-        style: finalComposition.style,
-        clip,
-      });
+      const presetOutput = await runPreset(
+        presetInputData,
+        preset.presetFunction,
+        {
+          config: finalComposition.config,
+          style: finalComposition.style,
+          clip,
+          fetcher: createCachedFetcher((url: string, data: any) =>
+            fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(data),
+            }),
+          ),
+        },
+      );
       if (!presetOutput) {
         return NextResponse.json(
           { error: `Failed to execute preset '${presetId}'` },

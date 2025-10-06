@@ -1,4 +1,5 @@
 import React, { useMemo, createContext, useContext, ReactNode } from 'react';
+import mergeCSSStyles from './mergeCSSStyles';
 import { useCurrentFrame, useVideoConfig, interpolate, Easing } from 'remotion';
 import { BaseRenderableProps } from '../../core/types/renderable.types';
 
@@ -402,6 +403,7 @@ export const UniversalEffect: React.FC<BaseRenderableProps & {
     effectType?: string;
     customAnimationLogic?: (effectData: UniversalEffectData, progress: number, frame: number) => React.CSSProperties;
 }> = ({
+    id,
     data,
     children,
     context,
@@ -412,6 +414,11 @@ export const UniversalEffect: React.FC<BaseRenderableProps & {
         const parentContext = useUniversalEffectOptional();
 
         const animatedStyles: React.CSSProperties = useMemo(() => {
+
+            if (progress <= 0 || progress >= 1) {
+                return parentContext?.animatedStyles || {};
+            }
+
             let currentStyles = {};
             if (customAnimationLogic) {
                 currentStyles = customAnimationLogic(effectData, progress, frame);
@@ -420,8 +427,11 @@ export const UniversalEffect: React.FC<BaseRenderableProps & {
             }
 
             if (parentContext && mode === 'provider') {
-                return { ...parentContext.animatedStyles, ...currentStyles };
+                const combinedStyles = mergeCSSStyles(parentContext.animatedStyles, currentStyles);
+                return combinedStyles;
             }
+
+            console.log('currentStyles', currentStyles);
 
             return currentStyles;
         }, [ranges, progress, parentContext?.animatedStyles, mode, customAnimationLogic, effectData, frame]);
@@ -461,8 +471,8 @@ export const UniversalEffectProvider: React.FC<{
     data,
     effectType = 'universal',
     customAnimationLogic,
-    id = 'universal-effect',
-    componentId = 'universal-effect',
+    id = 'generic',
+    componentId = 'generic',
     type = 'effect'
 }) => {
         return (
@@ -490,6 +500,8 @@ export const useAnimatedStyles = (componentId: string): React.CSSProperties => {
 
     const { animatedStyles, targetIds } = context;
 
+
+
     if (targetIds.includes(componentId)) {
         return animatedStyles;
     }
@@ -498,7 +510,7 @@ export const useAnimatedStyles = (componentId: string): React.CSSProperties => {
 };
 
 export const config = {
-    displayName: 'universal',
+    displayName: 'generic',
     description: 'Universal effect that can be extended for any effect type',
     isInnerSequence: false,
     props: {},

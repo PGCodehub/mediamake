@@ -8,6 +8,7 @@ import { runPreset, insertPresetToComposition } from "./preset-helpers";
 import AudioScene from "../../remotion/test.json";
 import { RenderProvider } from "../player";
 import { config } from "process";
+import { createCachedFetcher } from "@/lib/audio-cache";
 
 interface PresetEditorWithProviderProps {
     selectedPresets: (Preset | DatabasePreset)[];
@@ -108,13 +109,22 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
                 }
 
                 // Run the preset function with input data
-                const presetOutput = runPreset(
+                const presetOutput = await runPreset(
                     appliedPreset.inputData,
                     appliedPreset.preset.presetFunction,
                     {
                         config: baseComposition.config,
                         style: baseComposition.style,
-                        clip: clip
+                        clip: clip,
+                        fetcher: createCachedFetcher((url: string, data: any) =>
+                            fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(data),
+                            })
+                        ),
                     }
                 );
 

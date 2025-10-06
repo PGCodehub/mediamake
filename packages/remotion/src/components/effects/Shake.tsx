@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { BaseRenderableProps } from '../../core/types/renderable.types';
-import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext } from './UniversalEffect';
+import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext, useUniversalEffectOptional } from './UniversalEffect';
+import mergeCSSStyles from './mergeCSSStyles';
 
 // Shake effect data interface
 export interface ShakeEffectData extends UniversalEffectData {
@@ -22,11 +23,12 @@ export const ShakeEffect: React.FC<BaseRenderableProps> = ({
     // 1. Use the core animation hook to get progress, frame, etc.
     const { progress, frame, mode, targetIds, effectData } = useUniversalAnimation(data, context);
     const { amplitude = 10, frequency = 0.1, decay = true, axis = 'both' } = effectData as ShakeEffectData;
+    const parentContext = useUniversalEffectOptional();
 
     // 2. Implement custom animation logic directly in the component
     const animatedStyles = useMemo(() => {
         if (progress <= 0 || progress >= 1) {
-            return {};
+            return parentContext?.animatedStyles || {};
         }
         const decayFactor = decay ? (1 - progress) : 1;
         const currentAmplitude = amplitude * decayFactor;
@@ -41,8 +43,14 @@ export const ShakeEffect: React.FC<BaseRenderableProps> = ({
         if (axis === 'y' || axis === 'both') {
             styles.transform = `${styles.transform || ''} translateY(${shakeY}px)`.trim();
         }
+
+        if (parentContext && mode === 'provider') {
+            const combinedStyles = mergeCSSStyles(parentContext.animatedStyles, styles);
+            return combinedStyles;
+        }
+
         return styles;
-    }, [progress, frame, amplitude, frequency, decay, axis]);
+    }, [progress, frame, amplitude, frequency, decay, axis, id, targetIds, mode, parentContext?.animatedStyles]);
 
     // 3. Handle provider/wrapper logic
     const contextValue = useMemo(() => ({

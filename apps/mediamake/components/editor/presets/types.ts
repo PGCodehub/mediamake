@@ -29,10 +29,12 @@ export interface PresetInputData {
 
 export interface PresetPassedProps {
   config: InputCompositionProps['config'];
+  style?: InputCompositionProps['style'];
   clip?: {
     start?: number;
     duration?: number;
   };
+  fetcher?: (url: string, data?: any) => Promise<any>;
 }
 
 export interface PresetOutput {

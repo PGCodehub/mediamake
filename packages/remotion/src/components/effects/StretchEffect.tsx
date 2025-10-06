@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { spring } from 'remotion';
 import { BaseRenderableProps } from '../../core/types/renderable.types';
-import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext } from './UniversalEffect';
+import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext, useUniversalEffectOptional } from './UniversalEffect';
+import mergeCSSStyles from './mergeCSSStyles';
 
 // Stretch effect data interface
 export interface StretchEffectData extends UniversalEffectData {
@@ -26,6 +27,7 @@ export const StretchEffect: React.FC<BaseRenderableProps> = ({
     // 1. Use the core animation hook to get all the animation parameters
     const { fps, frame, mode, targetIds, effectData, start, duration } = useUniversalAnimation(data, context);
     const { stretchFrom = 0.8, stretchTo = 1, springConfig } = effectData as StretchEffectData;
+    const parentContext = useUniversalEffectOptional();
 
     // 2. Use Remotion's spring function to create a natural, bouncy animation
     const springProgress = spring({
@@ -42,16 +44,26 @@ export const StretchEffect: React.FC<BaseRenderableProps> = ({
 
     // 3. Implement the custom animation logic
     const animatedStyles = useMemo(() => {
+        if (springProgress <= 0 || springProgress >= 1) {
+            return parentContext?.animatedStyles || {};
+        }
         // Interpolate the horizontal scale based on the spring's progress
         const scaleX = springProgress * (stretchTo - stretchFrom) + stretchFrom;
         // Add a subtle vertical squish for a more dynamic feel
         const scaleY = 1 + (1 - scaleX) * 0.1;
 
-        return {
+        const currentStyles: React.CSSProperties = {
             transform: `scaleX(${scaleX}) scaleY(${scaleY})`,
             transformOrigin: 'center',
         };
-    }, [springProgress, stretchFrom, stretchTo]);
+
+        if (parentContext && mode === 'provider') {
+            const combinedStyles = mergeCSSStyles(parentContext.animatedStyles, currentStyles);
+            return combinedStyles;
+        }
+
+        return currentStyles;
+    }, [springProgress, stretchFrom, stretchTo, parentContext?.animatedStyles, mode]);
 
     // 4. Handle the provider/wrapper logic
     const contextValue = useMemo(() => ({

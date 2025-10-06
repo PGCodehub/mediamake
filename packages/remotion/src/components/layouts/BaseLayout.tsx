@@ -18,7 +18,6 @@ export const Layout: ComponentType<BaseLayoutProps> = ({ id, children, data, con
     const overrideStyles = useAnimatedStyles(id);
     const childrenArray = Children.toArray(children);
 
-
     const enhancedStyle = useMemo(() => ({
         ...(!context?.boundaries?.reset ? context?.boundaries : {}),
         ...containerProps.style,

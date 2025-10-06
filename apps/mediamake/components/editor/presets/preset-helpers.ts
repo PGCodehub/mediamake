@@ -3,7 +3,7 @@ import {
   RenderableComponentData,
   replaceMatchingComponent,
 } from '@microfox/datamotion';
-import { PresetOutput } from './types';
+import { PresetOutput, PresetPassedProps } from './types';
 
 const findMatchingComponents = (
   childrenData: RenderableComponentData[],
@@ -99,17 +99,17 @@ export const cleanFunctionString = (func: Function): string => {
   return funcString;
 };
 
-export const runPreset = <T>(
+export const runPreset = async <T>(
   presetInput: any,
   presetFunction: string,
-  props: any,
-): PresetOutput | null => {
+  props: PresetPassedProps,
+): Promise<PresetOutput | null> => {
   const presetJsFunction = new Function(
     'data',
     'props',
     `return (${presetFunction})(data, props);`,
   );
-  const output = presetJsFunction(presetInput, props);
+  const output = await presetJsFunction(presetInput, props);
   if (!output) {
     return null;
   }

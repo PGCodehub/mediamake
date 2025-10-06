@@ -1,6 +1,7 @@
 import React, { ComponentType } from 'react';
 import { getComponent } from '../../core/registry';
 import { BaseEffect, InternalRenderableContext } from '../../core/types';
+import { nanoid } from 'zod';
 
 interface EffectWrapperProps {
     effects?: BaseEffect[];
@@ -33,7 +34,7 @@ export const EffectWrapper: ComponentType<EffectWrapperProps> = ({
         const effectContext = typeof effect === 'string' ? context : (effect.context || context);
 
         const effectProps = {
-            id: typeof effect === 'string' ? `effect-${index}` : effect.id,
+            id: typeof effect === 'string' ? `effect-${nanoid()}` : effect.id,
             componentId: effectId,
             type: 'layout' as const, // Effects use the same rendering logic as layout
             data: effectData,

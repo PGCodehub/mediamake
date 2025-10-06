@@ -124,7 +124,7 @@ export const ZoomEffect: React.FC<BaseRenderableProps> = ({
     const { timing } = context ?? {};
     const contextDuration = timing?.durationInFrames || 50;
 
-    console.log(contextDuration);
+
 
     // Parse timing parameters
     const effectTiming = zoomData?.effectTiming || 'start';

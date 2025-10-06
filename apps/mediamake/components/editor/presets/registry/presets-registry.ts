@@ -10,6 +10,7 @@ import { thinkerVisualsPreset } from './thinker-visuals';
 import { imageLoopPreset } from './imageloop';
 import { musicCardPreset } from './music-card';
 import { textOverlayPreset } from './text-overlay';
+import { beatstitchPreset } from './beatstitch';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -23,6 +24,7 @@ export const predefinedPresets: Preset[] = [
   imageLoopPreset,
   musicCardPreset,
   textOverlayPreset,
+  beatstitchPreset,
   // Add more predefined presets here
 ];
 

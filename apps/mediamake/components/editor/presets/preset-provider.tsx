@@ -5,6 +5,7 @@ import { InputCompositionProps } from '@microfox/remotion';
 import { AppliedPresetsState, AppliedPreset, PresetInputData, PresetConfiguration } from './types';
 import { useRender } from '../player/render-provider';
 import useLocalState from '../../studio/context/hooks/useLocalState';
+import useIndexedDbState from '@/components/studio/context/hooks/useIndexedDbState';
 
 interface PresetContextType {
     // Applied presets state
@@ -55,11 +56,11 @@ export function PresetProvider({ children }: PresetProviderProps) {
         activePresetId: null
     });
     const [configuration, setConfiguration] = useLocalState<PresetConfiguration>('preset-configuration', {});
-    const [generatedOutput, setGeneratedOutput] = useLocalState<InputCompositionProps | null>('preset-generated-output', null);
-    const [editableOutput, setEditableOutput] = useLocalState<InputCompositionProps | null>('preset-editable-output', null);
+    const [generatedOutput, setGeneratedOutput] = useIndexedDbState<InputCompositionProps | null>('preset-generated-output', null);
+    const [editableOutput, setEditableOutput] = useIndexedDbState<InputCompositionProps | null>('preset-editable-output', null);
 
     const [isGenerating, setIsGenerating] = useState(false);
-    const [currentLoadedPreset, setCurrentLoadedPreset] = useLocalState<string | null>('preset-current-loaded', null);
+    const [currentLoadedPreset, setCurrentLoadedPreset] = useIndexedDbState<string | null>('preset-current-loaded', null);
     const { updateSetting } = useRender();
 
     useEffect(() => {

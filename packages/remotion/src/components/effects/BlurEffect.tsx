@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { BaseRenderableProps } from '../../core/types/renderable.types';
-import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext } from './UniversalEffect';
+import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext, useUniversalEffectOptional } from './UniversalEffect';
+import mergeCSSStyles from './mergeCSSStyles';
 
 // Blur effect data interface
 export interface BlurEffectData extends UniversalEffectData {
@@ -20,6 +21,7 @@ export const BlurEffect: React.FC<BaseRenderableProps> = ({
     // 1. Use the core animation hook
     const { progress, mode, targetIds, effectData } = useUniversalAnimation(data, context);
     const { intensity = 10, direction = 'in' } = effectData as BlurEffectData;
+    const parentContext = useUniversalEffectOptional();
 
     // 2. Implement custom animation logic
     const animatedStyles = useMemo(() => {
@@ -29,8 +31,15 @@ export const BlurEffect: React.FC<BaseRenderableProps> = ({
         const blurValue = direction === 'in'
             ? intensity * (1 - progress)
             : intensity * progress;
-        return { filter: `blur(${blurValue}px)` };
-    }, [progress, intensity, direction]);
+        const currentStyles: React.CSSProperties = { filter: `blur(${blurValue}px)` };
+
+        if (parentContext && mode === 'provider') {
+            const combinedStyles = mergeCSSStyles(parentContext.animatedStyles, currentStyles);
+            return combinedStyles;
+        }
+
+        return currentStyles;
+    }, [progress, intensity, direction, parentContext?.animatedStyles, mode]);
 
     // 3. Handle provider/wrapper logic
     const contextValue = useMemo(() => ({

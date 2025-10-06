@@ -381,7 +381,35 @@ const presetExecution = (
       const fadeOutEffects = createTransitionEffects(mediaItem, sceneId, false);
       const allEffects = [...fadeInEffects, ...fadeOutEffects];
 
-      if (mediaItem.type === 'video') {
+      let mediaType = mediaItem.type;
+
+      if (!mediaType) {
+        if (
+          mediaItem.src.endsWith('.png') ||
+          mediaItem.src.endsWith('.jpg') ||
+          mediaItem.src.endsWith('.jpeg') ||
+          mediaItem.src.endsWith('.gif') ||
+          mediaItem.src.endsWith('.webp') ||
+          mediaItem.src.endsWith('.svg') ||
+          mediaItem.src.endsWith('.avif')
+        ) {
+          mediaType = 'image';
+        } else if (
+          mediaItem.src.endsWith('.mp4') ||
+          mediaItem.src.endsWith('.webm') ||
+          mediaItem.src.endsWith('.mov') ||
+          mediaItem.src.endsWith('.avi') ||
+          mediaItem.src.endsWith('.mkv') ||
+          mediaItem.src.endsWith('.flv') ||
+          mediaItem.src.endsWith('.wmv')
+        ) {
+          mediaType = 'video';
+        } else {
+          mediaType = 'audio';
+        }
+      }
+
+      if (mediaType === 'video') {
         return {
           id: sceneId,
           componentId: 'VideoAtom',
@@ -423,7 +451,7 @@ const presetExecution = (
             };
           }),
         };
-      } else if (mediaItem.type === 'image') {
+      } else if (mediaType === 'image') {
         return {
           id: sceneId,
           componentId: 'ImageAtom',
@@ -460,7 +488,7 @@ const presetExecution = (
             };
           }),
         };
-      } else if (mediaItem.type === 'audio') {
+      } else if (mediaType === 'audio') {
         return {
           id: sceneId,
           componentId: 'AudioAtom',
