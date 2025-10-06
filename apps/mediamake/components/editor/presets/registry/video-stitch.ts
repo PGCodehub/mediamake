@@ -1,6 +1,6 @@
 import { InputCompositionProps } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 import { CSSProperties } from 'react';
 import { RenderableComponentData } from '@microfox/datamotion';
 
@@ -34,7 +34,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   // Parse aspect ratio
   const [widthRatio, heightRatio] = params.aspectRatio.split(':').map(Number);
   const aspectRatio = widthRatio / heightRatio;
@@ -86,23 +86,25 @@ const presetExecution = (
   }
 
   return {
-    config: {
-      width: baseWidth,
-      height: baseHeight,
-      fps: 30,
-      duration: 20,
-      fitDurationTo: 'video-scene', // Fit duration to the first video, scenes will handle sequencing
-    },
-    childrenData: [
-      {
-        id: `video-scene`,
-        componentId: 'BaseLayout',
-        type: 'scene' as const,
-        data: {},
-        context: {},
-        childrenData: scenes ?? [],
+    output: {
+      config: {
+        width: baseWidth,
+        height: baseHeight,
+        fps: 30,
+        duration: 20,
+        fitDurationTo: 'video-scene', // Fit duration to the first video, scenes will handle sequencing
       },
-    ],
+      childrenData: [
+        {
+          id: `video-scene`,
+          componentId: 'BaseLayout',
+          type: 'scene' as const,
+          data: {},
+          context: {},
+          childrenData: scenes ?? [],
+        },
+      ],
+    },
   };
 };
 

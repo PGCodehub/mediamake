@@ -21,10 +21,10 @@ interface PresetDataDocument {
 export async function GET(request: NextRequest) {
   try {
     const db = await getDatabase();
+    const clientId = request.headers.get('x-client-id') || undefined;
     const collection = db.collection<PresetDataDocument>('presetData');
 
     const { searchParams } = new URL(request.url);
-    const clientId = searchParams.get('clientId');
 
     const query = clientId ? { clientId } : {};
 
@@ -46,11 +46,12 @@ export async function GET(request: NextRequest) {
 // POST /api/preset-data - Save preset data
 export async function POST(request: NextRequest) {
   try {
+    const clientId = request.headers.get('x-client-id') || undefined;
     const db = await getDatabase();
     const collection = db.collection<PresetDataDocument>('presetData');
 
     const body = await request.json();
-    const { name, presetData, clientId, overwriteId } = body;
+    const { name, presetData, overwriteId } = body;
 
     if (!name || !presetData) {
       return NextResponse.json(

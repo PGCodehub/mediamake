@@ -90,6 +90,8 @@ export const POST = async (req: NextRequest) => {
       style: {},
     };
 
+    let clip = {};
+
     // Process each preset in order
     for (const presetItem of presets) {
       const { presetId, presetType, presetInputData } = presetItem;
@@ -142,12 +144,17 @@ export const POST = async (req: NextRequest) => {
       const presetOutput = runPreset(presetInputData, preset.presetFunction, {
         config: finalComposition.config,
         style: finalComposition.style,
+        clip,
       });
       if (!presetOutput) {
         return NextResponse.json(
           { error: `Failed to execute preset '${presetId}'` },
           { status: 500 },
         );
+      }
+
+      if (presetOutput.options?.clip && preset.metadata.presetType === 'full') {
+        clip = presetOutput.options.clip;
       }
 
       // Insert preset output into composition

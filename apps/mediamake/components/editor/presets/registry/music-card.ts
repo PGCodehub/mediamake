@@ -6,14 +6,24 @@ import {
   WaveformHistogramRangedDataProps,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput, PresetPassedProps } from '../types';
 
 const presetParams = z.object({
   audioUrl: z.string().describe('Audio URL for waveform'),
-  artworkImage: z.string().describe('Music artwork image URL'),
+  artworkImage: z.string().optional().describe('Music artwork image URL'),
   trackTitle: z.string().describe('Track title text'),
   artistName: z.string().optional().describe('Artist name'),
+  hideWaveform: z.boolean().optional().describe('Hide waveform'),
   waveformColor: z.string().optional().describe('Waveform color (hex)'),
+  waveformHeight: z.number().optional().describe('Waveform height (in pixels)'),
+  waveformSampling: z
+    .number()
+    .min(3)
+    .max(8)
+    .optional()
+    .describe(
+      'Waveform sampling multiplier,, the lower, the less number of bars',
+    ),
   waveformGradientEnd: z
     .string()
     .optional()
@@ -29,25 +39,21 @@ const presetParams = z.object({
     .optional()
     .describe('Artist font family (e.g., "Roboto:400" or "Inter")'),
   bottomOffset: z.string().optional().describe('Bottom offset (in pixels)'),
+  startOffset: z.number().optional().describe('Start offset (in seconds)'),
 });
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-  props: {
-    config: {
-      duration: number;
-      width: number;
-      height: number;
-      fps: number;
-      fitDurationTo?: string;
-    };
-  },
-): Partial<InputCompositionProps> => {
+  props: Partial<PresetPassedProps>,
+): PresetOutput => {
   // Parse aspect ratio from config
   const { config } = props;
-  const aspectRatio = config.width / config.height;
+  const aspectRatio =
+    config && config.width && config.height
+      ? config.width / config.height
+      : 16 / 9;
   const isVertical = aspectRatio < 1;
-
+  const startOffset = params.startOffset ?? 0;
   // Responsive waveform histogram
   const waveform = {
     id: 'waveform-music-card',
@@ -56,17 +62,23 @@ const presetExecution = (
     data: {
       config: {
         audioSrc: params.audioUrl,
-        numberOfSamples: 64,
+        numberOfSamples: params.waveformSampling
+          ? Math.pow(2, params.waveformSampling)
+          : 64,
         windowInSeconds: 1 / 30,
         amplitude: 1,
-        width: config.width,
-        height: isVertical ? 200 : 300,
+        width: config && config.width ? config.width : 1920,
+        height: params.waveformHeight ?? (isVertical ? 200 : 300),
         dataOffsetInSeconds: 0,
         useFrequencyData: true,
       } as WaveformConfig,
       barSpacing: isVertical ? 6 : 10,
       barBorderRadius: isVertical ? 4 : 8,
-      barWidth: isVertical ? 2 : 4,
+      barWidth: isVertical
+        ? params.waveformSampling
+          ? params.waveformSampling * 1.25
+          : 2
+        : 4,
       multiplier: 1,
       horizontalSymmetry: false,
       verticalMirror: true,
@@ -84,7 +96,11 @@ const presetExecution = (
         left: 0,
         right: 0,
         width: '100%',
-        height: isVertical ? '200px' : '300px',
+        height: params.waveformHeight
+          ? `${params.waveformHeight}px`
+          : isVertical
+            ? '200px'
+            : '300px',
       },
     } as WaveformHistogramRangedDataProps,
   };
@@ -99,7 +115,7 @@ const presetExecution = (
         id: 'artwork-fade-in',
         componentId: 'generic',
         data: {
-          start: 0,
+          start: startOffset,
           duration: 1,
           mode: 'provider',
           targetIds: ['artwork-music-card'],
@@ -122,7 +138,7 @@ const presetExecution = (
         id: 'artwork-scale-in',
         componentId: 'generic',
         data: {
-          start: 0,
+          start: startOffset,
           duration: 1.5,
           mode: 'provider',
           targetIds: ['artwork-music-card'],
@@ -143,7 +159,7 @@ const presetExecution = (
       },
     ],
     data: {
-      src: params.artworkImage,
+      src: params.artworkImage ?? '',
       className: isVertical
         ? 'w-[300px] h-[300px] object-cover'
         : 'w-[400px] h-[400px] object-cover',
@@ -165,7 +181,7 @@ const presetExecution = (
         id: 'track-title-fade-in',
         componentId: 'generic',
         data: {
-          start: 0.5,
+          start: startOffset + 0.5,
           duration: 1,
           mode: 'provider',
           targetIds: ['track-title-music-card'],
@@ -188,7 +204,7 @@ const presetExecution = (
         id: 'track-title-slide-up',
         componentId: 'generic',
         data: {
-          start: 0.5,
+          start: startOffset + 0.5,
           duration: 1.5,
           mode: 'provider',
           targetIds: ['track-title-music-card'],
@@ -215,7 +231,9 @@ const presetExecution = (
         fontSize: isVertical ? 35 : 45,
         color: params.titleColor || '#FFF',
         letterSpacing: isVertical ? 8 : 10,
-        fontWeight: 900,
+        ...(params.titleFont?.includes(':')
+          ? { fontWeight: params.titleFont.split(':')[1] }
+          : {}),
         textAlign: 'center',
         width: '100%',
         textShadow: '0 2px 10px rgba(0,0,0,0.8)',
@@ -227,7 +245,7 @@ const presetExecution = (
       font: {
         family: params.titleFont?.includes(':')
           ? params.titleFont.split(':')[0]
-          : params.titleFont || 'Inter',
+          : (params.titleFont ?? 'Inter'),
         ...(params.titleFont?.includes(':')
           ? { weights: [params.titleFont.split(':')[1]] }
           : {}),
@@ -246,7 +264,7 @@ const presetExecution = (
             id: 'artist-name-fade-in',
             componentId: 'generic',
             data: {
-              start: 1,
+              start: startOffset + 1,
               duration: 1,
               mode: 'provider',
               targetIds: ['artist-name-music-card'],
@@ -269,7 +287,7 @@ const presetExecution = (
             id: 'artist-name-slide-up',
             componentId: 'generic',
             data: {
-              start: 1,
+              start: startOffset + 1,
               duration: 1.5,
               mode: 'provider',
               targetIds: ['artist-name-music-card'],
@@ -297,7 +315,9 @@ const presetExecution = (
             color: params.artistColor || '#CCC',
             textTransform: 'uppercase',
             letterSpacing: isVertical ? 4 : 6,
-            fontWeight: 400,
+            ...(params.artistFont?.includes(':')
+              ? { fontWeight: params.artistFont.split(':')[1] }
+              : {}),
             textAlign: 'center',
             width: '100%',
             textShadow: '0 1px 5px rgba(0,0,0,0.8)',
@@ -335,7 +355,13 @@ const presetExecution = (
         fitDurationTo: 'audio-track',
       },
     },
-    childrenData: [artwork, trackTitle, ...(artistName ? [artistName] : [])],
+    childrenData: [
+      ...(params.artworkImage && params.artworkImage?.length > 0
+        ? [artwork]
+        : []),
+      trackTitle,
+      ...(artistName ? [artistName] : []),
+    ],
   };
 
   // Main layout container
@@ -366,28 +392,27 @@ const presetExecution = (
         fitDurationTo: 'audio-track',
       },
     },
-    childrenData: [waveform, musicCardContainer],
+    childrenData: [
+      ...(params.hideWaveform ? [] : [waveform]),
+      musicCardContainer,
+    ],
   };
 
   return {
-    childrenData: [
-      {
-        id: `BaseScene`,
-        componentId: 'BaseLayout',
-        type: 'scene' as const,
-        data: {
-          containerProps: {
-            className: `absolute inset-0`,
-          },
-          childrenProps: [
-            {
-              className: `absolute inset-0`,
-            },
-          ],
-        },
-        childrenData: [layout],
+    output: {
+      config: {
+        duration: 20,
       },
-    ],
+      childrenData: [layout],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 
@@ -410,6 +435,7 @@ const musicCardPresetMetadata: PresetMetadata = {
     waveformGradientEnd: '#FDCE99',
     titleColor: '#FFF',
     artistColor: '#CCC',
+    startOffset: 0,
   },
 };
 

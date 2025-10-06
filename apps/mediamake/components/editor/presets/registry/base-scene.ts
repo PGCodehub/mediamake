@@ -8,7 +8,7 @@ import {
   ZoomEffectData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 
 const presetParams = z.object({
   backgroundColor: z.string(),
@@ -25,7 +25,7 @@ const presetParams = z.object({
 //src: https://cdn1.suno.ai/6aded313-9bd5-4c8b-bb6f-fd5f158642e3.m4a
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   const { backgroundColor, duration, fitDurationTo } = params;
 
   const [widthRatio, heightRatio] = params.aspectRatio
@@ -51,36 +51,44 @@ const presetExecution = (
   const start = params.clip?.start ? -params.clip.start : 0;
   const durationData = params.clip ? {} : { duration: 20 };
   return {
-    childrenData: [
-      {
-        id: 'BaseScene',
-        componentId: 'BaseLayout',
-        type: fitDurationTo ? 'layout' : ('scene' as const),
-        data: {
-          containerProps: {
-            className: 'flex items-center justify-center',
-            style: {
-              backgroundColor: backgroundColor,
+    output: {
+      childrenData: [
+        {
+          id: 'BaseScene',
+          componentId: 'BaseLayout',
+          type: fitDurationTo ? 'layout' : ('scene' as const),
+          data: {
+            containerProps: {
+              className: 'flex items-center justify-center',
+              style: {
+                backgroundColor: backgroundColor,
+              },
+            },
+            childrenProps: [],
+          },
+          context: {
+            timing: {
+              start: start,
+              ...durationData,
+              fitDurationTo: fitDurationTo ?? 'this',
             },
           },
-          childrenProps: [],
+          childrenData: [],
         },
-        context: {
-          timing: {
-            start: start,
-            ...durationData,
-            fitDurationTo: fitDurationTo ?? 'this',
-          },
-        },
-        childrenData: [],
+      ],
+      config: {
+        width: baseWidth,
+        height: baseHeight,
+        fps: 30,
+        duration: sceneDuration ?? 20,
+        ...sceneFitDuration,
       },
-    ],
-    config: {
-      width: baseWidth,
-      height: baseHeight,
-      fps: 30,
-      duration: sceneDuration ?? 20,
-      ...sceneFitDuration,
+    },
+    options: {
+      clip: {
+        start: params.clip?.start,
+        duration: params.clip?.duration,
+      },
     },
   };
 };

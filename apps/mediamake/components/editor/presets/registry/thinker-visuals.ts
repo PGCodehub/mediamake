@@ -7,7 +7,7 @@ import {
   WaveformHistogramRangedDataProps,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 import { Layout } from 'lucide-react';
 
 const presetParams = z.object({
@@ -48,7 +48,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   // Parse aspect ratio
   const [widthRatio, heightRatio] = params.aspectRatio
     ?.split(':')
@@ -600,29 +600,24 @@ const presetExecution = (
   };
 
   return {
-    config: {
-      fitDurationTo: 'title-intro-alkefn', // Fit duration to the title intro (10 seconds)
-    },
-    childrenData: [
-      {
-        id: `BaseScene`,
-        componentId: 'BaseLayout',
-        type: 'scene' as const,
-        data: {
-          containerProps: {
-            className: `absolute inset-0`,
-          },
-          repeatChildrenProps: {
-            className: `absolute inset-0`,
-          },
-        },
-        childrenData: [
-          // Title intro overlay
-          layout,
-          layout2,
-        ],
+    output: {
+      config: {
+        fitDurationTo: 'title-intro-alkefn', // Fit duration to the title intro (10 seconds)
       },
-    ],
+      childrenData: [
+        // Title intro overlay
+        layout,
+        layout2,
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 

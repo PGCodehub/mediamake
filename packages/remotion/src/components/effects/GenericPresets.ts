@@ -1,6 +1,6 @@
 // Common animation presets for GenericEffect
 
-import { AnimationRange } from './Generic';
+import { AnimationRange } from './UniversalEffect';
 
 // Fade in animation
 const fadeInPreset: AnimationRange[] = [

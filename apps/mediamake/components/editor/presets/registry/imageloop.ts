@@ -5,7 +5,7 @@ import {
   GenericEffectData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 
 // Define the schema for image sources
 const imageSourceSchema = z.object({
@@ -77,24 +77,22 @@ const presetParams = z.object({
 const presetExecution = (
   params: z.infer<typeof presetParams>,
   props: {
-    config: {
-      duration: number;
-      width: number;
-      height: number;
-      fps: number;
-      fitDurationTo?: string;
-    };
+    config: InputCompositionProps['config'];
   },
-): Partial<InputCompositionProps> => {
+): Partial<PresetOutput> => {
   const { images, effects } = params;
   const { config } = props;
+
+  const isVertical =
+    config?.width && config?.height && config?.width < config?.height;
 
   // Create image components with effects
   const imageComponents = images.map((image, imageIndex) => {
     // Convert effects to the format expected by the system
     const imageEffects = effects.map((effect, effectIndex) => {
       const effectId =
-        effect.id || `${effect.type}-${imageIndex}-${effectIndex}`;
+        effect.id ||
+        `${params.trackName ?? 'imageloop'}-${effect.type}-${imageIndex}-${effectIndex}`;
 
       switch (effect.type) {
         case 'pan':
@@ -154,20 +152,32 @@ const presetExecution = (
     const isPanEffect = imageEffects.some(
       effect => effect.componentId === 'pan',
     );
+    const _panEffectData = imageEffects.find(
+      effect => effect.componentId === 'pan',
+    )?.data as PanEffectData;
     const isDuration = image.duration && image.duration > 0;
 
     return {
-      id: `image-${imageIndex}`,
+      id: `${params.trackName ?? 'imageloop'}-image-${imageIndex}`,
       componentId: 'ImageAtom',
       type: 'atom' as const,
       data: {
         src: image.src,
         className: isPanEffect
-          ? props.config.width > props.config.height
+          ? isVertical
             ? 'w-full h-auto object-cover'
-            : 'w-full h-full object-cover'
+            : `w-full h-full  object-cover`
           : 'w-full h-full object-cover',
         fit: image.fit || 'cover',
+        style: {
+          ...(isPanEffect
+            ? {
+                height:
+                  (props.config?.height ?? 1920) +
+                  ((_panEffectData?.panDistance as number) ?? 0),
+              }
+            : {}),
+        },
       },
       context: {
         timing: isDuration ? { duration: image.duration } : {},
@@ -177,51 +187,51 @@ const presetExecution = (
   });
 
   return {
-    childrenData: [
-      {
-        id: 'BaseScene',
-        componentId: 'BaseLayout',
-        type: 'layout',
-        data: {
-          childrenProps: [
-            {
+    output: {
+      childrenData: [
+        {
+          id: `${params.trackName}`,
+          componentId: 'BaseLayout',
+          type: params.trackFitDurationTo ? 'layout' : ('scene' as const),
+          data: {
+            containerProps: {
               className: 'absolute inset-0',
             },
-          ],
-        },
-        childrenData: [
-          {
-            id: `${params.trackName}`,
-            componentId: 'BaseLayout',
-            type: params.trackFitDurationTo ? 'layout' : ('scene' as const),
-            data: {},
-            context: {
-              timing: params.trackFitDurationTo
-                ? {
-                    start: 0,
-                    fitDurationTo: params.trackFitDurationTo ?? 'this',
-                  }
-                : {},
-            },
-            childrenData: imageComponents ?? [],
           },
-        ],
-      },
-    ],
+          context: {
+            timing: params.trackFitDurationTo
+              ? {
+                  start: 0,
+                  fitDurationTo: params.trackFitDurationTo ?? 'this',
+                }
+              : {},
+          },
+          childrenData: imageComponents ?? [],
+        },
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 
 // Preset metadata
 const presetMetadata: PresetMetadata = {
-  id: 'image-effects',
-  title: 'Image Effects',
+  id: 'imageloop',
+  title: 'imageloop',
   description:
     'Apply pan, zoom, and generic effects to single or multiple images',
   type: 'predefined',
   presetType: 'children',
   tags: ['image', 'effects', 'visual', 'animation'],
   defaultInputParams: {
-    trackName: 'image-track',
+    trackName: 'imageloop-track',
     images: [
       {
         src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',

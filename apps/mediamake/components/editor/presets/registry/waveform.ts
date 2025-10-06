@@ -5,7 +5,7 @@ import {
   WaveformHistogramRangedDataProps,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 
 // Define the schema for audio sources
 const audioSourceSchema = z.object({
@@ -195,7 +195,7 @@ const presetExecution = (
       fitDurationTo?: string;
     };
   },
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   const { audio, waveform, container } = params;
   const { config } = props;
 
@@ -325,99 +325,98 @@ const presetExecution = (
     .join(' ');
 
   return {
-    childrenData: [
-      {
-        id: 'BaseScene',
-        componentId: 'BaseLayout',
-        type: 'layout',
-        data: {
-          childrenProps: [
+    output: {
+      config: {
+        duration: 20,
+      },
+      childrenData: [
+        {
+          id: `${params.trackName}`,
+          componentId: 'BaseLayout',
+          type: params.trackFitDurationTo ? 'layout' : ('scene' as const),
+          data: {},
+          context: {
+            timing: params.trackFitDurationTo
+              ? {
+                  start: 0,
+                  fitDurationTo: params.trackFitDurationTo ?? 'this',
+                }
+              : {},
+          },
+          childrenData: [
+            // Audio component
             ...(!audio?.src?.startsWith('ref')
               ? [
                   {
-                    className: 'absolute inset-0',
+                    id: 'Audio',
+                    componentId: 'AudioAtom',
+                    type: 'atom' as const,
+                    data: {
+                      src: audio?.src ?? '',
+                      volume: audio.volume || 1,
+                      startFrom: audio.start || 0,
+                    } as AudioAtomDataProps,
+                    context: audio.duration
+                      ? { timing: { duration: audio.duration } }
+                      : {},
                   },
                 ]
               : []),
+            // Waveform container
             {
-              className: 'absolute inset-0',
-            },
-          ],
-        },
-        childrenData: [
-          {
-            id: `${params.trackName}`,
-            componentId: 'BaseLayout',
-            type: params.trackFitDurationTo ? 'layout' : ('scene' as const),
-            data: {},
-            context: {
-              timing: params.trackFitDurationTo
-                ? {
-                    start: 0,
-                    fitDurationTo: params.trackFitDurationTo ?? 'this',
-                  }
-                : {},
-            },
-            childrenData: [
-              // Audio component
-              ...(!audio?.src?.startsWith('ref')
-                ? [
-                    {
-                      id: 'Audio',
-                      componentId: 'AudioAtom',
-                      type: 'atom' as const,
-                      data: {
-                        src: audio?.src ?? '',
-                        volume: audio.volume || 1,
-                        startFrom: audio.start || 0,
-                      } as AudioAtomDataProps,
-                      context: audio.duration
-                        ? { timing: { duration: audio.duration } }
-                        : {},
-                    },
-                  ]
-                : []),
-              // Waveform container
-              {
-                id: 'WaveformContainer',
-                componentId: 'BaseLayout',
-                type: 'layout',
-                data: {
-                  containerProps: {
-                    style: {
-                      ...containerStyle,
-                      ...verticalPositioning,
-                    },
-                    className: containerClassName,
+              id: 'WaveformContainer',
+              componentId: 'BaseLayout',
+              type: 'layout',
+              data: {
+                containerProps: {
+                  style: {
+                    ...containerStyle,
+                    ...verticalPositioning,
                   },
-                  childrenProps: [
-                    {
-                      className: 'w-full h-full',
-                      style: {
-                        width: isVertical
-                          ? container?.verticalWidth || 200
-                          : (container?.width ?? '100%'),
-                      },
-                    },
-                  ],
+                  className: containerClassName,
                 },
-                childrenData: [
+                childrenProps: [
                   {
-                    id: 'Waveform',
-                    componentId:
-                      waveform.type === 'static'
-                        ? 'WaveformHistogramRanged'
-                        : 'WaveformHistogram',
-                    type: 'atom',
-                    data: waveformData,
+                    className: 'w-full h-full',
+                    style: {
+                      width: isVertical
+                        ? container?.verticalWidth || 200
+                        : (container?.width ?? '100%'),
+                    },
                   },
                 ],
               },
-            ],
-          },
-        ],
-      },
-    ],
+              childrenData: [
+                {
+                  id: 'Waveform',
+                  componentId:
+                    waveform.type === 'static'
+                      ? 'WaveformHistogramRanged'
+                      : 'WaveformHistogram',
+                  type: 'atom',
+                  data: waveformData,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        ...(!audio?.src?.startsWith('ref')
+          ? [
+              {
+                className: 'absolute inset-0',
+              },
+            ]
+          : []),
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 

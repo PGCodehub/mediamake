@@ -35,6 +35,7 @@ export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiReq
     const [apiKey, setApiKey] = useLocalState("apiKey", process.env.NEXT_PUBLIC_DEV_API_KEY ?? "");
     const [isApiLoading, setIsApiLoading] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
+    const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
 
     // Fetch render history from API
     const fetchApiHistory = async (key: string) => {
@@ -67,6 +68,8 @@ export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiReq
     const refreshApiRequest = async (renderId: string): Promise<RenderRequest | null> => {
         if (!apiKey.trim()) return null;
 
+        setRefreshingIds(prev => new Set(prev).add(renderId));
+
         try {
             const response = await fetch('/api/remotion/history', {
                 headers: {
@@ -97,6 +100,12 @@ export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiReq
         } catch (error) {
             console.error('Failed to refresh API request:', error);
             return null;
+        } finally {
+            setRefreshingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(renderId);
+                return newSet;
+            });
         }
     };
 
@@ -225,7 +234,12 @@ export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiReq
                                     <CardTitle className="text-sm font-medium truncate">
                                         {request.fileName}
                                     </CardTitle>
-                                    {getStatusIcon(request.status)}
+                                    <div className="flex items-center gap-2">
+                                        {refreshingIds.has(request.id) && (
+                                            <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                                        )}
+                                        {getStatusIcon(request.status)}
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {getStatusBadge(request.status)}
@@ -238,6 +252,18 @@ export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiReq
                             </CardHeader>
 
                             {selectedRender === request.id && <CardContent className="pt-0">
+                                {/* Video Preview for completed renders */}
+                                {request.status === "completed" && request.downloadUrl && (
+                                    <div className="mb-3">
+                                        <video
+                                            src={request.downloadUrl}
+                                            controls
+                                            className="w-full h-32 object-cover rounded-md"
+                                            preload="metadata"
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="space-y-1 text-xs text-muted-foreground">
                                     <div className="flex justify-between">
                                         <span>Codec:</span>
@@ -265,10 +291,21 @@ export function HistorySidebar({ selectedRender, onSelectRender, onRefreshApiReq
                                     <div className="mt-2">
                                         <div className="w-full bg-secondary rounded-full h-1.5">
                                             <div
-                                                className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                                                className={cn(
+                                                    "h-1.5 rounded-full transition-all duration-300",
+                                                    refreshingIds.has(request.id)
+                                                        ? "bg-blue-500 animate-pulse"
+                                                        : "bg-primary"
+                                                )}
                                                 style={{ width: `${request.progress * 100}%` }}
                                             />
                                         </div>
+                                        {refreshingIds.has(request.id) && (
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />
+                                                <span className="text-xs text-blue-600">Updating...</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>}

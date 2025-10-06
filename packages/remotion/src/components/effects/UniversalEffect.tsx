@@ -1,7 +1,6 @@
 import React, { useMemo, createContext, useContext, ReactNode } from 'react';
-import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from 'remotion';
+import { useCurrentFrame, useVideoConfig, interpolate, Easing } from 'remotion';
 import { BaseRenderableProps } from '../../core/types/renderable.types';
-import { z } from 'zod';
 
 // Animation range type for keyframe animations
 export interface AnimationRange {
@@ -10,44 +9,50 @@ export interface AnimationRange {
     prog: number; // Progress (0-1) when this keyframe should be active
 }
 
-// Generic effect data interface
-export interface GenericEffectData {
-    start?: number; // Start frame
-    duration?: number; // Duration in frames
+// Universal effect data interface - extends any effect with provider capabilities
+export interface UniversalEffectData {
+    start?: number; // Start time in seconds
+    duration?: number; // Duration in seconds
     type?: 'spring' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
     ranges?: AnimationRange[]; // Animation keyframes
     targetIds?: string[]; // IDs of child components to target (for provider mode)
     mode?: 'wrapper' | 'provider'; // How the effect is applied
     props?: any; // Additional properties for the effect
+    // Effect-specific properties (can be extended by any effect)
+    [key: string]: any;
 }
 
-// Context for provider mode
-interface GenericEffectContextType {
+// Context for universal effect provider mode
+interface UniversalEffectContextType {
     animatedStyles: React.CSSProperties;
     targetIds: string[];
+    effectType: string;
 }
 
-const GenericEffectContext = createContext<GenericEffectContextType | null>(null);
+const UniversalEffectContext = createContext<UniversalEffectContextType | null>(null);
 
-// Hook to use the generic effect context
-export const useGenericEffect = () => {
-    const context = useContext(GenericEffectContext);
+// Hook to use the universal effect context
+export const useUniversalEffect = () => {
+    const context = useContext(UniversalEffectContext);
     if (!context) {
-        throw new Error('useGenericEffect must be used within a GenericEffectProvider');
+        throw new Error('useUniversalEffect must be used within a UniversalEffectProvider');
     }
     return context;
 };
 
 // Optional hook that returns null if no provider is found
-export const useGenericEffectOptional = () => {
-    return useContext(GenericEffectContext);
+export const useUniversalEffectOptional = () => {
+    return useContext(UniversalEffectContext);
 };
 
-// Hook to check if a generic effect provider exists
-export const useHasGenericEffectProvider = (): boolean => {
-    const context = useContext(GenericEffectContext);
+// Hook to check if a universal effect provider exists
+export const useHasUniversalEffectProvider = (): boolean => {
+    const context = useContext(UniversalEffectContext);
     return context !== null;
 };
+
+// Export the context so it can be used by other effect components
+export { UniversalEffectContext };
 
 // Parse duration from seconds to frames
 const parseDuration = (duration: number | string | undefined, contextDuration: number, fps: number): number => {
@@ -107,20 +112,16 @@ interface ColorRGBA {
 
 // Parse hex color to RGBA
 const parseHexColor = (hex: string): ColorRGBA => {
-    // Remove # if present and normalize
     hex = hex.replace('#', '').toLowerCase();
 
-    // Validate hex characters
     if (!/^[0-9a-f]+$/.test(hex)) {
         return { r: 0, g: 0, b: 0, a: 1 };
     }
 
-    // Handle 3-digit hex
     if (hex.length === 3) {
         hex = hex.split('').map(char => char + char).join('');
     }
 
-    // Handle 6-digit hex
     if (hex.length === 6) {
         return {
             r: Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16))),
@@ -130,7 +131,6 @@ const parseHexColor = (hex: string): ColorRGBA => {
         };
     }
 
-    // Handle 8-digit hex (with alpha)
     if (hex.length === 8) {
         return {
             r: Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16))),
@@ -140,13 +140,11 @@ const parseHexColor = (hex: string): ColorRGBA => {
         };
     }
 
-    // Default fallback
     return { r: 0, g: 0, b: 0, a: 1 };
 };
 
 // Parse rgba color to RGBA
 const parseRgbaColor = (rgba: string): ColorRGBA => {
-    // More robust regex that handles both rgb() and rgba() with optional alpha
     const match = rgba.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
     if (match) {
         return {
@@ -169,7 +167,6 @@ const parseColor = (color: string): ColorRGBA => {
         return parseRgbaColor(trimmedColor);
     }
 
-    // Default fallback
     return { r: 0, g: 0, b: 0, a: 1 };
 };
 
@@ -203,62 +200,47 @@ const calculateAnimatedValue = (
     progress: number,
     key: string
 ): any => {
-    // Sort ranges by progress
     const sortedRanges = [...ranges].sort((a, b) => a.prog - b.prog);
 
-    // Handle edge cases
     if (sortedRanges.length === 0) return 0;
     if (sortedRanges.length === 1) return sortedRanges[0].val;
 
-    // If progress is before first range
     if (progress <= sortedRanges[0].prog) {
         return sortedRanges[0].val;
     }
 
-    // If progress is after last range
     if (progress >= sortedRanges[sortedRanges.length - 1].prog) {
         return sortedRanges[sortedRanges.length - 1].val;
     }
 
-    // Find the current range or interpolate between ranges
     for (let i = 0; i < sortedRanges.length - 1; i++) {
         const currentRange = sortedRanges[i];
         const nextRange = sortedRanges[i + 1];
 
         if (progress >= currentRange.prog && progress <= nextRange.prog) {
-            // Interpolate between current and next range
             const localProgress = (progress - currentRange.prog) / (nextRange.prog - currentRange.prog);
             const currentValue = currentRange.val;
             const nextValue = nextRange.val;
 
-            // Handle different value types
             if (typeof currentValue === 'number' && typeof nextValue === 'number') {
-                // Ensure both values are finite and valid before interpolating
                 if (isFinite(currentValue) && isFinite(nextValue) && !isNaN(currentValue) && !isNaN(nextValue)) {
-                    // For numbers, use simple linear interpolation to avoid double interpolation
                     const interpolatedValue = currentValue + (nextValue - currentValue) * localProgress;
-                    // Ensure interpolated value is valid
                     if (isFinite(interpolatedValue) && !isNaN(interpolatedValue)) {
                         return interpolatedValue;
                     }
                 }
-                // Return current value if interpolation fails
                 return currentValue;
             } else if (typeof currentValue === 'string' && typeof nextValue === 'string') {
-                // Check if both values are colors (hex or rgba)
                 const isColor = (str: string) => {
                     const trimmed = str.trim().toLowerCase();
                     return trimmed.startsWith('#') || trimmed.startsWith('rgb');
                 };
 
                 if (isColor(currentValue) && isColor(nextValue)) {
-                    // Interpolate colors
                     return interpolateColors(currentValue, nextValue, localProgress);
                 }
 
-                // Extract unit and value from both strings
                 const getUnitAndValue = (str: string) => {
-                    // Check for units in order of specificity (longer units first)
                     const units = ['vmax', 'vmin', 'rem', 'deg', 'bpm', 'vh', 'vw', 'px', 'em', 'ms', 'hz', 'db', 'fr', 's', '%'];
 
                     for (const unit of units) {
@@ -271,7 +253,6 @@ const calculateAnimatedValue = (
                         }
                     }
 
-                    // If no unit found, treat as number
                     const value = parseFloat(str);
                     return {
                         value: isNaN(value) ? 0 : value,
@@ -282,24 +263,20 @@ const calculateAnimatedValue = (
                 const current = getUnitAndValue(currentValue);
                 const next = getUnitAndValue(nextValue);
 
-                // Only interpolate if units match and values are finite
                 if (current.unit === next.unit && isFinite(current.value) && isFinite(next.value)) {
                     const interpolatedValue = interpolate(localProgress, [0, 1], [current.value, next.value]);
-                    // Ensure interpolated value is finite
                     if (isFinite(interpolatedValue)) {
                         return current.unit ? `${interpolatedValue}${current.unit}` : interpolatedValue;
                     }
                 }
 
-                // Fallback: return current value if interpolation fails
                 return currentValue;
             }
 
-            return currentValue; // Fallback
+            return currentValue;
         }
     }
 
-    // Fallback - should not reach here
     return sortedRanges[0]?.val || 0;
 };
 
@@ -307,7 +284,6 @@ const calculateAnimatedValue = (
 const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): React.CSSProperties => {
     const styles: React.CSSProperties = {};
 
-    // Group ranges by key
     const rangesByKey = ranges.reduce((acc, range) => {
         if (!acc[range.key]) {
             acc[range.key] = [];
@@ -316,40 +292,32 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
         return acc;
     }, {} as Record<string, AnimationRange[]>);
 
-    // Calculate values for each key
     Object.entries(rangesByKey).forEach(([key, keyRanges]) => {
         const value = calculateAnimatedValue(keyRanges, progress, key);
 
-        // Map common animation keys to CSS properties
         switch (key) {
             case 'scale':
                 styles.transform = `scale(${value})`;
                 break;
             case 'rotate':
-                // Handle both number and string values for rotate
                 const rotateValue = typeof value === 'string' && value.includes('deg') ? value : `${value}deg`;
                 styles.transform = `${styles.transform || ''} rotate(${rotateValue})`.trim();
                 break;
             case 'translateX':
-                // Handle both number and string values for translateX
                 const translateXValue = typeof value === 'string' && (value.includes('px') || value.includes('%') || value.includes('vw') || value.includes('vh')) ? value : `${value}px`;
                 styles.transform = `${styles.transform || ''} translateX(${translateXValue})`.trim();
                 break;
             case 'translateY':
-                // Handle both number and string values for translateY
                 const translateYValue = typeof value === 'string' && (value.includes('px') || value.includes('%') || value.includes('vw') || value.includes('vh')) ? value : `${value}px`;
                 styles.transform = `${styles.transform || ''} translateY(${translateYValue})`.trim();
                 break;
             case 'opacity':
-                // Ensure opacity is always a valid number between 0 and 1
-                // Use Math.round to prevent floating point precision issues that cause flickering
                 const opacityValue = typeof value === 'number'
                     ? Math.max(0, Math.min(1, isFinite(value) && !isNaN(value) ? Math.round(value * 1000) / 1000 : 1))
                     : 1;
                 styles.opacity = opacityValue;
                 break;
             case 'blur':
-                // Handle both number and string values for blur
                 const blurValue = typeof value === 'string' && (value.includes('px') || value.includes('rem') || value.includes('em')) ? value : `${value}px`;
                 styles.filter = `blur(${blurValue})`;
                 break;
@@ -360,7 +328,6 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
                 styles.filter = `${styles.filter || ''} contrast(${value})`.trim();
                 break;
             case 'filter':
-                // Handle filter property directly, including drop-shadow
                 styles.filter = value;
                 break;
             case 'color':
@@ -370,8 +337,6 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
                 styles.backgroundColor = value;
                 break;
             default:
-                // For custom CSS properties, set them directly
-                // This supports any CSS property including CSS custom properties (CSS variables)
                 (styles as any)[key] = value;
         }
     });
@@ -379,12 +344,8 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
     return styles;
 };
 
-// Generic Effect Component
-export const GenericEffect: React.FC<BaseRenderableProps> = ({
-    data,
-    children,
-    context
-}) => {
+// A new hook to encapsulate the core animation logic
+export const useUniversalAnimation = (data: UniversalEffectData, context?: any) => {
     // Safely get Remotion context with fallbacks
     let frame = 0;
     let fps = 30;
@@ -394,16 +355,14 @@ export const GenericEffect: React.FC<BaseRenderableProps> = ({
         const videoConfig = useVideoConfig();
         fps = videoConfig.fps;
     } catch (error) {
-        // If we're not in a Remotion context, use fallback values
-        console.warn('GenericEffect used outside Remotion context, using fallback values');
+        console.warn('useUniversalAnimation used outside Remotion context, using fallback values');
     }
 
-    const effectData = data as GenericEffectData;
-
+    const effectData = data as UniversalEffectData;
     const { timing } = context ?? {};
     const contextDuration = timing?.durationInFrames || 50;
 
-    // Parse effect parameters (convert seconds to frames)
+    // Parse effect parameters
     const start = parseDelay(effectData?.start, contextDuration, fps);
     const duration = parseDuration(effectData?.duration, contextDuration, fps);
     const type = effectData?.type || 'linear';
@@ -412,9 +371,7 @@ export const GenericEffect: React.FC<BaseRenderableProps> = ({
     const mode = effectData?.mode || 'wrapper';
 
     // Calculate animation progress
-
     const easing = getEasingFunction(type);
-
     const progress = interpolate(
         frame - start,
         [0, duration],
@@ -425,110 +382,114 @@ export const GenericEffect: React.FC<BaseRenderableProps> = ({
             extrapolateRight: 'clamp',
         }
     );
-    // useMemo(() => {
-    //     if (type === 'spring') {
-    //         return spring({
-    //             frame,
-    //             fps,
-    //             config: {
-    //                 stiffness: 100,
-    //                 damping: 10,
-    //                 mass: 1,
-    //             },
-    //             durationInFrames: duration,
-    //             delay: start,
-    //         });
-    //     } else {
-    //         const animationFrame = frame - start;
-    //         const easing = getEasingFunction(type);
 
-    //         return interpolate(
-    //             animationFrame,
-    //             [0, duration],
-    //             [0, 1],
-    //             {
-    //                 easing,
-    //                 extrapolateLeft: 'clamp',
-    //                 extrapolateRight: 'clamp',
-    //             }
-    //         );
-    //     }
-    // }, [frame, fps, start, duration, type]);
-
-
-
-    // Provider mode: Create context for child components
-    const parentContext = useGenericEffectOptional();
-
-    // Calculate animated styles once with proper dependencies
-    const animatedStyles: React.CSSProperties = useMemo(() => {
-        if (ranges.length === 0) return {};
-
-        const currentStyles = rangesToCSSProperties(ranges, progress);
-
-        // If we have a parent context and we're in provider mode, merge styles
-        if (parentContext && mode === 'provider') {
-            return { ...parentContext.animatedStyles, ...currentStyles };
-        }
-
-        return currentStyles;
-    }, [ranges, progress, parentContext?.animatedStyles, mode]);
-
-    // Create context value once to prevent unnecessary re-renders
-    const contextValue: GenericEffectContextType = useMemo(() => ({
-        animatedStyles,
+    return {
+        frame,
+        fps,
+        progress,
+        start,
+        duration,
+        type,
+        ranges,
         targetIds,
-    }), [animatedStyles, targetIds]);
-
-    if (mode === 'provider') {
-        return (
-            <GenericEffectContext.Provider value={contextValue}>
-                {children}
-            </GenericEffectContext.Provider>
-        );
-    } else {
-        return (
-            <div {...effectData.props} style={animatedStyles}>
-                {children}
-            </div>
-        );
-    }
-
+        mode,
+        effectData,
+    };
 };
 
+// Universal Effect Component - now a thin wrapper for provider/wrapper logic
+export const UniversalEffect: React.FC<BaseRenderableProps & {
+    effectType?: string;
+    customAnimationLogic?: (effectData: UniversalEffectData, progress: number, frame: number) => React.CSSProperties;
+}> = ({
+    data,
+    children,
+    context,
+    effectType = 'universal',
+    customAnimationLogic
+}) => {
+        const { progress, frame, ranges, mode, targetIds, effectData } = useUniversalAnimation(data, context);
+        const parentContext = useUniversalEffectOptional();
+
+        const animatedStyles: React.CSSProperties = useMemo(() => {
+            let currentStyles = {};
+            if (customAnimationLogic) {
+                currentStyles = customAnimationLogic(effectData, progress, frame);
+            } else if (ranges.length > 0) {
+                currentStyles = rangesToCSSProperties(ranges, progress);
+            }
+
+            if (parentContext && mode === 'provider') {
+                return { ...parentContext.animatedStyles, ...currentStyles };
+            }
+
+            return currentStyles;
+        }, [ranges, progress, parentContext?.animatedStyles, mode, customAnimationLogic, effectData, frame]);
+
+        const contextValue: UniversalEffectContextType = useMemo(() => ({
+            animatedStyles,
+            targetIds,
+            effectType,
+        }), [animatedStyles, targetIds, effectType]);
+
+        if (mode === 'provider') {
+            return (
+                <UniversalEffectContext.Provider value={contextValue}>
+                    {children}
+                </UniversalEffectContext.Provider>
+            );
+        } else {
+            return (
+                <div {...effectData.props} style={animatedStyles}>
+                    {children}
+                </div>
+            );
+        }
+    };
+
 // Provider component for standalone use
-export const GenericEffectProvider: React.FC<{
+export const UniversalEffectProvider: React.FC<{
     children: ReactNode;
-    data: GenericEffectData;
+    data: UniversalEffectData;
+    effectType?: string;
+    customAnimationLogic?: (effectData: UniversalEffectData, progress: number, frame: number) => React.CSSProperties;
     id?: string;
     componentId?: string;
     type?: string;
-}> = ({ children, data, id = 'generic-effect', componentId = 'generic-effect', type = 'effect' }) => {
-    return (
-        <GenericEffect
-            id={id}
-            componentId={componentId}
-            type={type as any}
-            data={data}
-            context={undefined}
-        >
-            {children}
-        </GenericEffect>
-    );
-};
+}> = ({
+    children,
+    data,
+    effectType = 'universal',
+    customAnimationLogic,
+    id = 'universal-effect',
+    componentId = 'universal-effect',
+    type = 'effect'
+}) => {
+        return (
+            <UniversalEffect
+                id={id}
+                componentId={componentId}
+                type={type as any}
+                data={data}
+                context={undefined}
+                effectType={effectType}
+                customAnimationLogic={customAnimationLogic}
+            >
+                {children}
+            </UniversalEffect>
+        );
+    };
 
 // Hook for child components to get their animated styles
 export const useAnimatedStyles = (componentId: string): React.CSSProperties => {
-    const context = useGenericEffectOptional();
+    const context = useUniversalEffectOptional();
 
-    // If no provider context exists, return empty styles
     if (!context) {
         return {};
     }
 
     const { animatedStyles, targetIds } = context;
 
-    // If this component is targeted, return the animated styles
     if (targetIds.includes(componentId)) {
         return animatedStyles;
     }
@@ -536,11 +497,9 @@ export const useAnimatedStyles = (componentId: string): React.CSSProperties => {
     return {};
 };
 
-
 export const config = {
-    displayName: 'generic',
-    description: 'Generic effect',
+    displayName: 'universal',
+    description: 'Universal effect that can be extended for any effect type',
     isInnerSequence: false,
-    props: {
-    },
+    props: {},
 };

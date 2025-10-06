@@ -263,6 +263,8 @@ export const MediaDialog = ({
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [showFullKeywords, setShowFullKeywords] = useState(false);
 
+    console.log('MEDIA', media);
+
     return (
         <Dialog open={!!media} onOpenChange={(open) => !open && setMedia(null)}>
             <DialogPortal>

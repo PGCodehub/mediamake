@@ -4,7 +4,7 @@ import {
   TextAtomData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 
 const presetParams = z.object({
   // Text content
@@ -170,7 +170,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   const {
     text,
     fontFamily,
@@ -394,34 +394,34 @@ const presetExecution = (
   };
 
   return {
-    childrenData: [
-      {
-        id: 'text-overlay-container',
-        componentId: 'BaseLayout',
-        type: 'layout' as const,
-        data: {
-          containerProps: {
-            className: 'text-overlay-container',
-            style: containerStyle,
-          },
-          childrenProps: [],
-        },
-        childrenData: [
-          {
-            id: 'text-overlay',
-            componentId: 'TextAtom',
-            type: 'atom' as const,
-            effects,
-            data: textAtomData,
-            context: {
-              timing: {
-                fitDurationTo: 'BaseScene',
-              },
+    output: {
+      config: {
+        duration: 20,
+      },
+      childrenData: [
+        {
+          id: 'text-overlay',
+          componentId: 'TextAtom',
+          type: 'atom' as const,
+          effects,
+          data: textAtomData,
+          context: {
+            timing: {
+              fitDurationTo: 'BaseScene',
             },
           },
-        ],
-      },
-    ],
+        },
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'text-overlay-container',
+          style: containerStyle,
+        },
+      ],
+    },
   };
 };
 

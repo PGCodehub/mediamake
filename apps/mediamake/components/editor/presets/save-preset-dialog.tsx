@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -37,9 +37,30 @@ export function SavePresetDialog({
     const [isSaving, setIsSaving] = useState(false);
     const [saveMode, setSaveMode] = useState<'new' | 'overwrite'>('new');
 
+    // Reset form when dialog opens/closes
+    useEffect(() => {
+        if (open) {
+            // When dialog opens, set default values
+            setPresetName("");
+            setSaveMode('new');
+            setIsSaving(false);
+        } else {
+            // When dialog closes, reset all state
+            setPresetName("");
+            setSaveMode('new');
+            setIsSaving(false);
+        }
+    }, [open]);
+
     const handleSave = async () => {
         if (!presetName.trim()) {
             toast.error("Please enter a preset name");
+            return;
+        }
+
+        // For overwrite mode, validate that the name matches
+        if (saveMode === 'overwrite' && presetName.trim() !== currentLoadedPresetName) {
+            toast.error(`Please enter the exact name "${currentLoadedPresetName}" to confirm overwrite`);
             return;
         }
 

@@ -41,7 +41,7 @@ interface RenderContextType {
 }
 
 const defaultSettings: RenderSettings = {
-    fileName: "video",
+    fileName: "video-" + Date.now().toString().replaceAll("-", ""),
     codec: "h264",
     audioCodec: "aac",
     composition: "DataMotion",
@@ -97,7 +97,13 @@ export function RenderProvider({
         }));
     };
 
-    const openModal = () => setIsModalOpen(true);
+    const openModal = () => {
+        setSettingsState(prev => ({
+            ...prev,
+            fileName: "video-" + Date.now().toString().replaceAll("-", ""),
+        }));
+        setIsModalOpen(true);
+    }
     const closeModal = () => setIsModalOpen(false);
 
     const resetSettings = () => {

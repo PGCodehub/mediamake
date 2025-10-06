@@ -6,7 +6,7 @@ import {
   TextAtomData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 
 const presetParams = z.object({
   inputCaptions: z.array(z.any()),
@@ -36,7 +36,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   const {
     inputCaptions,
     position,
@@ -137,53 +137,45 @@ const presetExecution = (
 
   //generate childrenData for scenes.
   return {
-    // appends this children data to the target parent
-    config: {
-      duration: inputCaptions[inputCaptions.length - 1].absoluteEnd!,
-    },
-    childrenData: [
-      {
-        // If AudioScene is already in the composition, we need to append this as children data, as this is children data type of preset
-        // if not present, then it will append to the first node in base childrenData.
-        id: 'AudioScene',
-        componentId: 'BaseLayout',
-        type: 'layout',
-        data: {
-          childrenProps: [
-            {
+    output: {
+      config: {
+        duration: inputCaptions[inputCaptions.length - 1].absoluteEnd!,
+      },
+      childrenData: [
+        {
+          id: 'SubtitlesOverlay',
+          componentId: 'BaseLayout',
+          type: 'layout',
+          data: {
+            containerProps: {
               className:
                 position === 'bottom' ? 'absolute bottom-0' : 'absolute top-0',
               style: {
                 padding: padding ?? '24px',
               },
             },
-          ],
-        },
-        childrenData: [
-          // THIS IS OUR ACTUAL PRESET WIDGET THAT WILL BE APPENDED.
-          {
-            id: 'SubtitlesOverlay',
-            componentId: 'BaseLayout',
-            type: 'layout',
-            data: {
-              containerProps: {
-                //className: 'absolute bottom-0',
-              },
-              childrenProps: [],
-            },
-            context: {
-              timing: {
-                start: 0,
-                duration:
-                  inputCaptions[inputCaptions.length - 1].absoluteEnd! -
-                  inputCaptions[0].absoluteStart!,
-              },
-            },
-            childrenData: captionsCHildrenData,
+            childrenProps: [],
           },
-        ],
-      },
-    ],
+          context: {
+            timing: {
+              start: 0,
+              duration:
+                inputCaptions[inputCaptions.length - 1].absoluteEnd! -
+                inputCaptions[0].absoluteStart!,
+            },
+          },
+          childrenData: captionsCHildrenData,
+        },
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 

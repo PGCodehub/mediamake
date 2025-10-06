@@ -6,7 +6,7 @@ import {
   TextAtomData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 import { CSSProperties } from 'react';
 
 const presetParams = z.object({
@@ -87,7 +87,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   const {
     inputCaptions,
     position,
@@ -1069,66 +1069,62 @@ const presetExecution = (
 
   // Generate final composition structure
   return {
-    config: {
-      duration:
-        captionsChildrenData[captionsChildrenData.length - 1].context?.timing
-          ?.start! +
-        captionsChildrenData[captionsChildrenData.length - 1].context?.timing
-          ?.duration!,
-    },
-    childrenData: [
-      {
-        id: 'BaseScene',
-        componentId: 'BaseLayout',
-        type: 'layout',
-        data: {
-          childrenProps: [
-            {
+    output: {
+      config: {
+        duration:
+          captionsChildrenData[captionsChildrenData.length - 1].context?.timing
+            ?.start! +
+          captionsChildrenData[captionsChildrenData.length - 1].context?.timing
+            ?.duration!,
+      },
+      childrenData: [
+        {
+          id: 'SubtitlesOverlay',
+          componentId: 'BaseLayout',
+          type: 'layout',
+          data: {
+            containerProps: {
               className: 'absolute inset-0',
             },
-          ],
-        },
-        childrenData: [
-          {
-            id: 'SubtitlesOverlay',
-            componentId: 'BaseLayout',
-            type: 'layout',
-            data: {
-              containerProps: {
-                className: 'absolute inset-0',
-              },
-              childrenProps: Array(captionsChildrenData.length)
-                .fill({
-                  className: 'absolute',
-                })
-                .map((child, _j) => {
-                  // Get position based on position configuration
-                  const positionStyle = getPosition(
-                    inputCaptions[_j].text.length > 20 ? 800 : 600,
-                    position,
-                  );
+            childrenProps: Array(captionsChildrenData.length)
+              .fill({
+                className: 'absolute',
+              })
+              .map((child, _j) => {
+                // Get position based on position configuration
+                const positionStyle = getPosition(
+                  inputCaptions[_j].text.length > 20 ? 800 : 600,
+                  position,
+                );
 
-                  return {
-                    ...child,
-                    style: positionStyle,
-                  };
-                }),
+                return {
+                  ...child,
+                  style: positionStyle,
+                };
+              }),
+          },
+          context: {
+            timing: {
+              start: 0,
+              duration:
+                captionsChildrenData[captionsChildrenData.length - 1].context
+                  ?.timing?.start! +
+                captionsChildrenData[captionsChildrenData.length - 1].context
+                  ?.timing?.duration!,
             },
-            context: {
-              timing: {
-                start: 0,
-                duration:
-                  captionsChildrenData[captionsChildrenData.length - 1].context
-                    ?.timing?.start! +
-                  captionsChildrenData[captionsChildrenData.length - 1].context
-                    ?.timing?.duration!,
-              },
-            },
-            childrenData: captionsChildrenData,
-          } as RenderableComponentData,
-        ],
-      },
-    ],
+          },
+          childrenData: captionsChildrenData,
+        } as RenderableComponentData,
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 

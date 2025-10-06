@@ -28,6 +28,7 @@ import { useProgress } from "@/hooks/use-progress";
 import Link from "next/link";
 import useLocalState from "@/components/studio/context/hooks/useLocalState";
 import { toast } from "sonner";
+import { ReadOnlyJsonEditor } from "./readonly-json-editor";
 
 interface HistoryContentProps {
     selectedRender: string | null;
@@ -39,7 +40,8 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     const [selectedRequest, setSelectedRequest] = useState<RenderRequest | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { isRefreshing, fetchAndUpdateProgress } = useProgress();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const { fetchAndUpdateProgress } = useProgress();
     const [apiKey, setApiKey] = useLocalState("apiKey", process.env.NEXT_PUBLIC_DEV_API_KEY ?? "");
 
     // Load selected request from API
@@ -60,29 +62,36 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     useEffect(() => {
         console.log('selectedRequest', selectedRequest);
         if (!selectedRequest || selectedRequest.status !== "rendering" || !selectedRequest.bucketName || !selectedRequest.renderId) {
-            toast.error("Selected request is not valid");
             return;
         }
 
         if (!apiKey) {
-            toast.error("API key is not valid");
             return;
         }
 
         const checkProgress = async () => {
-            const result = await fetchAndUpdateProgress(selectedRequest, apiKey);
-            if (result.success && result.updatedRequest) {
-                setSelectedRequest(result.updatedRequest);
-                // Also notify the parent component of the update
-                if (onRefreshApiRequest) {
-                    onRefreshApiRequest(selectedRequest.id, result.updatedRequest);
+            setIsRefreshing(true);
+            try {
+                const result = await fetchAndUpdateProgress(selectedRequest, apiKey);
+                if (result.success && result.updatedRequest) {
+                    setSelectedRequest(result.updatedRequest);
+                    // Also notify the parent component of the update
+                    if (onRefreshApiRequest) {
+                        onRefreshApiRequest(selectedRequest.id, result.updatedRequest);
+                    }
                 }
+            } catch (error) {
+                console.error('Error checking progress:', error);
+            } finally {
+                setIsRefreshing(false);
             }
         };
 
-        const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
+        // Check immediately first, then set up interval
+        checkProgress();
+        const interval = setInterval(checkProgress, 3000); // Check every 3 seconds
         return () => clearInterval(interval);
-    }, [selectedRequest, fetchAndUpdateProgress, onRefreshApiRequest]);
+    }, [selectedRequest, fetchAndUpdateProgress, onRefreshApiRequest, apiKey]);
 
     const getStatusIcon = (status: RenderRequest["status"]) => {
         switch (status) {
@@ -146,22 +155,27 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
         }
 
         console.log('Refreshing request for ID:', selectedRender);
-
-        // For API requests, use fetchAndUpdateProgress directly
-        console.log('Refreshing API-based request');
+        setIsRefreshing(true);
         setError(null);
 
-        const result = await fetchAndUpdateProgress(propSelectedRequest, apiKey);
-        if (result.success && result.updatedRequest) {
-            console.log('Refresh successful, updating with fresh data:', result.updatedRequest);
-            setSelectedRequest(result.updatedRequest);
-            // Also notify the parent component of the update
-            if (onRefreshApiRequest) {
-                onRefreshApiRequest(selectedRender, result.updatedRequest);
+        try {
+            const result = await fetchAndUpdateProgress(propSelectedRequest, apiKey);
+            if (result.success && result.updatedRequest) {
+                console.log('Refresh successful, updating with fresh data:', result.updatedRequest);
+                setSelectedRequest(result.updatedRequest);
+                // Also notify the parent component of the update
+                if (onRefreshApiRequest) {
+                    onRefreshApiRequest(selectedRender, result.updatedRequest);
+                }
+            } else if (result.error) {
+                console.error('Refresh failed:', result.error);
+                setError('Failed to refresh request');
             }
-        } else if (result.error) {
-            console.error('Refresh failed:', result.error);
+        } catch (error) {
+            console.error('Refresh error:', error);
             setError('Failed to refresh request');
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
@@ -202,196 +216,215 @@ export function HistoryContent({ selectedRender, selectedRequest: propSelectedRe
     }
 
     return (
-        <ScrollArea className="h-[calc(100vh-8rem)] overflow-y-auto">
-            <div className="flex-1 p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        {getStatusIcon(selectedRequest.status)}
-                        <div>
-                            <h1 className="text-2xl font-bold">{selectedRequest.fileName}</h1>
-                            <p className="text-muted-foreground">
-                                Created {formatDate(selectedRequest.createdAt)}
-                            </p>
+        <div className="flex-1 flex flex-col min-h-0">
+            <ScrollArea className="flex-1 overflow-y-auto">
+                <div className="p-6 space-y-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            {getStatusIcon(selectedRequest.status)}
+                            <div>
+                                <h1 className="text-2xl font-bold">{selectedRequest.fileName}</h1>
+                                <p className="text-muted-foreground">
+                                    Created {formatDate(selectedRequest.createdAt)}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {getStatusBadge(selectedRequest.status)}
+                            {isRefreshing && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    <span>Checking status...</span>
+                                </div>
+                            )}
+                            <Button
+                                onClick={handleRefresh}
+                                variant="outline"
+                                size="sm"
+                                disabled={isRefreshing}
+                            >
+                                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                            </Button>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {getStatusBadge(selectedRequest.status)}
-                        <Button
-                            onClick={handleRefresh}
-                            variant="outline"
-                            size="sm"
-                            disabled={isRefreshing}
-                        >
-                            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                        </Button>
-                    </div>
-                </div>
 
-                <Separator />
+                    <Separator />
 
-                {/* Progress Section */}
-                {selectedRequest.status === "rendering" && selectedRequest.progress !== undefined && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Play className="h-5 w-5" />
-                                Rendering Progress
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex justify-between text-sm">
-                                    <span>Progress</span>
-                                    <span>{Math.round(selectedRequest.progress * 100)}%</span>
-                                </div>
-                                <Progress value={selectedRequest.progress * 100} className="w-full" />
-                                <p className="text-sm text-muted-foreground">
-                                    Your video is being rendered. This may take several minutes depending on the complexity.
-                                </p>
-
-                                {/* Show cost and progress details during rendering if available */}
-                                {selectedRequest.progressData?.renderInfo && (
-                                    <div className="pt-4 border-t space-y-4">
-                                        {selectedRequest.progressData.renderInfo.costs && (
-                                            <CostDisplay costs={selectedRequest.progressData.renderInfo.costs} />
+                    {/* Progress Section */}
+                    {selectedRequest.status === "rendering" && selectedRequest.progress !== undefined && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Play className="h-5 w-5" />
+                                    Rendering Progress
+                                    {isRefreshing && (
+                                        <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    )}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between text-sm">
+                                        <span>Progress</span>
+                                        <span>{Math.round(selectedRequest.progress * 100)}%</span>
+                                    </div>
+                                    <Progress value={selectedRequest.progress * 100} className="w-full" />
+                                    <p className="text-sm text-muted-foreground">
+                                        Your video is being rendered. This may take several minutes depending on the complexity.
+                                        {isRefreshing && (
+                                            <span className="block mt-1 text-blue-600">
+                                                <RefreshCw className="h-3 w-3 inline animate-spin mr-1" />
+                                                Checking for updates...
+                                            </span>
                                         )}
-                                        <ProgressDetails renderInfo={selectedRequest.progressData.renderInfo} />
+                                    </p>
+
+                                    {/* Show cost and progress details during rendering if available */}
+                                    {selectedRequest.progressData?.renderInfo && (
+                                        <div className="pt-4 border-t space-y-4">
+                                            {selectedRequest.progressData.renderInfo.costs && (
+                                                <CostDisplay costs={selectedRequest.progressData.renderInfo.costs} />
+                                            )}
+                                            <ProgressDetails renderInfo={selectedRequest.progressData.renderInfo} />
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Error Section */}
+                    {selectedRequest.status === "failed" && selectedRequest.error && (
+                        <Card className="border-red-200">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-red-600">
+                                    <AlertCircle className="h-5 w-5" />
+                                    Render Failed
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <p className="text-red-800 font-medium">Error Details:</p>
+                                    <p className="text-red-700 mt-1">{selectedRequest.error}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Download Section */}
+                    {selectedRequest.status === "completed" && selectedRequest.downloadUrl && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                    Render Complete
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-medium">Your video is ready!</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                File size: {formatFileSize(selectedRequest.fileSize)}
+                                            </p>
+                                        </div>
+                                        {!selectedRequest.isDownloadable ? (
+                                            <Link href={selectedRequest.downloadUrl!} target="_blank">
+                                                <Button className="gap-2 cursor-pointer">
+                                                    <ExternalLink className="h-4 w-4" />
+                                                    Video Link
+                                                </Button>
+                                            </Link>) : (
+                                            <Button
+                                                onClick={() => handleDownload(selectedRequest.downloadUrl!, selectedRequest.fileName)}
+                                                className="gap-2"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                Download
+                                            </Button>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
-                {/* Error Section */}
-                {selectedRequest.status === "failed" && selectedRequest.error && (
-                    <Card className="border-red-200">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-red-600">
-                                <AlertCircle className="h-5 w-5" />
-                                Render Failed
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <p className="text-red-800 font-medium">Error Details:</p>
-                                <p className="text-red-700 mt-1">{selectedRequest.error}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                    {/* Cost Display */}
+                    {selectedRequest.progressData?.renderInfo?.costs && (
+                        <CostDisplay costs={selectedRequest.progressData.renderInfo.costs} />
+                    )}
 
-                {/* Download Section */}
-                {selectedRequest.status === "completed" && selectedRequest.downloadUrl && (
+                    {/* Progress Details */}
+                    {selectedRequest.progressData?.renderInfo && (
+                        <ProgressDetails renderInfo={selectedRequest.progressData.renderInfo} />
+                    )}
+
+                    {/* Render Details */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                                Render Complete
+                                <Settings className="h-5 w-5" />
+                                Render Details
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium">Your video is ready!</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            File size: {formatFileSize(selectedRequest.fileSize)}
-                                        </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-medium">File Name:</span>
+                                        <span className="text-sm font-mono">{selectedRequest.fileName}</span>
                                     </div>
-                                    {!selectedRequest.isDownloadable ? (
-                                        <Link href={selectedRequest.downloadUrl!} target="_blank">
-                                            <Button className="gap-2 cursor-pointer">
-                                                <ExternalLink className="h-4 w-4" />
-                                                Video Link
-                                            </Button>
-                                        </Link>) : (
-                                        <Button
-                                            onClick={() => handleDownload(selectedRequest.downloadUrl!, selectedRequest.fileName)}
-                                            className="gap-2"
-                                        >
-                                            <Download className="h-4 w-4" />
-                                            Download
-                                        </Button>
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-medium">Codec:</span>
+                                        <span className="text-sm font-mono">{selectedRequest.codec}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-medium">Composition:</span>
+                                        <span className="text-sm font-mono">{selectedRequest.composition}</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-medium">Status:</span>
+                                        {getStatusBadge(selectedRequest.status)}
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-medium">Created:</span>
+                                        <span className="text-sm">{formatDate(selectedRequest.createdAt)}</span>
+                                    </div>
+                                    {selectedRequest.fileSize && (
+                                        <div className="flex justify-between">
+                                            <span className="text-sm font-medium">File Size:</span>
+                                            <span className="text-sm">{formatFileSize(selectedRequest.fileSize)}</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                )}
 
-                {/* Cost Display */}
-                {selectedRequest.progressData?.renderInfo?.costs && (
-                    <CostDisplay costs={selectedRequest.progressData.renderInfo.costs} />
-                )}
-
-                {/* Progress Details */}
-                {selectedRequest.progressData?.renderInfo && (
-                    <ProgressDetails renderInfo={selectedRequest.progressData.renderInfo} />
-                )}
-
-                {/* Render Details */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5" />
-                            Render Details
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-sm font-medium">File Name:</span>
-                                    <span className="text-sm font-mono">{selectedRequest.fileName}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm font-medium">Codec:</span>
-                                    <span className="text-sm font-mono">{selectedRequest.codec}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm font-medium">Composition:</span>
-                                    <span className="text-sm font-mono">{selectedRequest.composition}</span>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-sm font-medium">Status:</span>
-                                    {getStatusBadge(selectedRequest.status)}
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm font-medium">Created:</span>
-                                    <span className="text-sm">{formatDate(selectedRequest.createdAt)}</span>
-                                </div>
-                                {selectedRequest.fileSize && (
-                                    <div className="flex justify-between">
-                                        <span className="text-sm font-medium">File Size:</span>
-                                        <span className="text-sm">{formatFileSize(selectedRequest.fileSize)}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Input Props */}
-                {selectedRequest.inputProps && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Code className="h-5 w-5" />
-                                Input Properties
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto max-h-[200px] overflow-y-auto">
-                                {JSON.stringify(selectedRequest.inputProps, null, 2)}
-                            </pre>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-        </ScrollArea>
+                    {/* Input Props */}
+                    {selectedRequest.inputProps && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Code className="h-5 w-5" />
+                                    Input Properties
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ReadOnlyJsonEditor
+                                    value={selectedRequest.inputProps}
+                                    height="300px"
+                                    className="w-full"
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+            </ScrollArea>
+        </div>
     );
 }

@@ -3,6 +3,7 @@ import {
   RenderableComponentData,
   replaceMatchingComponent,
 } from '@microfox/datamotion';
+import { PresetOutput } from './types';
 
 const findMatchingComponents = (
   childrenData: RenderableComponentData[],
@@ -102,36 +103,38 @@ export const runPreset = <T>(
   presetInput: any,
   presetFunction: string,
   props: any,
-): T | null => {
+): PresetOutput | null => {
   const presetJsFunction = new Function(
     'data',
     'props',
     `return (${presetFunction})(data, props);`,
   );
-  const childrenData = presetJsFunction(presetInput, props);
-  if (!childrenData) {
+  const output = presetJsFunction(presetInput, props);
+  if (!output) {
     return null;
   }
-  return childrenData as T;
+  return output as PresetOutput;
 };
 
 export const insertPresetToComposition = (
   data: InputCompositionProps,
   options: {
-    presetOutput: any;
+    presetOutput: PresetOutput;
     presetType: 'children' | 'data' | 'context' | 'effects' | 'full';
   },
 ) => {
+  // Extract the output data from the new PresetOutput structure
+  const outputData = options.presetOutput.output;
+  const outputOptions = options.presetOutput.options;
+
   if (!data.childrenData || data.childrenData.length === 0) {
     if (options.presetType === 'full') {
-      data.childrenData = Array.isArray(options.presetOutput.childrenData)
-        ? options.presetOutput.childrenData
-        : [options.presetOutput.childrenData];
-      if (options.presetOutput.config) {
-        data.config = options.presetOutput.config;
+      data.childrenData = outputData.childrenData || [];
+      if (outputData.config) {
+        data.config = outputData.config;
       }
-      if (options.presetOutput.style) {
-        data.style = options.presetOutput.style;
+      if (outputData.style) {
+        data.style = outputData.style;
       }
       return data;
     } else {
@@ -139,51 +142,82 @@ export const insertPresetToComposition = (
     }
   }
   if (options.presetType === 'full') {
-    data.childrenData = Array.isArray(options.presetOutput.childrenData)
-      ? options.presetOutput.childrenData
-      : [options.presetOutput.childrenData];
-    if (options.presetOutput.config) {
+    data.childrenData = outputData.childrenData || [];
+    if (outputData.config) {
       data.config = {
         ...data.config,
-        ...options.presetOutput.config,
+        ...outputData.config,
       };
     }
-    if (options.presetOutput.style) {
+    if (outputData.style) {
       data.style = {
         ...data.style,
-        ...options.presetOutput.style,
+        ...outputData.style,
       };
     }
     return data;
   }
 
-  const firstChild = options.presetOutput.childrenData[0];
+  // For children type presets, we need to handle the new structure
+  if (options.presetType === 'children') {
+    if (!outputData.childrenData || outputData.childrenData.length === 0) {
+      return data;
+    }
+
+    // Find the target component to attach to based on options.attachedToId
+    const targetId = outputOptions?.attachedToId || 'BaseScene';
+    let targetComponents = findMatchingComponents(data.childrenData, [
+      targetId,
+    ]);
+
+    if (targetComponents.length === 0) {
+      // If no matching component found, use the first component
+      targetComponents = [data.childrenData[0]];
+    }
+
+    // Append the preset children to the target component
+    const targetComponent = targetComponents[0];
+    if (targetComponent) {
+      targetComponent.childrenData = [
+        ...(targetComponent.childrenData || []),
+        ...outputData.childrenData,
+      ];
+
+      // Apply attached containers styling if provided
+      if (outputOptions?.attachedContainers) {
+        // This would need to be handled by the rendering system
+        // For now, we just ensure the children are added
+      }
+    }
+
+    return data;
+  }
+
+  // For other preset types, we need to find the first child and apply changes
+  if (!outputData.childrenData || outputData.childrenData.length === 0) {
+    return data;
+  }
+
+  const firstChild = outputData.childrenData[0];
   const firstChildId = firstChild.id;
   let componeents = findMatchingComponents(data.childrenData, [firstChildId]);
   if (componeents.length === 0) {
     // THERE ARE NO BASE DATA, JUST ASSUME THE PRESET OUTPUT IS FULL THEN
     if (data.childrenData.length === 0) {
-      data.childrenData = Array.isArray(options.presetOutput.childrenData)
-        ? options.presetOutput.childrenData
-        : [options.presetOutput.childrenData];
-      if (options.presetOutput.config) {
-        data.config = options.presetOutput.config;
+      data.childrenData = outputData.childrenData;
+      if (outputData.config) {
+        data.config = outputData.config;
       }
-      if (options.presetOutput.style) {
-        data.style = options.presetOutput.style;
+      if (outputData.style) {
+        data.style = outputData.style;
       }
       return data;
     }
     componeents = [data.childrenData[0]];
   }
-  if (options.presetType === 'children') {
-    const appendchildrenData = Array.isArray(firstChild.childrenData)
-      ? firstChild.childrenData
-      : [firstChild.childrenData];
-    componeents[0].childrenData = [
-      ...(componeents[0].childrenData || []),
-      ...appendchildrenData,
-    ];
+
+  if (options.presetType === 'data') {
+    // For data type, we need to merge the data from the first child
     if (firstChild.data) {
       Object.entries(firstChild.data).forEach(([key, value]) => {
         if (!componeents[0].data) {
@@ -208,48 +242,6 @@ export const insertPresetToComposition = (
         }
       });
     }
-    // if(firstChild.context) {
-    //   Object.entries(firstChild.context).forEach(([key, value]) => {
-    //     if(!componeents[0].context) {
-    //       componeents[0].context = {};
-    //     }
-    //     if(key in componeents[0].context) {
-    //       typeof value === 'object' && value !== null ? componeents[0].context[key as keyof RenderableContext] = {
-    //         ...componeents[0].context[key as keyof RenderableContext],
-    //         ...value,
-    //       } : componeents[0].context[key as keyof RenderableContext] = value;
-    //     } else {
-    //       componeents[0].context[key as keyof RenderableContext] = value;
-    //     }
-    //   });
-    // }
-    // if (options.presetOutput.context) {
-    //   componeents[0].context = {
-    //     ...(componeents[0].context || {}),
-    //     timing: {
-    //       ...(componeents[0].context?.timing || {}),
-    //       ...(options.presetOutput.context.timing || {}),
-    //     },
-    //     boundaries: {
-    //       ...(componeents[0].context?.boundaries || {}),
-    //       ...(options.presetOutput.context.boundaries || {}),
-    //     },
-    //   };
-    // }
-
-    // Replace matching components with components[0] before returning
-    if (componeents.length > 0) {
-      data.childrenData = replaceMatchingComponent(
-        data.childrenData || [],
-        [firstChildId],
-        componeents[0],
-      );
-    }
-
-    return data;
-  }
-  if (options.presetType === 'data') {
-    componeents[0].data = options.presetOutput.data;
 
     // Replace matching components with components[0] before returning
     if (componeents.length > 0) {
@@ -263,7 +255,12 @@ export const insertPresetToComposition = (
     return data;
   }
   if (options.presetType === 'context') {
-    componeents[0].context = options.presetOutput.context;
+    if (firstChild.context) {
+      componeents[0].context = {
+        ...componeents[0].context,
+        ...firstChild.context,
+      };
+    }
 
     // Replace matching components with components[0] before returning
     if (componeents.length > 0) {
@@ -277,9 +274,11 @@ export const insertPresetToComposition = (
     return data;
   }
   if (options.presetType === 'effects') {
-    componeents[0].effects = Array.isArray(options.presetOutput.effects)
-      ? options.presetOutput.effects
-      : [options.presetOutput.effects];
+    if (firstChild.effects) {
+      componeents[0].effects = Array.isArray(firstChild.effects)
+        ? firstChild.effects
+        : [firstChild.effects];
+    }
 
     // Replace matching components with components[0] before returning
     if (componeents.length > 0) {

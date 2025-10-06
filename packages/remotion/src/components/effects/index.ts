@@ -6,17 +6,26 @@ import { BlurEffect, config as BlurEffectConfig } from './BlurEffect';
 import { LoopEffect, config as LoopEffectConfig } from './Loop';
 import { PanEffect, config as PanEffectConfig } from './Pan';
 import { ZoomEffect, config as ZoomEffectConfig } from './Zoom';
-import { GenericEffect, config as GenericEffectConfig } from './Generic';
+import { ShakeEffect, config as ShakeEffectConfig } from './Shake';
+import { StretchEffect, config as StretchEffectConfig } from './StretchEffect';
+import {
+  UniversalEffect,
+  config as UniversalEffectConfig,
+  UniversalEffectData,
+} from './UniversalEffect';
 
 // Register all effect components
 registerEffect(BlurEffectConfig.displayName, BlurEffect, BlurEffectConfig);
 registerEffect(LoopEffectConfig.displayName, LoopEffect, LoopEffectConfig);
 registerEffect(PanEffectConfig.displayName, PanEffect, PanEffectConfig);
 registerEffect(ZoomEffectConfig.displayName, ZoomEffect, ZoomEffectConfig);
+// Register UniversalEffect as 'generic' for backwards compatibility
+registerEffect('generic', UniversalEffect, UniversalEffectConfig);
+registerEffect(ShakeEffectConfig.displayName, ShakeEffect, ShakeEffectConfig);
 registerEffect(
-  GenericEffectConfig.displayName,
-  GenericEffect,
-  GenericEffectConfig
+  StretchEffectConfig.displayName,
+  StretchEffect,
+  StretchEffectConfig
 );
 
 // Export effect components
@@ -33,17 +42,35 @@ export {
   type ZoomEffectData,
 } from './Zoom';
 
-// Export Generic Effect components
+// Export Shake Effect components
 export {
-  GenericEffect,
-  GenericEffectProvider,
-  useGenericEffect,
-  useGenericEffectOptional,
-  useHasGenericEffectProvider,
+  ShakeEffect,
+  config as ShakeEffectConfig,
+  type ShakeEffectData,
+} from './Shake';
+
+// Export Stretch Effect components
+export {
+  StretchEffect,
+  config as StretchEffectConfig,
+  type StretchEffectData,
+} from './StretchEffect';
+
+// Export Universal Effect components (formerly Generic)
+export {
+  UniversalEffect,
+  UniversalEffectProvider,
+  useUniversalEffect,
+  useUniversalEffectOptional,
+  useHasUniversalEffectProvider,
   useAnimatedStyles,
-  type GenericEffectData,
+  type UniversalEffectData,
   type AnimationRange,
-} from './Generic';
+} from './UniversalEffect';
+
+type GenericEffectData = UniversalEffectData;
+
+export { GenericEffectData };
 
 // Export animation presets
 export * from './GenericPresets';

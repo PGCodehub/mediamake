@@ -99,24 +99,35 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
                 }
             };
 
-            // Apply all presets in sequence
+            let clip = {}
+            // Apply all presets in sequence (skip disabled presets)
             for (const appliedPreset of appliedPresets.presets) {
+                // Skip disabled presets
+                if (appliedPreset.disabled) {
+                    continue;
+                }
+
                 // Run the preset function with input data
                 const presetOutput = runPreset(
                     appliedPreset.inputData,
                     appliedPreset.preset.presetFunction,
                     {
                         config: baseComposition.config,
-                        style: baseComposition.style
+                        style: baseComposition.style,
+                        clip: clip
                     }
                 );
 
                 if (presetOutput) {
+                    if (presetOutput.options?.clip && appliedPreset.preset.metadata.presetType === 'full') {
+                        clip = presetOutput.options.clip;
+                    }
                     // Insert preset output into composition (this handles childrenData, config, and style)
                     baseComposition = insertPresetToComposition(baseComposition, {
                         presetOutput: presetOutput,
                         presetType: appliedPreset.preset.metadata.presetType
                     });
+
                 }
             }
 

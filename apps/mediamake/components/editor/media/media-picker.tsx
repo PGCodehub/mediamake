@@ -437,59 +437,39 @@ export function MediaPicker({
                         )}
                         <div className="flex-1 overflow-hidden">
                             <div className="p-4 h-full overflow-auto">
+
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="col-span-1">
+                                        <UrlIndexingTrigger
+                                            uiType="dropzone"
+                                            onIndexingComplete={() => {
+                                                mutateFiles();
+                                            }}
+                                            dropzoneClassName="min-h-[200px]"
+                                            preselectedTags={hashtagFilters}
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <UploadTrigger
+                                            autoUpload={true}
+                                            uiType="dropzone"
+                                            onUploadComplete={() => {
+                                                mutateFiles();
+                                            }}
+                                            dropzoneClassName="min-h-[200px]"
+                                            preselectedTags={hashtagFilters}
+                                        />
+                                    </div>
+                                </div>
                                 {isLoading ? (
                                     <div className="text-center text-muted-foreground py-8">
                                         Loading files...
                                     </div>
                                 ) : filteredFiles.length === 0 ? (
                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="col-span-1">
-                                            <UrlIndexingTrigger
-                                                uiType="dropzone"
-                                                onIndexingComplete={() => {
-                                                    mutateFiles();
-                                                }}
-                                                dropzoneClassName="min-h-[200px]"
-                                                preselectedTags={hashtagFilters}
-                                            />
-                                        </div>
-                                        <div className="col-span-1">
-                                            <UploadTrigger
-                                                autoUpload={true}
-                                                uiType="dropzone"
-                                                onUploadComplete={() => {
-                                                    mutateFiles();
-                                                }}
-                                                dropzoneClassName="min-h-[200px]"
-                                                preselectedTags={hashtagFilters}
-                                            />
-                                        </div>
                                     </div>
                                 ) : (
                                     <div>
-                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                            <div className="col-span-1">
-                                                <UrlIndexingTrigger
-                                                    uiType="dropzone"
-                                                    onIndexingComplete={() => {
-                                                        mutateFiles();
-                                                    }}
-                                                    dropzoneClassName="min-h-[200px]"
-                                                    preselectedTags={hashtagFilters}
-                                                />
-                                            </div>
-                                            <div className="col-span-1">
-                                                <UploadTrigger
-                                                    autoUpload={true}
-                                                    uiType="dropzone"
-                                                    onUploadComplete={() => {
-                                                        mutateFiles();
-                                                    }}
-                                                    dropzoneClassName="min-h-[200px]"
-                                                    preselectedTags={hashtagFilters}
-                                                />
-                                            </div>
-                                        </div>
                                         {viewMode === "grid" ? (
                                             <MediaGrid
                                                 mediaFiles={filteredFiles}

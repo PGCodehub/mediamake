@@ -321,11 +321,8 @@ export function MediaContent({ selectedTag, selectedFile, onSelectFile, tagToAdd
                 {/* Content */}
                 <div className="flex-1 overflow-hidden">
                     <div className="p-4 h-full overflow-auto">
-                        {isLoading ? (
-                            <div className="text-center text-muted-foreground py-8">
-                                Loading files...
-                            </div>
-                        ) : filteredFiles.length === 0 ? (
+                        <div>
+                            {/* Always show upload boxes */}
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="col-span-1">
                                     <UrlIndexingTrigger
@@ -349,89 +346,77 @@ export function MediaContent({ selectedTag, selectedFile, onSelectFile, tagToAdd
                                     />
                                 </div>
                             </div>
-                        ) : (
-                            <div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="col-span-1">
-                                        <UrlIndexingTrigger
-                                            uiType="dropzone"
-                                            onIndexingComplete={() => {
-                                                mutateFiles();
-                                            }}
-                                            dropzoneClassName="min-h-[200px]"
-                                            preselectedTags={hashtagFilters}
-                                        />
-                                    </div>
-                                    <div className="col-span-1">
-                                        <UploadTrigger
-                                            autoUpload={true}
-                                            uiType="dropzone"
-                                            onUploadComplete={() => {
-                                                mutateFiles();
-                                            }}
-                                            dropzoneClassName="min-h-[200px]"
-                                            preselectedTags={hashtagFilters}
-                                        />
-                                    </div>
+
+                            {/* Show loading state or files */}
+                            {isLoading ? (
+                                <div className="text-center text-muted-foreground py-8">
+                                    Loading files...
                                 </div>
-                                {viewMode === "grid" ? (
-                                    <MediaGrid
-                                        mediaFiles={filteredFiles}
-                                        onEditDetails={handleEditDetails}
-                                        onCopyUrl={handleCopyUrl}
-                                        onCopyId={handleCopyId}
-                                        onDeleteMedia={handleDeleteMedia}
-                                    />
-                                ) : (
-                                    <div className="space-y-2">
-                                        {filteredFiles.map((file: MediaFile) => (
-                                            <Card
-                                                key={file._id?.toString()}
-                                                className={`cursor-pointer transition-colors ${selectedFile?._id === file._id ? 'ring-2 ring-primary' : ''
-                                                    }`}
-                                                onClick={() => onSelectFile(file)}
-                                            >
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-4">
-                                                            {getContentTypeIcon(file.contentType)}
-                                                            <div className="flex-1">
-                                                                <h3 className="font-medium">{file.fileName || 'Untitled'}</h3>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {file.contentType} • {new Date(file.createdAt).toLocaleDateString()}
-                                                                </p>
-                                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                                    {file.tags.map((tagId: string) => (
-                                                                        <span
-                                                                            key={tagId}
-                                                                            className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                // TODO: Filter by tag
-                                                                                console.log('Filter by tag:', tagId);
-                                                                            }}
-                                                                        >
-                                                                            #{getTagDisplayName(tagId)}
-                                                                        </span>
-                                                                    ))}
+                            ) : filteredFiles.length === 0 ? (
+                                <div className="text-center text-muted-foreground py-8">
+                                    No files found. Upload some files to get started!
+                                </div>
+                            ) : (
+                                <div>
+                                    {viewMode === "grid" ? (
+                                        <MediaGrid
+                                            mediaFiles={filteredFiles}
+                                            onEditDetails={handleEditDetails}
+                                            onCopyUrl={handleCopyUrl}
+                                            onCopyId={handleCopyId}
+                                            onDeleteMedia={handleDeleteMedia}
+                                        />
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {filteredFiles.map((file: MediaFile) => (
+                                                <Card
+                                                    key={file._id?.toString()}
+                                                    className={`cursor-pointer transition-colors ${selectedFile?._id === file._id ? 'ring-2 ring-primary' : ''
+                                                        }`}
+                                                    onClick={() => onSelectFile(file)}
+                                                >
+                                                    <CardContent className="p-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-4">
+                                                                {getContentTypeIcon(file.contentType)}
+                                                                <div className="flex-1">
+                                                                    <h3 className="font-medium">{file.fileName || 'Untitled'}</h3>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        {file.contentType} • {new Date(file.createdAt).toLocaleDateString()}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                                        {file.tags.map((tagId: string) => (
+                                                                            <span
+                                                                                key={tagId}
+                                                                                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    // TODO: Filter by tag
+                                                                                    console.log('Filter by tag:', tagId);
+                                                                                }}
+                                                                            >
+                                                                                #{getTagDisplayName(tagId)}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
                                                             </div>
+                                                            <MediaOptionsDropdown
+                                                                mediaFile={file}
+                                                                onEditDetails={handleEditDetails}
+                                                                onCopyUrl={handleCopyUrl}
+                                                                onCopyId={handleCopyId}
+                                                                onDeleteMedia={handleDeleteMedia}
+                                                            />
                                                         </div>
-                                                        <MediaOptionsDropdown
-                                                            mediaFile={file}
-                                                            onEditDetails={handleEditDetails}
-                                                            onCopyUrl={handleCopyUrl}
-                                                            onCopyId={handleCopyId}
-                                                            onDeleteMedia={handleDeleteMedia}
-                                                        />
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

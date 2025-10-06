@@ -1,23 +1,54 @@
-import React from 'react';
-import { BaseRenderableProps } from '../../core/types';
+import React, { useMemo } from 'react';
+import { BaseRenderableProps } from '../../core/types/renderable.types';
+import { UniversalEffectData, useUniversalAnimation, UniversalEffectContext } from './UniversalEffect';
 
-interface BlurEffectData {
-    blur?: number;
-    children?: React.ReactNode;
+// Blur effect data interface
+export interface BlurEffectData extends UniversalEffectData {
+    intensity?: number; // Blur intensity (default: 10)
+    direction?: 'in' | 'out'; // Blur direction (default: 'in')
 }
 
+// Blur Effect Component using the new hook
 export const BlurEffect: React.FC<BaseRenderableProps> = ({
+    id,
+    componentId,
+    type,
     data,
-    children
+    children,
+    context
 }) => {
-    const blurAmount = (data as BlurEffectData)?.blur || 5;
+    // 1. Use the core animation hook
+    const { progress, mode, targetIds, effectData } = useUniversalAnimation(data, context);
+    const { intensity = 10, direction = 'in' } = effectData as BlurEffectData;
+
+    // 2. Implement custom animation logic
+    const animatedStyles = useMemo(() => {
+        if (progress <= 0 || progress >= 1) {
+            return {};
+        }
+        const blurValue = direction === 'in'
+            ? intensity * (1 - progress)
+            : intensity * progress;
+        return { filter: `blur(${blurValue}px)` };
+    }, [progress, intensity, direction]);
+
+    // 3. Handle provider/wrapper logic
+    const contextValue = useMemo(() => ({
+        animatedStyles,
+        targetIds,
+        effectType: 'blur',
+    }), [animatedStyles, targetIds]);
+
+    if (mode === 'provider') {
+        return (
+            <UniversalEffectContext.Provider value={contextValue}>
+                {children}
+            </UniversalEffectContext.Provider>
+        );
+    }
 
     return (
-        <div style={{
-            filter: `blur(${blurAmount}px)`,
-            width: '100%',
-            height: '100%'
-        }}>
+        <div {...effectData.props} style={animatedStyles}>
             {children}
         </div>
     );
@@ -25,13 +56,19 @@ export const BlurEffect: React.FC<BaseRenderableProps> = ({
 
 export const config = {
     displayName: 'blur',
-    description: 'Applies a blur effect to its children',
-    category: 'effects',
+    description: 'Blur effect with configurable intensity and direction',
+    isInnerSequence: false,
     props: {
-        blur: {
+        intensity: {
             type: 'number',
-            description: 'Blur amount in pixels',
-            default: 5
+            default: 10,
+            description: 'Blur intensity in pixels'
+        },
+        direction: {
+            type: 'enum',
+            values: ['in', 'out'],
+            default: 'in',
+            description: 'Blur direction (in = start blurred, out = end blurred)'
         }
-    }
-}; 
+    },
+};

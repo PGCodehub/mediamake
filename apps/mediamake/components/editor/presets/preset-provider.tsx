@@ -15,6 +15,7 @@ interface PresetContextType {
     removePreset: (presetId: string) => void;
     updatePresetInputData: (presetId: string, inputData: PresetInputData) => void;
     togglePresetExpansion: (presetId: string) => void;
+    togglePresetDisabled: (presetId: string) => void;
     refreshPreset: (presetId: string) => void;
     reorderPresets: (oldIndex: number, newIndex: number) => void;
 
@@ -99,6 +100,15 @@ export function PresetProvider({ children }: PresetProviderProps) {
         }));
     }, [setAppliedPresets]);
 
+    const togglePresetDisabled = useCallback((presetId: string) => {
+        setAppliedPresets((prev: AppliedPresetsState) => ({
+            ...prev,
+            presets: prev.presets.map((p: AppliedPreset) =>
+                p.id === presetId ? { ...p, disabled: !p.disabled } : p
+            )
+        }));
+    }, [setAppliedPresets]);
+
     const refreshPreset = useCallback((presetId: string) => {
         setAppliedPresets((prev: AppliedPresetsState) => {
             const presetToRefresh = prev.presets.find((p: AppliedPreset) => p.id === presetId);
@@ -163,6 +173,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
         removePreset,
         updatePresetInputData,
         togglePresetExpansion,
+        togglePresetDisabled,
         refreshPreset,
         reorderPresets,
         configuration,

@@ -1,6 +1,6 @@
 import { AudioAtomDataProps, InputCompositionProps, PanEffectData, TextAtomData, WaveformConfig, WaveformHistogramRangedDataProps, ZoomEffectData } from "@microfox/remotion";
 import z from "zod";
-import { PresetMetadata } from "../types";
+import { PresetMetadata, PresetOutput } from "../types";
 
 const presetParams = z.object({
     audio: z.object({
@@ -37,7 +37,7 @@ const presetParams = z.object({
 
 });
 //src: https://cdn1.suno.ai/6aded313-9bd5-4c8b-bb6f-fd5f158642e3.m4a
-const presetExecution = (params: z.infer<typeof presetParams>): Partial<InputCompositionProps> => {
+const presetExecution = (params: z.infer<typeof presetParams>): PresetOutput => {
 
     const histogramWaves = {
         componentId: "WaveformHistogram",
@@ -122,137 +122,139 @@ const presetExecution = (params: z.infer<typeof presetParams>): Partial<InputCom
     };
 
     return {
-        childrenData: [{
-            id: "AudioScene",
-            componentId: "BaseLayout",
-            type: "layout",
-            data: {
-                containerProps: {
-                    className: 'flex items-center justify-center bg-black',
-                },
-                childrenProps: [
-                    {
-                        className: '',
+        output: {
+            childrenData: [{
+                id: "AudioScene",
+                componentId: "BaseLayout",
+                type: "layout",
+                data: {
+                    containerProps: {
+                        className: 'flex items-center justify-center bg-black',
                     },
-                    {
-                        className: 'inset-0 absolute',
-                    },
-                    {
-                        className: params.isWaveFormHidden ? 'absolute opacity-0' : 'absolute -bottom-1',
-                        style: {
-                            background: `linear-gradient(to bottom, transparent 0%,  #000000 100%)`,
+                    childrenProps: [
+                        {
+                            className: '',
                         },
-                    },
-                    {
-                        className: `absolute bottom-0`
-                    },
-                    {
-                        className: 'absolute bottom-0',
-                    },
-                    {
-                        className: 'absolute top-10 bottom-0 flex items-center justify-center'
-                    },
-                ]
-            },
-            context: {
-                timing: { start: 0, duration: 20, fitDurationTo: 'Audio-xyz' },
-            },
-            childrenData: [
-                {
-                    id: 'Audio-xyz',
-                    componentId: "AudioAtom",
-                    type: 'atom',
-                    data: {
-                        src: params.audio.src,
-                        volume: params.audio.volume,
-                        startFrom: params.audio.start ?? 0,
-                    } as AudioAtomDataProps
+                        {
+                            className: 'inset-0 absolute',
+                        },
+                        {
+                            className: params.isWaveFormHidden ? 'absolute opacity-0' : 'absolute -bottom-1',
+                            style: {
+                                background: `linear-gradient(to bottom, transparent 0%,  #000000 100%)`,
+                            },
+                        },
+                        {
+                            className: `absolute bottom-0`
+                        },
+                        {
+                            className: 'absolute bottom-0',
+                        },
+                        {
+                            className: 'absolute top-10 bottom-0 flex items-center justify-center'
+                        },
+                    ]
                 },
-                {
-                    id: 'Image-xyz',
-                    componentId: "ImageAtom",
-                    type: 'atom',
-                    effects: [
-                        imageEffect,
-                    ],
-                    data: {
-                        className: 'w-full h-auto object-contain',
-                        src: params.image.src,
+                context: {
+                    timing: { start: 0, duration: 20, fitDurationTo: 'Audio-xyz' },
+                },
+                childrenData: [
+                    {
+                        id: 'Audio-xyz',
+                        componentId: "AudioAtom",
+                        type: 'atom',
+                        data: {
+                            src: params.audio.src,
+                            volume: params.audio.volume,
+                            startFrom: params.audio.start ?? 0,
+                        } as AudioAtomDataProps
+                    },
+                    {
+                        id: 'Image-xyz',
+                        componentId: "ImageAtom",
+                        type: 'atom',
+                        effects: [
+                            imageEffect,
+                        ],
+                        data: {
+                            className: 'w-full h-auto object-contain',
+                            src: params.image.src,
+                        }
+                    },
+                    {
+                        id: 'WaveformLine-xyz',
+                        ...(params.waveformType === "fixed" ? histogramStatic : histogramWaves),
+                    },
+                    {
+                        id: 'text-xyz',
+                        componentId: "TextAtom",
+                        type: 'atom',
+                        data: {
+                            text: params.titleText.text,
+                            className: `rounded-xl `,
+                            style: {
+                                fontSize: params.titleText.fontSize ?? 250,
+                                color: params.textColor ?? '#FFF',
+                                borderRadius: 40,
+                                letterSpacing: 10,
+                                fontWeight: 100,
+                                marginBottom: params.titleText.marginBottom ?? 130,
+                            },
+                            font: {
+                                family: params.titleText.fontChoice ?? 'ProtestRevolution',
+                            }
+                        } as TextAtomData
+                    },
+                    {
+                        id: 'text-xyz-boxed',
+                        componentId: "TextAtom",
+                        type: 'atom',
+                        data: {
+                            text: params.bottomText.text,
+                            className: `bg-black/30 px-12 py-4 rounded-xl backdrop-blur-sm `,
+                            style: {
+                                fontSize: params.bottomText.fontSize ?? 20,
+                                color: "#FFF",
+                                textTransform: 'uppercase',
+                                letterSpacing: 10,
+                                fontWeight: 700,
+                                borderRadius: 40,
+                                marginBottom: params.bottomText.marginBottom ?? 50,
+                            },
+                            font: {
+                                family: 'Inter',
+                                weights: ['100', '400', '700'],
+                            }
+                        } as TextAtomData
+                    },
+                    {
+                        id: 'text-xyz-3',
+                        componentId: "TextAtom",
+                        type: 'atom',
+                        data: {
+                            text: params.middleText.text,
+                            className: ' px-0 py-4 text-center',
+                            style: {
+                                fontSize: params.middleText.fontSize ?? 25,
+                                color: params.textColor ?? '#FFF',
+                                textTransform: 'uppercase',
+                                letterSpacing: 60,
+                                fontWeight: 700,
+                                borderRadius: 40,
+                                marginLeft: 80,
+                                marginBottom: params.middleText.marginBottom ?? 0,
+                            },
+                            font: {
+                                family: 'Inter',
+                                weights: ['100', '400', '700'],
+                            }
+                        } as TextAtomData
                     }
-                },
-                {
-                    id: 'WaveformLine-xyz',
-                    ...(params.waveformType === "fixed" ? histogramStatic : histogramWaves),
-                },
-                {
-                    id: 'text-xyz',
-                    componentId: "TextAtom",
-                    type: 'atom',
-                    data: {
-                        text: params.titleText.text,
-                        className: `rounded-xl `,
-                        style: {
-                            fontSize: params.titleText.fontSize ?? 250,
-                            color: params.textColor ?? '#FFF',
-                            borderRadius: 40,
-                            letterSpacing: 10,
-                            fontWeight: 100,
-                            marginBottom: params.titleText.marginBottom ?? 130,
-                        },
-                        font: {
-                            family: params.titleText.fontChoice ?? 'ProtestRevolution',
-                        }
-                    } as TextAtomData
-                },
-                {
-                    id: 'text-xyz-boxed',
-                    componentId: "TextAtom",
-                    type: 'atom',
-                    data: {
-                        text: params.bottomText.text,
-                        className: `bg-black/30 px-12 py-4 rounded-xl backdrop-blur-sm `,
-                        style: {
-                            fontSize: params.bottomText.fontSize ?? 20,
-                            color: "#FFF",
-                            textTransform: 'uppercase',
-                            letterSpacing: 10,
-                            fontWeight: 700,
-                            borderRadius: 40,
-                            marginBottom: params.bottomText.marginBottom ?? 50,
-                        },
-                        font: {
-                            family: 'Inter',
-                            weights: ['100', '400', '700'],
-                        }
-                    } as TextAtomData
-                },
-                {
-                    id: 'text-xyz-3',
-                    componentId: "TextAtom",
-                    type: 'atom',
-                    data: {
-                        text: params.middleText.text,
-                        className: ' px-0 py-4 text-center',
-                        style: {
-                            fontSize: params.middleText.fontSize ?? 25,
-                            color: params.textColor ?? '#FFF',
-                            textTransform: 'uppercase',
-                            letterSpacing: 60,
-                            fontWeight: 700,
-                            borderRadius: 40,
-                            marginLeft: 80,
-                            marginBottom: params.middleText.marginBottom ?? 0,
-                        },
-                        font: {
-                            family: 'Inter',
-                            weights: ['100', '400', '700'],
-                        }
-                    } as TextAtomData
-                }
-            ],
-        }],
-        config: {
-            fitDurationTo: 'Audio-xyz',
+                ],
+            }],
+            config: {
+                fitDurationTo: 'Audio-xyz',
+            }
         }
     }
 };

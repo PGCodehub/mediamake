@@ -6,7 +6,7 @@ import {
   TextAtomData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata } from '../types';
+import { PresetMetadata, PresetOutput } from '../types';
 import { headers } from 'next/headers';
 import { CSSProperties } from 'react';
 
@@ -49,7 +49,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
-): Partial<InputCompositionProps> => {
+): PresetOutput => {
   const {
     inputCaptions,
     position,
@@ -816,91 +816,51 @@ const presetExecution = (
 
   //generate childrenData for scenes.
   return {
-    // appends this children data to the target parent
-    config: {
-      duration: processedCaptions[processedCaptions.length - 1].absoluteEnd!,
-    },
-    childrenData: [
-      {
-        // If AudioScene is already in the composition, we need to append this as children data, as this is children data type of preset
-        // if not present, then it will append to the first node in base childrenData.
-        id: 'AudioScene',
-        componentId: 'BaseLayout',
-        type: 'layout',
-        data: {
-          childrenProps: [
-            {
-              className: `absolute inset-0`,
-            },
-          ],
-        },
-        childrenData: [
-          // THIS IS OUR ACTUAL PRESET WIDGET THAT WILL BE APPENDED.
-          {
-            id: 'SubtitlesOverlay',
-            componentId: 'BaseLayout',
-            type: 'layout',
-            // effects: [
-            //   {
-            //     id: `fade-out-fullblock`,
-            //     componentId: 'generic',
-            //     data: {
-            //       start: 0,
-            //       duration: 10,
-            //       props: {
-            //         className: 'absolute inset-0',
-            //       },
-            //       ranges: [
-            //         {
-            //           key: 'backgroundColor',
-            //           val: 'rgba(0, 0, 0, 0)',
-            //           prog: 0,
-            //         },
-            //         {
-            //           key: 'backgroundColor',
-            //           val: 'rgba(0, 0, 0, 0.5)',
-            //           prog: 1,
-            //         },
-            //       ],
-            //     },
-            //   },
-            // ],
-            data: {
-              containerProps: {
-                className: 'absolute inset-0',
-                // style: {
-                //   background: 'rgba(0, 0, 0, 0.5)',
-                // },
-              },
-              childrenProps: Array(captionsCHildrenData.length)
-                .fill({
-                  className: 'absolute',
-                })
-                .map(child => ({
-                  ...child,
-                  style: {
-                    ...getRandomPosition(),
-                    //top: 50,
-                    left: 100,
-                  },
-                })),
-              // repeatChildrenProps: {
-              //   className: `w-full h-full`,
-              // },
-            },
-            context: {
-              timing: {
-                start: 0,
-                duration:
-                  processedCaptions[processedCaptions.length - 1].absoluteEnd! -
-                  processedCaptions[0].absoluteStart!,
-              },
-            },
-            childrenData: captionsCHildrenData,
-          } as RenderableComponentData,
-        ],
+    output: {
+      config: {
+        duration: processedCaptions[processedCaptions.length - 1].absoluteEnd!,
       },
-    ],
+      childrenData: [
+        {
+          id: 'SubtitlesOverlay',
+          componentId: 'BaseLayout',
+          type: 'layout',
+          data: {
+            containerProps: {
+              className: 'absolute inset-0',
+            },
+            childrenProps: Array(captionsCHildrenData.length)
+              .fill({
+                className: 'absolute',
+              })
+              .map(child => ({
+                ...child,
+                style: {
+                  ...getRandomPosition(),
+                  left: 100,
+                },
+              })),
+          },
+          context: {
+            timing: {
+              start: 0,
+              duration:
+                processedCaptions[processedCaptions.length - 1].absoluteEnd! -
+                processedCaptions[0].absoluteStart!,
+            },
+          },
+          childrenData: captionsCHildrenData,
+        } as RenderableComponentData,
+      ],
+    },
+    options: {
+      attachedToId: `BaseScene`,
+      attachedContainers: [
+        {
+          className: 'absolute inset-0',
+        },
+      ],
+    },
   };
 };
 

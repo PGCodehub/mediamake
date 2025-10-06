@@ -27,6 +27,26 @@ export interface PresetInputData {
   [key: string]: any;
 }
 
+export interface PresetPassedProps {
+  config: InputCompositionProps['config'];
+  clip?: {
+    start?: number;
+    duration?: number;
+  };
+}
+
+export interface PresetOutput {
+  output: Partial<InputCompositionProps>;
+  options?: Partial<{
+    attachedToId?: string;
+    attachedContainers?: any;
+    clip?: {
+      start?: number;
+      duration?: number;
+    };
+  }>;
+}
+
 export interface PresetConfiguration {
   style?: any;
   config?: any;
@@ -96,6 +116,7 @@ export interface AppliedPreset {
   preset: Preset | DatabasePreset;
   inputData: PresetInputData;
   isExpanded: boolean;
+  disabled?: boolean;
 }
 
 export interface AppliedPresetsState {

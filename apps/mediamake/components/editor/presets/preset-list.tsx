@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Trash2, Play, Loader2, RefreshCw, GripVertical, Copy, Save, Upload } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2, Play, Loader2, RefreshCw, GripVertical, Copy, Save, Upload, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset } from "./types";
 import { SchemaForm } from "./schema-form";
@@ -42,6 +42,7 @@ interface SortablePresetItemProps {
     onUpdateInputData: (id: string, inputData: PresetInputData) => void;
     onRefresh: (id: string) => void;
     onRemove: (id: string) => void;
+    onToggleDisabled: (id: string) => void;
 }
 
 function SortablePresetItem({
@@ -49,7 +50,8 @@ function SortablePresetItem({
     onToggleExpansion,
     onUpdateInputData,
     onRefresh,
-    onRemove
+    onRemove,
+    onToggleDisabled
 }: SortablePresetItemProps) {
     const {
         attributes,
@@ -68,7 +70,7 @@ function SortablePresetItem({
 
     return (
         <div ref={setNodeRef} style={style} className="w-full">
-            <Card className="w-full p-0">
+            <Card className={`w-full p-0 ${appliedPreset.disabled ? 'opacity-60 bg-muted/50' : ''}`}>
                 <CardHeader className="pb-2 px-3 py-2">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -92,11 +94,20 @@ function SortablePresetItem({
                                 <GripVertical className="h-4 w-4 text-muted-foreground" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm truncate">{appliedPreset.preset.metadata.title}</h4>
+                                <h4 className="font-medium text-sm truncate">
+                                    {appliedPreset.inputData?.trackName && appliedPreset.inputData?.trackName.length > 0 ?
+                                        appliedPreset.inputData?.trackName
+                                        : appliedPreset.preset.metadata.title}
+                                </h4>
                                 <div className="flex items-center gap-1 mt-0.5">
                                     <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
                                         {appliedPreset.preset.metadata.presetType}
                                     </Badge>
+                                    {appliedPreset.disabled && (
+                                        <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
+                                            Disabled
+                                        </Badge>
+                                    )}
                                     {appliedPreset.preset.metadata.tags?.slice(0, 2).map((tag) => (
                                         <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0.5">
                                             {tag}
@@ -115,6 +126,24 @@ function SortablePresetItem({
                             >
                                 <RefreshCw className="h-3 w-3" />
                             </Button>
+                            {appliedPreset.preset.metadata.presetType === 'children' && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onToggleDisabled(appliedPreset.id)}
+                                    className={`p-1 h-6 w-6 ${appliedPreset.disabled
+                                        ? 'text-gray-400 hover:text-gray-600'
+                                        : 'text-green-500 hover:text-green-700'
+                                        }`}
+                                    title={appliedPreset.disabled ? 'Enable preset' : 'Disable preset'}
+                                >
+                                    {appliedPreset.disabled ? (
+                                        <EyeOff className="h-3 w-3" />
+                                    ) : (
+                                        <Eye className="h-3 w-3" />
+                                    )}
+                                </Button>
+                            )}
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -191,6 +220,7 @@ export function PresetList({
         appliedPresets,
         setAppliedPresets,
         togglePresetExpansion,
+        togglePresetDisabled,
         updatePresetInputData,
         removePreset,
         refreshPreset,
@@ -204,6 +234,7 @@ export function PresetList({
     const [isLoadingSaved, setIsLoadingSaved] = useState(false);
     const [showSaveDialog, setShowSaveDialog] = useState(false);
     const [showLoadDialog, setShowLoadDialog] = useState(false);
+    const [isSavingPreset, setIsSavingPreset] = useState(false);
 
     // Load saved presets on component mount
     useEffect(() => {
@@ -250,14 +281,16 @@ export function PresetList({
             const hasNewPresets = appliedPresets.presets.some(preset =>
                 !preset.id.startsWith('loaded-')
             );
-            if (hasNewPresets) {
+            // Only clear if we have new presets AND we're not in the middle of a save operation
+            if (hasNewPresets && !showSaveDialog && !isSavingPreset) {
                 setCurrentLoadedPreset(null);
             }
         }
-    }, [appliedPresets.presets, currentLoadedPreset, setCurrentLoadedPreset]);
+    }, [appliedPresets.presets, currentLoadedPreset, setCurrentLoadedPreset, showSaveDialog, isSavingPreset]);
 
     const savePresetData = async (name: string, overwriteId?: string) => {
         try {
+            setIsSavingPreset(true);
             const presetData = {
                 presets: appliedPresets.presets.map(appliedPreset => ({
                     presetId: appliedPreset.preset.metadata.id,
@@ -283,16 +316,22 @@ export function PresetList({
                 // If we're overwriting, update the current loaded preset
                 if (overwriteId) {
                     setCurrentLoadedPreset(result.id || overwriteId);
+                } else {
+                    // If we're creating a new preset, set it as the current loaded preset
+                    setCurrentLoadedPreset(result.id);
                 }
-                toast.success('Preset data saved successfully');
+                toast.success(overwriteId ? 'Preset data overwritten successfully' : 'Preset data saved successfully');
                 loadSavedPresets(); // Refresh the list
             } else {
-                throw new Error('Failed to save preset data');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to save preset data');
             }
         } catch (error) {
             console.error('Failed to save preset data:', error);
             toast.error('Failed to save preset data');
             throw error; // Re-throw to handle in dialog
+        } finally {
+            setIsSavingPreset(false);
         }
     };
 
@@ -387,6 +426,7 @@ export function PresetList({
             reorderPresets(oldIndex, newIndex);
         }
     }
+
     if (appliedPresets.presets.length === 0) {
         return (
             <div className="h-full flex flex-col">
@@ -507,6 +547,7 @@ export function PresetList({
                                     onUpdateInputData={updatePresetInputData}
                                     onRefresh={refreshPreset}
                                     onRemove={removePreset}
+                                    onToggleDisabled={togglePresetDisabled}
                                 />
                             ))}
                         </SortableContext>
@@ -519,6 +560,7 @@ export function PresetList({
 
             {/* Save Preset Dialog */}
             <SavePresetDialog
+                key={`save-dialog-${currentLoadedPreset || 'new'}`}
                 open={showSaveDialog}
                 onOpenChange={setShowSaveDialog}
                 onSave={savePresetData}

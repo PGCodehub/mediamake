@@ -61,13 +61,7 @@ export async function GET(request: NextRequest) {
         fileName: 1,
         fileSize: 1,
         filePath: 1,
-        'metadata.description': 1,
-        'metadata.src': 1,
-        'metadata.width': 1,
-        'metadata.height': 1,
-        'metadata.aspectRatio': 1,
-        'metadata.platform': 1,
-        'metadata.keywords': 1,
+        metadata: 1,
       };
     }
 
@@ -151,7 +145,7 @@ export async function POST(request: NextRequest) {
               ...finalMetadata,
               ...aiMetadata,
             };
-            console.log('AI analysis completed, metadata updated');
+            console.log('AI analysis completed, metadata updated', aiMetadata);
           } else {
             console.log('AI analysis failed or returned no metadata');
           }

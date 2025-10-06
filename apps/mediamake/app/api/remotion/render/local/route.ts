@@ -91,6 +91,7 @@ export const POST = async (req: NextRequest) => {
         serveUrl: bundleLocation,
         output: stillOutputPath,
         inputProps,
+        logLevel: 'error',
       });
 
       result = {
@@ -118,6 +119,7 @@ export const POST = async (req: NextRequest) => {
         jpegQuality: 1,
         videoBitrate: '1k', // Very low bitrate for audio-only
         audioBitrate: '128k',
+        logLevel: 'error',
       });
 
       result = {
@@ -137,6 +139,7 @@ export const POST = async (req: NextRequest) => {
         audioCodec,
         outputLocation: videoOutputPath,
         inputProps,
+        logLevel: 'error',
       });
 
       result = {
