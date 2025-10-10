@@ -10,7 +10,7 @@ import {
     extractSentencesFromTranscription,
     getDominantFeel,
     type TranscriptionMetadataResult
-} from "@/lib/transcription-metadata";
+} from "@/components/transcriber/transcription-metadata";
 import { cn } from "@/lib/utils";
 import { TranscriptionSentence } from "@microfox/datamotion";
 import {

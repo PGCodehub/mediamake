@@ -45,6 +45,19 @@ const presetParams = z.object({
       .describe('text alignment within parts'),
   }),
   subtitleSync: z.object({
+    //timing-normalnime-imapctanime-continuosanime
+    animationStyle: z
+      .enum([
+        'word-fade-letterspace-float', // each word fades in exact time from 0 to 1 opacity, with letterspace aniamtion for imapctful words, and all liens floating.
+        'scentence-highlight-letterspace-float', // each word is already at 1 opacity, it jsuts highlighted with deeper glow at exact wor time, with letterspace animation for imapctful words, and all liens floating.
+        'aggressive-pulse-shake-float', // aggressive rock-style animation with pulse, shake, and distortion effects for fast beat energy
+        'melodic-fade-blur-float', // smooth fade with gentle blur effects, perfect for melodic content with longer sentences
+        'melodic-wave-breathing', // gentle wave-like floating with soft breathing effects for melodic rhythm
+        'melodic-color-flow', // smooth color transitions with gentle drift for melodic flow
+        'melodic-gentle-drift', // subtle position and scale drift with soft fade for melodic feel
+      ])
+      .default('word-fade-letterspace-float')
+      .optional(),
     negativeOffset: z.number().optional(),
     maxLines: z.number().optional(),
     noGaps: z.object({
@@ -82,6 +95,19 @@ const presetParams = z.object({
     )
     .optional()
     .describe('color choices - primary and secondary colors'),
+  style: z
+    .object({
+      textTransformSub: z
+        .enum(['none', 'uppercase', 'lowercase', 'capitalize'])
+        .optional()
+        .describe('text transform'),
+      textTransformMain: z
+        .enum(['none', 'uppercase', 'lowercase', 'capitalize'])
+        .optional()
+        .describe('text transform'),
+    })
+    .optional()
+    .describe('style'),
   avgFontSize: z.number().optional().describe('average font size'),
 });
 
@@ -95,6 +121,7 @@ const presetExecution = (
     avgFontSize,
     colorChoices,
     fontChoices,
+    style,
   } = params;
 
   // Font choices configuration
@@ -302,12 +329,35 @@ const presetExecution = (
     ],
   });
 
+  // Creates opacity effect for sentence highlight style (0.7 to 1)
+  const createSentenceOpacityEffect = (
+    wordId: string,
+    word: any,
+    caption: any,
+  ): GenericEffectData => ({
+    type: 'ease-out',
+    start: word.start,
+    duration: 1,
+    mode: 'provider',
+    targetIds: [wordId],
+    ranges: [
+      { key: 'opacity', val: 0.3, prog: 0 },
+      {
+        key: 'opacity',
+        val: 1,
+        prog: caption.duration >= 1 ? 0.5 : 0.05,
+      },
+      { key: 'opacity', val: 1, prog: 1 },
+    ],
+  });
+
   // Creates letter spacing effect for highlighted words
   const createLetterSpacingEffect = (
     wordId: string,
     word: any,
     syncDuration: number | null,
     shouldAnimate: boolean,
+    impact: number,
   ): GenericEffectData => ({
     type: 'ease-out',
     start: word.start,
@@ -316,11 +366,30 @@ const presetExecution = (
     targetIds: [wordId],
     ranges: [
       { key: 'letterSpacing', val: '0.1em' as any, prog: 0 },
-      { key: 'letterSpacing', val: '0.175em' as any, prog: 1 },
+      { key: 'letterSpacing', val: `${impact * 0.175}em` as any, prog: 1 },
     ],
   });
 
-  // Creates glow effect for highlighted words
+  // Creates spring scale effect for normal words
+  const createSpringScaleEffect = (
+    wordId: string,
+    word: any,
+    impact: number,
+    impactWord: boolean,
+  ): GenericEffectData => ({
+    type: 'spring',
+    start: word.start,
+    duration: 0.3,
+    mode: 'provider',
+    targetIds: [wordId],
+    ranges: [
+      { key: 'scale', val: impactWord ? 1 : 0.9, prog: 0 },
+      { key: 'scale', val: 1.1 * impact, prog: 0.5 },
+      { key: 'scale', val: 1, prog: 1 },
+    ],
+  });
+
+  // Creates glow effect for all words
   const createGlowEffect = (
     wordId: string,
     word: any,
@@ -366,10 +435,436 @@ const presetExecution = (
             },
             {
               key: 'filter',
-              val: `drop-shadow(0 0 6px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8))` as any,
+              val: `drop-shadow(0 0 8px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.9))` as any,
               prog: 1,
             },
           ],
+    };
+  };
+
+  // Creates vibration effect using translateX for rock-style animation
+  const createVibrationEffect = (
+    wordId: string,
+    word: any,
+    impact: number,
+  ): GenericEffectData => ({
+    type: 'spring',
+    start: word.start,
+    duration: 0.2,
+    mode: 'provider',
+    targetIds: [wordId],
+    ranges: [
+      { key: 'translateX', val: -5 * impact, prog: 0 },
+      { key: 'translateX', val: 6 * impact, prog: 0.3 },
+      { key: 'translateX', val: -3 * impact, prog: 0.6 },
+      { key: 'translateX', val: 3 * impact, prog: 0.8 },
+      { key: 'translateX', val: 0, prog: 1 },
+    ],
+  });
+
+  // Creates continuous shake effect for long-duration words with amplitude and frequency control
+  const createContinuousShakeEffect = (
+    wordId: string,
+    word: any,
+    amplitude: number,
+    frequency: number = 0.1, // Shake every 0.1 seconds
+  ): GenericEffectData => {
+    const duration = word.duration;
+    const shakeCount = Math.floor(duration / frequency);
+    const ranges = [];
+
+    // Create shake pattern with specified amplitude and frequency
+    for (let i = 0; i <= shakeCount; i++) {
+      const prog = i / shakeCount;
+      const shakeValue = (i % 2 === 0 ? 1 : -1) * amplitude;
+      ranges.push({ key: 'translateX', val: shakeValue, prog });
+    }
+
+    // End at center position
+    ranges.push({ key: 'translateX', val: 0, prog: 1 });
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: duration,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges,
+    };
+  };
+
+  // Creates motion blur effect for word entrance
+  const createMotionBlurEffect = (
+    wordId: string,
+    word: any,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: 0.4,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        {
+          key: 'filter',
+          val: `blur(8px) drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))` as any,
+          prog: 0,
+        },
+        {
+          key: 'filter',
+          val: `blur(4px) drop-shadow(0 0 ${6 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.6))` as any,
+          prog: 0.3,
+        },
+        {
+          key: 'filter',
+          val: `blur(1px) drop-shadow(0 0 ${4 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8))` as any,
+          prog: 0.7,
+        },
+        {
+          key: 'filter',
+          val: `blur(0px) drop-shadow(0 0 ${2 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.9))` as any,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates distortion effect for rock intensity
+  const createDistortionEffect = (
+    wordId: string,
+    word: any,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-in',
+      start: word.start,
+      duration: 0.3,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0)) contrast(1) brightness(1)` as any,
+          prog: 0,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${8 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.9)) contrast(1.5) brightness(1.3) saturate(1.5)` as any,
+          prog: 0.4,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${12 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.7)) contrast(1.2) brightness(1.1)` as any,
+          prog: 0.7,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${6 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8)) contrast(1) brightness(1)` as any,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates fast beat sync effect for rock timing
+  const createFastBeatSyncEffect = (
+    wordId: string,
+    word: any,
+    impact: number,
+  ): GenericEffectData => ({
+    type: 'spring',
+    start: word.start,
+    duration: 0.08,
+    mode: 'provider',
+    targetIds: [wordId],
+    ranges: [
+      { key: 'scale', val: 1, prog: 0 },
+      { key: 'scale', val: 1.15 * impact, prog: 0.5 },
+      { key: 'scale', val: 1, prog: 1 },
+    ],
+  });
+
+  // Creates smooth fade-blur effect for melodic content
+  const createMelodicFadeBlurEffect = (
+    wordId: string,
+    word: any,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: Math.max(0.8, word.duration * 0.6), // Longer, smoother duration
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        {
+          key: 'opacity',
+          val: 0,
+          prog: 0,
+        },
+        {
+          key: 'opacity',
+          val: 0.3,
+          prog: 0.2,
+        },
+        {
+          key: 'opacity',
+          val: 0.8,
+          prog: 0.6,
+        },
+        {
+          key: 'opacity',
+          val: 1,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates gentle blur effect for melodic smoothness
+  const createMelodicBlurEffect = (
+    wordId: string,
+    word: any,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: Math.max(1.2, word.duration * 0.8),
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        {
+          key: 'filter',
+          val: `blur(6px) drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))` as any,
+          prog: 0,
+        },
+        {
+          key: 'filter',
+          val: `blur(3px) drop-shadow(0 0 ${4 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.4))` as any,
+          prog: 0.3,
+        },
+        {
+          key: 'filter',
+          val: `blur(1px) drop-shadow(0 0 ${6 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.6))` as any,
+          prog: 0.7,
+        },
+        {
+          key: 'filter',
+          val: `blur(0px) drop-shadow(0 0 ${3 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8))` as any,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates gentle wave-like floating effect for melodic rhythm
+  const createMelodicWaveEffect = (
+    wordId: string,
+    word: any,
+    impact: number,
+  ): GenericEffectData => {
+    const duration = Math.max(2.0, word.duration * 1.2);
+    const waveCount = Math.floor(duration / 0.8); // Wave every 0.8 seconds
+    const ranges = [];
+
+    // Create smooth wave pattern
+    for (let i = 0; i <= waveCount; i++) {
+      const prog = i / waveCount;
+      const waveValue = Math.sin(prog * Math.PI * 2) * 3 * impact; // Gentle 3px amplitude
+      ranges.push({ key: 'translateY', val: waveValue, prog });
+    }
+
+    // End at neutral position
+    ranges.push({ key: 'translateY', val: 0, prog: 1 });
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: duration,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges,
+    };
+  };
+
+  // Creates soft breathing effect for melodic rhythm
+  const createMelodicBreathingEffect = (
+    wordId: string,
+    word: any,
+    impact: number,
+  ): GenericEffectData => {
+    const duration = Math.max(1.5, word.duration * 1.0);
+    const breathCount = Math.floor(duration / 1.2); // Breathe every 1.2 seconds
+    const ranges = [];
+
+    // Create gentle breathing pattern
+    for (let i = 0; i <= breathCount; i++) {
+      const prog = i / breathCount;
+      const breathValue = 1 + Math.sin(prog * Math.PI * 2) * 0.05 * impact; // 5% scale variation
+      ranges.push({ key: 'scale', val: breathValue, prog });
+    }
+
+    // End at normal scale
+    ranges.push({ key: 'scale', val: 1, prog: 1 });
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: duration,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges,
+    };
+  };
+
+  // Creates smooth color transition effect for melodic flow
+  const createMelodicColorFlowEffect = (
+    wordId: string,
+    word: any,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const primaryRgb = hexToRgb(selectedColorChoice.primary) || {
+      r: 255,
+      g: 255,
+      b: 255,
+    };
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: Math.max(1.0, word.duration * 0.8),
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        {
+          key: 'color',
+          val: `rgb(${primaryRgb.r},${primaryRgb.g},${primaryRgb.b})`,
+          prog: 0,
+        },
+        {
+          key: 'color',
+          val: `rgb(${Math.floor(primaryRgb.r + (accentRgb.r - primaryRgb.r) * 0.3)},${Math.floor(primaryRgb.g + (accentRgb.g - primaryRgb.g) * 0.3)},${Math.floor(primaryRgb.b + (accentRgb.b - primaryRgb.b) * 0.3)})`,
+          prog: 0.5,
+        },
+        {
+          key: 'color',
+          val: `rgb(${accentRgb.r},${accentRgb.g},${accentRgb.b})`,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates gentle drift effect for melodic feel
+  const createMelodicDriftEffect = (
+    wordId: string,
+    word: any,
+    impact: number,
+  ): GenericEffectData => {
+    const duration = Math.max(1.8, word.duration * 1.1);
+    const driftCount = Math.floor(duration / 1.5); // Drift every 1.5 seconds
+    const ranges = [];
+
+    // Create subtle position drift
+    for (let i = 0; i <= driftCount; i++) {
+      const prog = i / driftCount;
+      const driftX = Math.sin(prog * Math.PI * 1.5) * 2 * impact; // 2px horizontal drift
+      const driftY = Math.cos(prog * Math.PI * 1.5) * 1.5 * impact; // 1.5px vertical drift
+      ranges.push({ key: 'translateX', val: driftX, prog });
+      ranges.push({ key: 'translateY', val: driftY, prog });
+    }
+
+    // End at center position
+    ranges.push({ key: 'translateX', val: 0, prog: 1 });
+    ranges.push({ key: 'translateY', val: 0, prog: 1 });
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: duration,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges,
+    };
+  };
+
+  // Creates soft glow effect for melodic ambiance
+  const createMelodicGlowEffect = (
+    wordId: string,
+    word: any,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start,
+      duration: Math.max(1.5, word.duration * 1.0),
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))` as any,
+          prog: 0,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${4 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.3))` as any,
+          prog: 0.3,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${8 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.5))` as any,
+          prog: 0.7,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${6 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.7))` as any,
+          prog: 1,
+        },
+      ],
     };
   };
 
@@ -382,6 +877,8 @@ const presetExecution = (
     selectedColorChoice: any,
     partId: string,
     scentenceId: string,
+    style?: any,
+    animationStyle?: string,
   ) => {
     const isAllWordsHighlighted = words.every(
       word => word.metadata?.isHighlight,
@@ -397,31 +894,52 @@ const presetExecution = (
       const shouldAnimate =
         word.duration >= 1 || (isAllWordsHighlighted && syncDuration > 1.5);
 
-      // Create effects array
-      const effects = [
-        {
+      // Create effects array based on animation style
+      const effects = [];
+
+      if (animationStyle === 'word-fade-letterspace-float') {
+        // Original behavior: fade-in opacity for all words
+        effects.push({
           id: `opacity-${wordId}`,
           componentId: 'generic',
           data: createOpacityEffect(wordId, word, caption),
-        },
-      ];
-
-      // Add letter spacing effect for highlighted words
-      if (isHighlight) {
-        effects.push({
-          id: `letter-spacing-${wordId}`,
-          componentId: 'generic',
-          data: createLetterSpacingEffect(
-            wordId,
-            word,
-            syncDuration,
-            shouldAnimate,
-          ),
         });
-      }
 
-      // Add glow effect for highlighted words
-      if (isHighlight) {
+        // Add letter spacing and glow effects only for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `letter-spacing-${wordId}`,
+            componentId: 'generic',
+            data: createLetterSpacingEffect(
+              wordId,
+              word,
+              syncDuration,
+              shouldAnimate,
+              1,
+            ),
+          });
+
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
+      } else if (animationStyle === 'scentence-highlight-letterspace-float') {
+        // ALL words get opacity effect (0.7 to 1)
+        effects.push({
+          id: `opacity-${wordId}`,
+          componentId: 'generic',
+          data: createSentenceOpacityEffect(wordId, word, caption),
+        });
+
+        // ALL words get glow effect when they start
         effects.push({
           id: `glow-${wordId}`,
           componentId: 'generic',
@@ -431,6 +949,308 @@ const presetExecution = (
             selectedColorChoice,
             syncDuration,
             shouldAnimate,
+          ),
+        });
+
+        // Normal words get spring scale effect (scale-press) + letter spacing
+        if (!isHighlight) {
+          effects.push({
+            id: `spring-scale-${wordId}`,
+            componentId: 'generic',
+            data: createSpringScaleEffect(wordId, word, 0.8, false),
+          });
+
+          effects.push({
+            id: `letter-spacing-${wordId}`,
+            componentId: 'generic',
+            data: createLetterSpacingEffect(
+              wordId,
+              word,
+              syncDuration,
+              shouldAnimate,
+              0.95,
+            ),
+          });
+        }
+
+        // Impact words get letter spacing effect (larger) + spring scale effect (smaller)
+        if (isHighlight) {
+          effects.push({
+            id: `spring-scale-${wordId}`,
+            componentId: 'generic',
+            data: createSpringScaleEffect(wordId, word, 0.9, true),
+          });
+
+          effects.push({
+            id: `letter-spacing-${wordId}`,
+            componentId: 'generic',
+            data: createLetterSpacingEffect(
+              wordId,
+              word,
+              syncDuration,
+              shouldAnimate,
+              1.25,
+            ),
+          });
+        }
+      } else if (animationStyle === 'aggressive-pulse-shake-float') {
+        // Aggressive rock-style animation with enhanced effects
+        const wordDuration = word.duration;
+        const isLongWord = wordDuration > 1.5;
+        const impact = isHighlight ? 1.3 : 1.2; // Increased from 0.9 to 1.2 for better visibility
+
+        // ALL words start from 0 opacity with smooth fade-in
+        effects.push({
+          id: `opacity-${wordId}`,
+          componentId: 'generic',
+          data: {
+            type: 'ease-out',
+            start: word.start,
+            duration: Math.min(0.6, wordDuration * 0.4), // Smoother based on duration
+            mode: 'provider',
+            targetIds: [wordId],
+            ranges: [
+              { key: 'opacity', val: 0, prog: 0 },
+              { key: 'opacity', val: 0.3, prog: 0.3 },
+              { key: 'opacity', val: 0.8, prog: 0.7 },
+              { key: 'opacity', val: 1, prog: 1 },
+            ],
+          },
+        });
+
+        // Motion blur effect for dramatic entrance
+        effects.push({
+          id: `motion-blur-${wordId}`,
+          componentId: 'generic',
+          data: createMotionBlurEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Vibration effect using translateX for rock presence
+        effects.push({
+          id: `vibration-${wordId}`,
+          componentId: 'generic',
+          data: createVibrationEffect(wordId, word, impact),
+        });
+
+        // Continuous shake for long-duration words with proper amplitude and frequency
+        if (isLongWord) {
+          effects.push({
+            id: `continuous-shake-${wordId}`,
+            componentId: 'generic',
+            data: createContinuousShakeEffect(
+              wordId,
+              word,
+              impact, // Use impact for amplitude (1.2 for normal, 1.3 for highlight)
+              0.15, // Shake every 0.15 seconds for rock rhythm
+            ),
+          });
+        }
+
+        // Distortion effect for rock intensity
+        effects.push({
+          id: `distortion-${wordId}`,
+          componentId: 'generic',
+          data: createDistortionEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Fast beat sync for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `fast-beat-${wordId}`,
+            componentId: 'generic',
+            data: createFastBeatSyncEffect(wordId, word, 1.2),
+          });
+        }
+
+        // Enhanced letter spacing for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `letter-spacing-${wordId}`,
+            componentId: 'generic',
+            data: createLetterSpacingEffect(
+              wordId,
+              word,
+              syncDuration,
+              shouldAnimate,
+              1.4,
+            ),
+          });
+        }
+      } else if (animationStyle === 'melodic-fade-blur-float') {
+        // Smooth fade-blur effect for melodic content
+        const impact = isHighlight ? 1.2 : 0.8;
+
+        // Smooth fade effect
+        effects.push({
+          id: `melodic-fade-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicFadeBlurEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Gentle blur effect
+        effects.push({
+          id: `melodic-blur-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicBlurEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Soft glow for ambiance
+        effects.push({
+          id: `melodic-glow-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicGlowEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+      } else if (animationStyle === 'melodic-wave-breathing') {
+        // Gentle wave-like floating with soft breathing
+        const impact = isHighlight ? 1.1 : 0.9;
+
+        // Smooth fade effect
+        effects.push({
+          id: `melodic-fade-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicFadeBlurEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Wave-like floating effect
+        effects.push({
+          id: `melodic-wave-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicWaveEffect(wordId, word, impact),
+        });
+
+        // Soft breathing effect
+        effects.push({
+          id: `melodic-breathing-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicBreathingEffect(wordId, word, impact),
+        });
+
+        // Gentle glow
+        effects.push({
+          id: `melodic-glow-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicGlowEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+      } else if (animationStyle === 'melodic-color-flow') {
+        // Smooth color transitions with gentle drift
+        const impact = isHighlight ? 1.3 : 1.0;
+
+        // Smooth fade effect
+        effects.push({
+          id: `melodic-fade-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicFadeBlurEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Color flow effect
+        effects.push({
+          id: `melodic-color-flow-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicColorFlowEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Gentle drift effect
+        effects.push({
+          id: `melodic-drift-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicDriftEffect(wordId, word, impact),
+        });
+
+        // Soft glow
+        effects.push({
+          id: `melodic-glow-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicGlowEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+      } else if (animationStyle === 'melodic-gentle-drift') {
+        // Subtle position and scale drift with soft fade
+        const impact = isHighlight ? 1.1 : 0.8;
+
+        // Smooth fade effect
+        effects.push({
+          id: `melodic-fade-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicFadeBlurEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+
+        // Gentle drift effect
+        effects.push({
+          id: `melodic-drift-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicDriftEffect(wordId, word, impact),
+        });
+
+        // Soft breathing for rhythm
+        effects.push({
+          id: `melodic-breathing-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicBreathingEffect(wordId, word, impact),
+        });
+
+        // Gentle glow
+        effects.push({
+          id: `melodic-glow-${wordId}`,
+          componentId: 'generic',
+          data: createMelodicGlowEffect(
+            wordId,
+            word,
+            selectedColorChoice,
+            impact,
           ),
         });
       }
@@ -470,13 +1290,38 @@ const presetExecution = (
         ? selectedColorChoice.accent
         : selectedColorChoice.secondary;
 
+      // Apply text transform based on highlight status
+      const textTransform = isHighlight
+        ? style?.textTransformMain || 'none'
+        : style?.textTransformSub || 'none';
+
+      // Apply text transform to the word text
+      let transformedText = word.text;
+      switch (textTransform) {
+        case 'uppercase':
+          transformedText = word.text.toUpperCase();
+          break;
+        case 'lowercase':
+          transformedText = word.text.toLowerCase();
+          break;
+        case 'capitalize':
+          transformedText =
+            word.text.charAt(0).toUpperCase() +
+            word.text.slice(1).toLowerCase();
+          break;
+        case 'none':
+        default:
+          transformedText = word.text;
+          break;
+      }
+
       return {
         type: 'atom',
         id: wordId,
         componentId: 'TextAtom',
         effects: effects,
         data: {
-          text: word.text.toUpperCase(),
+          text: transformedText,
           className: isHighlight
             ? 'rounded-xl text-xl font-bold tracking-wide'
             : 'rounded-xl text-xl',
@@ -722,6 +1567,8 @@ const presetExecution = (
     scentenceId: string,
     floatThreshold?: number,
     textAlign?: string,
+    style?: any,
+    animationStyle?: string,
   ) => {
     const wordsData = generateWordsData(
       partWords,
@@ -731,6 +1578,8 @@ const presetExecution = (
       selectedColorChoice,
       partId,
       scentenceId,
+      style,
+      animationStyle,
     );
 
     // Calculate displacement based on character count or floatThreshold
@@ -809,6 +1658,8 @@ const presetExecution = (
     floatThreshold?: number,
     textAlign?: string,
     disableMetadata?: boolean,
+    style?: any,
+    animationStyle?: string,
   ) => {
     // Pre-process captions to split combined words
     const preprocessedCaptions = preprocessCaptions(inputCaptions);
@@ -1007,6 +1858,8 @@ const presetExecution = (
             scentenceId,
             floatThreshold,
             textAlign,
+            style,
+            animationStyle,
           );
         });
 
@@ -1065,6 +1918,8 @@ const presetExecution = (
     subtitleSync?.floatThreshold,
     position?.textAlign,
     subtitleSync?.disableMetadata,
+    style,
+    subtitleSync?.animationStyle,
   );
 
   // Generate final composition structure
@@ -1132,15 +1987,28 @@ const presetMetadata: PresetMetadata = {
   id: 'sub-vertical-float',
   title: 'Subtitles Vertical Float',
   description:
-    'Kinetic Subtitle in Vertical Layout & zig zag floating animations',
+    'Kinetic Subtitle in Vertical Layout with smooth melodic animations including fade-blur, wave-breathing, color-flow, and gentle drift effects perfect for melodic content',
   type: 'predefined',
   presetType: 'children',
-  tags: ['subtitles', 'vertical', 'float', 'zigzag'],
+  tags: [
+    'subtitles',
+    'vertical',
+    'float',
+    'melodic',
+    'smooth',
+    'fade',
+    'blur',
+    'wave',
+    'breathing',
+    'color-flow',
+    'drift',
+  ],
   defaultInputParams: {
     subtitleSync: {
-      negativeOffset: 0.5,
-      maxLines: 3,
-      floatThreshold: undefined, // Will use character-based calculation
+      animationStyle: 'melodic-fade-blur-float',
+      negativeOffset: 0.15,
+      maxLines: 5,
+      floatThreshold: 15,
       disableMetadata: false,
       noGaps: {
         enabled: false,
@@ -1152,6 +2020,24 @@ const presetMetadata: PresetMetadata = {
       randomize: false,
       textAlign: 'center',
     },
+    fontChoices: [
+      {
+        primaryFont: 'Roboto:600:italic',
+        headerFont: 'BebasNeue',
+      },
+    ],
+    colorChoices: [
+      {
+        primary: '#ffffff',
+        secondary: '#cccccc',
+        accent: '#ff6b6b',
+      },
+    ],
+    style: {
+      textTransformSub: 'uppercase',
+      textTransformMain: 'uppercase',
+    },
+    avgFontSize: 50,
     inputCaptions: [
       {
         id: 'caption-1',

@@ -1,8 +1,9 @@
 'use client';
 
 import { InputCompositionProps } from '@microfox/remotion';
-import { ObjectId } from 'mongodb';
 import z from 'zod';
+
+import { ObjectId } from 'mongodb';
 
 export interface PresetMetadata {
   id: string;
@@ -128,11 +129,12 @@ export interface AppliedPresetsState {
 // --- Transcription Schemas ---
 
 export const TranscriptionWordSchema = z.object({
+  id: z.string(),
   text: z.string(),
   start: z.number(),
-  absoluteStart: z.number().optional(),
+  absoluteStart: z.number(),
   end: z.number(),
-  absoluteEnd: z.number().optional(),
+  absoluteEnd: z.number(),
   duration: z.number(),
   confidence: z.number(),
 });
@@ -143,9 +145,9 @@ export const TranscriptionSentenceSchema = z.object({
   id: z.string(),
   text: z.string(),
   start: z.number(),
-  absoluteStart: z.number().optional(),
+  absoluteStart: z.number(),
   end: z.number(),
-  absoluteEnd: z.number().optional(),
+  absoluteEnd: z.number(),
   duration: z.number(),
   words: z.array(TranscriptionWordSchema),
 });

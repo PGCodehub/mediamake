@@ -28,5 +28,6 @@ export const deepResearchAgent = aiRouter
       icon: 'https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/brave.svg',
       title: 'Deep Search',
       parent: 'research_brave',
+      hideUI: true,
     },
   });

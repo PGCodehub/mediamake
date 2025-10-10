@@ -46,15 +46,18 @@ type TranscriptionRequest = z.infer<typeof TranscriptionRequestSchema>;
 export const generateCaptions = (utterances: AssemblyAIUtterance[]) => {
   let captions: Caption[] = utterances.map(
     (utterance: AssemblyAIUtterance, index: number): Caption => {
-      const words: Word[] = utterance.words.map((word: AssemblyAIWord) => ({
-        text: word.text,
-        start: (word.start - utterance.start) / 1000,
-        absoluteStart: word.start / 1000,
-        end: (word.end - utterance.start) / 1000,
-        absoluteEnd: word.end / 1000,
-        duration: (word.end - word.start) / 1000,
-        confidence: word.confidence,
-      }));
+      const words: Word[] = utterance.words.map(
+        (word: AssemblyAIWord, wordIndex: number) => ({
+          id: `caption-${index}-word-${wordIndex}`,
+          text: word.text,
+          start: (word.start - utterance.start) / 1000,
+          absoluteStart: word.start / 1000,
+          end: (word.end - utterance.start) / 1000,
+          absoluteEnd: word.end / 1000,
+          duration: (word.end - word.start) / 1000,
+          confidence: word.confidence,
+        }),
+      );
 
       return {
         id: `caption-${index}`,
@@ -74,7 +77,14 @@ export const generateCaptions = (utterances: AssemblyAIUtterance[]) => {
       maxSentenceDuration: 2,
       minSentenceDuration: 0.5,
       splitStrategy: 'smart',
-    });
+    }).map((caption, index) => ({
+      ...caption,
+      words: caption.words.map((word, wordIndex) => ({
+        ...word,
+        id: `caption-${index}-word-${wordIndex}`,
+      })),
+      id: `caption-${index}`,
+    }));
   }
   return captions;
 };

@@ -15,7 +15,10 @@ export async function GET(
     const { id } = await params;
     const clientId = req.headers.get('x-client-id') || undefined;
 
+    console.log(`🔍 API: Fetching database preset with ID: ${id}`);
+
     if (!ObjectId.isValid(id)) {
+      console.log(`❌ API: Invalid preset ID format: ${id}`);
       return NextResponse.json({ error: 'Invalid preset ID' }, { status: 400 });
     }
 
@@ -28,8 +31,16 @@ export async function GET(
     const preset = await collection.findOne(query);
 
     if (!preset) {
+      console.log(`❌ API: Database preset not found: ${id}`);
       return NextResponse.json({ error: 'Preset not found' }, { status: 404 });
     }
+
+    console.log(`✅ API: Successfully fetched database preset:`, {
+      id: id,
+      title: preset.metadata?.title,
+      type: preset.metadata?.presetType,
+      clientId: preset.clientId,
+    });
 
     return NextResponse.json({ success: true, preset });
   } catch (error) {

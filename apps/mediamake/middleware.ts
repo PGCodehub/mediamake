@@ -9,12 +9,22 @@ export default async function middleware(request: NextRequest) {
   const apiKey = request.headers.get('Authorization');
   let bearer = apiKey?.split(' ')[1];
 
-  if (process.env.NODE_ENV === 'development' && !bearer) {
+  if (
+    (process.env.NODE_ENV === 'development' ||
+      process.env.DEV_API_KEY != undefined) &&
+    !bearer
+  ) {
     // In development, use the API key from environment variables
     const devApiKey = process.env.DEV_API_KEY;
     if (devApiKey) {
       bearer = devApiKey;
     }
+    const response = NextResponse.next();
+    response.headers.set(
+      'x-client-id',
+      process.env.NEXT_PUBLIC_DEV_CLIENT_ID ?? 'dev',
+    );
+    return response;
     //return NextResponse.next();
   }
 

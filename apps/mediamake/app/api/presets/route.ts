@@ -134,6 +134,13 @@ export async function POST(req: NextRequest) {
       _id: result.insertedId,
     });
 
+    console.log(`✅ API: Successfully created database preset:`, {
+      id: result.insertedId.toString(),
+      title: createdPreset?.metadata?.title,
+      type: createdPreset?.metadata?.presetType,
+      clientId: createdPreset?.clientId,
+    });
+
     return NextResponse.json(
       { success: true, preset: createdPreset },
       { status: 201 },

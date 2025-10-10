@@ -46,6 +46,7 @@ interface MediaPickerProps {
     onTagAddedToHashtags?: () => void;
     hashtagFilters?: string[];
     onHashtagFiltersChange?: (filters: string[]) => void;
+    showSidebar?: boolean;
 }
 
 // Content source options for filtering
@@ -73,7 +74,8 @@ export function MediaPicker({
     tagToAddToHashtags: propTagToAddToHashtags,
     onTagAddedToHashtags: propOnTagAddedToHashtags,
     hashtagFilters: propHashtagFilters,
-    onHashtagFiltersChange: propOnHashtagFiltersChange
+    onHashtagFiltersChange: propOnHashtagFiltersChange,
+    showSidebar = true
 }: MediaPickerProps) {
     // Internal state for picker mode
     const [selectedTag, setSelectedTag] = useState<string | null>(propSelectedTag || null);
@@ -427,7 +429,7 @@ export function MediaPicker({
 
                     {/* Content */}
                     <div className="flex flex-1 overflow-hidden">
-                        {!pickerMode && (
+                        {!pickerMode && showSidebar && (
                             <MediaSidebar
                                 selectedTag={selectedTag}
                                 onSelectTag={handleTagSelection}

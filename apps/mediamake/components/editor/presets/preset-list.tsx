@@ -184,6 +184,7 @@ interface SavedPresetData {
             presetId: string;
             presetType: string;
             presetInputData: any;
+            disabled?: boolean;
         }>;
     };
 }
@@ -262,7 +263,8 @@ export function PresetList({
                 presets: appliedPresets.presets.map(appliedPreset => ({
                     presetId: appliedPreset.preset.metadata.id,
                     presetType: appliedPreset.preset.metadata.presetType,
-                    presetInputData: appliedPreset.inputData
+                    presetInputData: appliedPreset.inputData,
+                    disabled: appliedPreset.disabled || false
                 }))
             };
 
@@ -295,9 +297,17 @@ export function PresetList({
                 presets: appliedPresets.presets.map(appliedPreset => ({
                     presetId: appliedPreset.preset.metadata.id,
                     presetType: appliedPreset.preset.metadata.presetType,
-                    presetInputData: appliedPreset.inputData
+                    presetInputData: appliedPreset.inputData,
+                    disabled: appliedPreset.disabled || false
                 }))
             };
+
+            console.log(`💾 SAVING PRESET DATA:`, {
+                name: name,
+                overwriteId: overwriteId,
+                numberOfPresets: presetData.presets.length,
+                presetIds: presetData.presets.map(p => p.presetId)
+            });
 
             const response = await fetch('/api/preset-data', {
                 method: 'POST',
@@ -313,6 +323,12 @@ export function PresetList({
 
             if (response.ok) {
                 const result = await response.json();
+                console.log(`✅ SUCCESSFULLY SAVED PRESET DATA:`, {
+                    presetDataId: result.id,
+                    name: name,
+                    overwriteId: overwriteId,
+                    isOverwrite: !!overwriteId
+                });
                 // If we're overwriting, update the current loaded preset
                 if (overwriteId) {
                     setCurrentLoadedPreset(result.id || overwriteId);
@@ -337,6 +353,13 @@ export function PresetList({
 
     const loadPresetData = async (savedPreset: SavedPresetData) => {
         try {
+            console.log(`🔍 LOADING PRESET DATA:`, {
+                presetDataId: savedPreset.id,
+                presetDataName: savedPreset.name,
+                createdAt: savedPreset.createdAt,
+                numberOfPresets: savedPreset.presetData.presets.length
+            });
+
             // Clear current applied presets
             setAppliedPresets({
                 presets: [],
@@ -355,17 +378,23 @@ export function PresetList({
 
                 if (isDatabasePreset) {
                     // Fetch from database
+                    console.log(`🔍 Fetching database preset with ID: ${presetItem.presetId}`);
                     try {
                         const response = await fetch(`/api/presets/${presetItem.presetId}`);
                         if (response.ok) {
                             const data = await response.json();
                             actualPreset = data.preset;
+                            console.log(`✅ Successfully loaded database preset:`, {
+                                id: presetItem.presetId,
+                                title: actualPreset?.metadata?.title,
+                                type: actualPreset?.metadata?.presetType
+                            });
                         } else {
-                            console.warn(`Database preset ${presetItem.presetId} not found`);
+                            console.warn(`❌ Database preset ${presetItem.presetId} not found`);
                             continue;
                         }
                     } catch (error) {
-                        console.warn(`Failed to fetch database preset ${presetItem.presetId}:`, error);
+                        console.warn(`❌ Failed to fetch database preset ${presetItem.presetId}:`, error);
                         continue;
                     }
                 } else {
@@ -383,7 +412,8 @@ export function PresetList({
                         id: `loaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         preset: actualPreset,
                         inputData: presetItem.presetInputData,
-                        isExpanded: true
+                        isExpanded: true,
+                        disabled: presetItem.disabled || false
                     };
 
                     newAppliedPresets.push(appliedPreset);
@@ -399,8 +429,17 @@ export function PresetList({
             if (newAppliedPresets.length > 0) {
                 // Track the loaded preset
                 setCurrentLoadedPreset(savedPreset.id);
+                console.log(`✅ SUCCESSFULLY LOADED PRESET DATA:`, {
+                    presetDataId: savedPreset.id,
+                    presetDataName: savedPreset.name,
+                    loadedPresetsCount: newAppliedPresets.length
+                });
                 toast.success(`Loaded preset: ${savedPreset.name} (${newAppliedPresets.length} presets)`);
             } else {
+                console.log(`❌ NO VALID PRESETS FOUND IN PRESET DATA:`, {
+                    presetDataId: savedPreset.id,
+                    presetDataName: savedPreset.name
+                });
                 toast.error('No valid presets found in saved data');
             }
         } catch (error) {
@@ -435,7 +474,7 @@ export function PresetList({
                         <div>
                             <h3 className="text-lg font-semibold">Applied Presets</h3>
                             <p className="text-sm text-muted-foreground">
-                                No presets applied yet
+                                {currentLoadedPreset ? `Loaded preset data ID: ${currentLoadedPreset}` : 'No presets applied yet'}
                             </p>
                         </div>
 

@@ -11,6 +11,7 @@ interface PresetDataDocument {
       presetId: string;
       presetType: string;
       presetInputData: any;
+      disabled?: boolean;
     }>;
   };
   createdAt: Date;
@@ -53,6 +54,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, presetData, overwriteId } = body;
 
+    console.log(`💾 API: Saving preset data:`, {
+      name: name,
+      overwriteId: overwriteId,
+      numberOfPresets: presetData?.presets?.length || 0,
+      clientId: clientId,
+    });
+
     if (!name || !presetData) {
       return NextResponse.json(
         { error: 'Name and presetData are required' },
@@ -76,11 +84,20 @@ export async function POST(request: NextRequest) {
         );
 
         if (updateResult.matchedCount === 0) {
+          console.log(
+            `❌ API: Preset data not found for overwrite: ${overwriteId}`,
+          );
           return NextResponse.json(
             { error: 'Preset not found' },
             { status: 404 },
           );
         }
+
+        console.log(`✅ API: Successfully updated preset data:`, {
+          presetDataId: overwriteId,
+          name: name,
+          numberOfPresets: presetData?.presets?.length || 0,
+        });
 
         return NextResponse.json({
           id: overwriteId,
@@ -104,6 +121,13 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await collection.insertOne(document);
+
+    console.log(`✅ API: Successfully created preset data:`, {
+      presetDataId: result.insertedId.toString(),
+      name: name,
+      numberOfPresets: presetData?.presets?.length || 0,
+      clientId: clientId,
+    });
 
     return NextResponse.json({
       id: result.insertedId,

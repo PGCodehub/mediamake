@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonEditor } from "../player/json-editor";
-import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image } from "lucide-react";
+import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image, FileAudio } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PresetMetadata } from "./types";
@@ -20,6 +20,8 @@ import { MediaFile } from "@/app/types/media";
 import { getAvailableFonts } from "@remotion/google-fonts";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TranscriptionPicker } from "../../transcriber/picker/transcription-picker";
+import { Transcription } from "@/app/types/transcription";
 
 const availableFonts = getAvailableFonts();
 
@@ -176,6 +178,37 @@ function MediaPickerButton({ onSelect, singular = true }: { onSelect: (files: Me
                     singular={singular}
                     onSelect={handleSelect}
                     onClose={() => setShowPicker(false)}
+                />
+            )}
+        </>
+    );
+}
+
+// TranscriptionPickerButton component
+function TranscriptionPickerButton({ onSelect }: { onSelect: (transcription: Transcription) => void }) {
+    const [showPicker, setShowPicker] = useState(false);
+
+    const handleSelect = (transcription: Transcription) => {
+        onSelect(transcription);
+        setShowPicker(false);
+    };
+
+    return (
+        <>
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPicker(true)}
+                className="px-3"
+            >
+                <FileAudio className="h-4 w-4" />
+            </Button>
+            {showPicker && (
+                <TranscriptionPicker
+                    open={showPicker}
+                    onClose={() => setShowPicker(false)}
+                    onSelect={handleSelect}
                 />
             )}
         </>
@@ -409,6 +442,8 @@ function renderField(
                     const isUrlArray = isUrlField(fieldKey, field) ||
                         (field.items.type === 'string' && isUrlField('item', { ...field.items, title: field.items.title || '' }));
 
+                    const isCaptionsArray = fieldKey.toLowerCase().includes('captions') || fieldKey.toLowerCase().includes('inputcaptions');
+
                     if (isUrlArray) {
                         return (
                             <div className="space-y-2">
@@ -428,6 +463,31 @@ function renderField(
                                             handleChange(fieldKey, newValue);
                                         }}
                                         singular={false}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    if (isCaptionsArray) {
+                        return (
+                            <div className="space-y-2">
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <ArrayManager
+                                            schema={field}
+                                            value={fieldValue || []}
+                                            onChange={(val) => handleChange(fieldKey, val)}
+                                            fieldKey={fieldKey}
+                                            parentSchema={parentSchema}
+                                        />
+                                    </div>
+                                    <TranscriptionPickerButton
+                                        onSelect={(transcription) => {
+                                            if (transcription.captions) {
+                                                handleChange(fieldKey, transcription.captions);
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>

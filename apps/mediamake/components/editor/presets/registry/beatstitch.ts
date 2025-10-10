@@ -7,11 +7,19 @@ import {
 import z from 'zod';
 import { PresetMetadata, PresetOutput } from '../types';
 
+type Effect = {
+  id: string;
+  componentId: string;
+  data: any;
+};
+
 const presetParams = z.object({
+  trackName: z.string().describe('Name of the track ( used for the ID )'),
   audio: z.object({
     src: z.string().describe('Audio source URL'),
     start: z.number().optional(),
     duration: z.number().optional(),
+    muted: z.boolean().optional(),
   }),
   clips: z
     .array(
@@ -32,16 +40,6 @@ const presetParams = z.object({
     )
     .min(1)
     .describe('Array of video/image clips to cut with beats'),
-  minClipDuration: z
-    .number()
-    .optional()
-    .describe('Minimum clip duration')
-    .default(0.5),
-  maxClipDuration: z
-    .number()
-    .optional()
-    .describe('Maximum clip duration')
-    .default(5),
   minTimeDiff: z
     .number()
     .min(0.1)
@@ -68,6 +66,10 @@ const presetParams = z.object({
     .optional()
     .describe('Whether to hide the beat count')
     .default(false),
+  transition: z.object({
+    impact: z.number().optional().describe('The impact of the transition'),
+    type: z.enum(['shake', 'smooth-blur']),
+  }),
 });
 
 const presetExecution = async (
@@ -97,6 +99,21 @@ const presetExecution = async (
       options: {},
     };
   }
+
+  const getTransitionDuration = (
+    transition: z.infer<typeof presetParams>['transition'],
+  ): number => {
+    const impact = transition.impact ?? 1;
+    switch (transition.type) {
+      case 'smooth-blur':
+        // Calculate a duration that gets shorter with higher impact
+        return Math.max(0.4, 0.9 - impact * 0.3);
+      case 'shake':
+      default:
+        // Shake is a quick effect, so it doesn't need a long overlap
+        return 0.3;
+    }
+  };
 
   // Smart calculation of optimal beat count based on musical characteristics
   const calculateOptimalBeatCount = (beats: any[], duration: number) => {
@@ -446,6 +463,8 @@ const presetExecution = async (
     }
   }
 
+  const transitionDuration = getTransitionDuration(params.transition);
+
   // Add beat-synced clips starting from the first beat
   const beatSyncedClips = selectedBeats
     .map((beatData: any, index: number) => {
@@ -456,12 +475,11 @@ const presetExecution = async (
       const baseDuration = nextBeat ? nextBeat.timestamp - timestamp : 2;
 
       // Add overlap time to ensure clips intersect and prevent black screens
-      const overlapTime = 0.3; // 0.3 seconds overlap
+      const overlapTime = transitionDuration; // Use dynamic transition duration
       const duration = baseDuration + overlapTime;
 
       // Start the next clip earlier to prevent black screens
-      const startTime = index === 0 ? timestamp : timestamp - overlapTime;
-
+      const startTime = timestamp - overlapTime / 2; // Center the transition
       // Select clip based on beat index (starting from clip 2 since clip 1 is used for the intro)
       let clip;
       if (isRepeatClips) {
@@ -558,114 +576,173 @@ const presetExecution = async (
   const continuousEffects: any[] = [];
 
   // Add shake effects as component-level effects using map to avoid mutation
-  const clipsWithShakeEffects = allClipComponents.map((clip, index) => {
-    const effects = [...(clip.effects || [])];
+  const clipsWithTransitionEffects = allClipComponents.map((clip, index) => {
+    const effects: Effect[] = [...(clip.effects || [])];
+    const impact = params.transition.impact ?? 1;
 
-    // Add shake effect for high-intensity beats
-    if (index > 0 && index <= selectedBeats.length) {
-      const beat = selectedBeats[index - 1];
-      if (beat.intensity > 0.8) {
-        const shakeEffect = {
+    // --- INCOMING TRANSITION ---
+    if (index > 0) {
+      if (
+        params.transition.type === 'shake' &&
+        selectedBeats[index - 1].intensity > 0.7
+      ) {
+        const beat = selectedBeats[index - 1];
+        const amplitude = 5 + beat.intensity * 10 * impact;
+        const frequency = 0.3 + beat.intensity * 0.5 * impact;
+        const shakeDuration = 0.3 + beat.intensity * 0.5;
+        effects.push({
           id: `shake-effect-${index}`,
           componentId: 'shake',
           data: {
             mode: 'provider',
             targetIds: [clip.id],
             type: 'linear',
-            amplitude: 10,
-            frequency: 0.75,
+            amplitude,
+            frequency,
             decay: true,
             axis: 'both',
-            duration: 0.8,
+            duration: shakeDuration,
             start: 0,
           },
-        };
-        (effects as any[]).push(shakeEffect);
+        });
+      } else if (params.transition.type === 'smooth-blur') {
+        const blurAmount = 10 * impact;
+        const slideDistance = 5 * impact;
+        effects.push(
+          {
+            id: `smooth-blur-in-effect-${index}`,
+            componentId: 'generic',
+            data: {
+              mode: 'provider',
+              targetIds: [clip.id],
+              type: 'ease-out',
+              ranges: [
+                { key: 'blur', val: `${blurAmount}px`, prog: 0 },
+                { key: 'blur', val: '0px', prog: 1 },
+              ],
+              duration: transitionDuration / 2,
+              start: 0,
+            },
+          },
+          {
+            id: `slide-in-effect-${index}`,
+            componentId: 'generic',
+            data: {
+              mode: 'provider',
+              targetIds: [clip.id],
+              type: 'ease-out',
+              ranges: [
+                { key: 'translateX', val: `${slideDistance}%`, prog: 0 },
+                { key: 'translateX', val: '0%', prog: 1 },
+              ],
+              duration: transitionDuration / 2,
+              start: 0,
+            },
+          },
+          {
+            id: `slide-out-effect-${index}`,
+            componentId: 'generic',
+            data: {
+              mode: 'provider',
+              targetIds: [clip.id],
+              type: 'ease-in',
+              ranges: [
+                { key: 'translateX', val: '0%', prog: 0 },
+                { key: 'translateX', val: `-${slideDistance}%`, prog: 1 },
+              ],
+              duration: transitionDuration / 2,
+              start:
+                clip.context.timing.start +
+                clip.context.timing.duration -
+                transitionDuration / 2,
+            },
+          },
+        );
       }
-      const continuousScaleEffect = {
-        id: `continuous-scale-effect-${index}`,
-        componentId: 'generic',
-        data: {
-          mode: 'provider',
-          targetIds: [clip.id],
-          type: 'spring',
-          ranges: [
-            { key: 'scale', val: 1, prog: 0 },
-            { key: 'scale', val: 1.3, prog: 0.1 }, // More dramatic scale up
-            { key: 'scale', val: 1.3, prog: 0.7 }, // Hold at 1.3 for middle 60%
-            { key: 'scale', val: 1.5, prog: 1 }, // Final scale up to 1.5
-          ],
-          duration: clip.context.timing.duration, // Use actual total duration
-          start: 0, // Start at video beginning
-        },
-      };
-      (effects as any[]).push(continuousScaleEffect);
     }
 
-    return {
-      ...clip,
-      effects,
+    // --- OUTGOING TRANSITION ---
+    if (index < allClipComponents.length - 1) {
+      if (params.transition.type === 'smooth-blur') {
+        const blurAmount = 10 * impact;
+        const slideDistance = 100 * impact;
+        const start = clip.context.timing.duration - transitionDuration;
+        effects.push(
+          {
+            id: `smooth-blur-out-effect-${index}`,
+            componentId: 'generic',
+            data: {
+              mode: 'provider',
+              targetIds: [clip.id],
+              type: 'ease-in',
+              ranges: [
+                { key: 'blur', val: '0px', prog: 0 },
+                { key: 'blur', val: `${blurAmount}px`, prog: 1 },
+              ],
+              duration: transitionDuration,
+              start,
+            },
+          },
+          {
+            id: `slide-out-effect-${index}`,
+            componentId: 'generic',
+            data: {
+              mode: 'provider',
+              targetIds: [clip.id],
+              type: 'ease-in',
+              ranges: [
+                { key: 'translateX', val: '0%', prog: 0 },
+                { key: 'translateX', val: `-${slideDistance}%`, prog: 1 },
+              ],
+              duration: transitionDuration,
+              start,
+            },
+          },
+        );
+      }
+    }
+
+    // Calculate a scale factor based on clip duration.
+    // We want an inverse relationship: shorter clips get a more intense scale effect.
+    const clipDuration = clip.context.timing.duration;
+
+    // Define the scale range. Shorter clips get more scale, longer clips get less.
+    const minScale = 1.1; // for clips longer than maxDuration
+    const maxScale = 1.3; // for clips shorter than minDuration
+
+    // Define the duration range to map to the scale range.
+    const minDuration = 0.5; // durations <= this get maxScale
+    const maxDuration = 2.0; // durations >= this get minScale
+
+    // Calculate how far the clip's duration is within our defined range (0 to 1).
+    const durationRatio =
+      (clipDuration - minDuration) / (maxDuration - minDuration);
+    const clampedRatio = Math.max(0, Math.min(1, durationRatio));
+
+    // Invert the ratio because shorter durations should have higher scale.
+    const inverseRatio = 1 - clampedRatio;
+
+    // Interpolate the scaleFactor based on the inverse ratio.
+    const scaleFactor = minScale + (maxScale - minScale) * inverseRatio;
+
+    const continuousScaleEffect = {
+      id: `continuous-scale-effect-${index}`,
+      componentId: 'generic',
+      data: {
+        mode: 'provider',
+        targetIds: [clip.id],
+        type: 'spring',
+        ranges: [
+          { key: 'scale', val: 1, prog: 0 },
+          { key: 'scale', val: 1 * scaleFactor, prog: 0.1 }, // Scale up
+          { key: 'scale', val: 1.1 * scaleFactor, prog: 0.7 }, // Hold
+          { key: 'scale', val: 1.2 * scaleFactor, prog: 1 }, // Final scale up
+        ],
+        duration: clipDuration, // Use the clip's own duration
+        start: 0, // Start at the beginning of the clip
+      },
     };
-  });
-
-  const clipsWithBlurEffects = clipsWithShakeEffects.map((clip, index) => {
-    const effects = [...(clip.effects || [])];
-
-    // Add blur effects for transitions
-    if (index < clipsWithShakeEffects.length - 1) {
-      const currentClip = clipsWithShakeEffects[index];
-      const nextClip = clipsWithShakeEffects[index + 1];
-
-      // Calculate intersection duration
-      const currentClipEnd =
-        currentClip.context.timing.start + currentClip.context.timing.duration;
-      const nextClipStart = nextClip.context.timing.start;
-      const intersectionDuration = Math.max(0, currentClipEnd - nextClipStart);
-
-      if (intersectionDuration > 0.2) {
-        const blurDuration = Math.max(0.3, Math.min(0.5, intersectionDuration));
-
-        // Blur out effect for start of current clip
-        const blurOutEffect = {
-          id: `blur-out-${index}`,
-          componentId: 'generic',
-          data: {
-            mode: 'provider',
-            targetIds: [currentClip.id],
-            type: 'ease-out',
-            ranges: [
-              { key: 'blur', val: '8px', prog: 0 },
-              { key: 'blur', val: '0px', prog: 1 },
-            ],
-            duration: blurDuration,
-            start: 0,
-          },
-        };
-
-        // Blur in effect for end of current clip
-        const blurInEffect = {
-          id: `blur-in-${index}`,
-          componentId: 'generic',
-          data: {
-            mode: 'provider',
-            targetIds: [currentClip.id],
-            type: 'ease-in',
-            ranges: [
-              { key: 'blur', val: '0px', prog: 0 },
-              { key: 'blur', val: '8px', prog: 1 },
-            ],
-            duration: blurDuration,
-            start:
-              currentClip.context.timing.start +
-              currentClip.context.timing.duration -
-              blurDuration,
-          },
-        };
-
-        (effects as any[]).push(blurOutEffect);
-        (effects as any[]).push(blurInEffect);
-      }
-    }
+    (effects as any[]).push(continuousScaleEffect);
 
     return {
       ...clip,
@@ -674,7 +751,7 @@ const presetExecution = async (
   });
 
   // Use clips with their individual effects (shake and blur are now component-level)
-  const clipsWithTransitions = clipsWithBlurEffects;
+  const clipsWithTransitions = clipsWithTransitionEffects;
 
   const textComponents = selectedBeats.map((beatData: any, index: number) => {
     const { timestamp, intensity, beatType, frequency } = beatData;
@@ -728,6 +805,19 @@ const presetExecution = async (
     return baseComponent;
   });
 
+  const audioAtom = {
+    id: `beatstitch-audio`,
+    componentId: 'AudioAtom',
+    type: 'atom' as const,
+    data: {
+      src: audio.src,
+      muted: audio.muted ?? false,
+      startFrom: audio.start ?? 0,
+    },
+    context: {
+      timing: {},
+    },
+  };
   return {
     output: {
       childrenData: [
@@ -746,12 +836,13 @@ const presetExecution = async (
           context: {
             timing: {
               start: 0,
-              duration: durationInSeconds,
+              duration: durationInSeconds - (audio.start ?? 0),
             },
           },
           childrenData: [
             ...clipsWithTransitions,
             ...(params.hideBeatCount ? [] : textComponents),
+            ...(params.audio.muted ? [] : [audioAtom]),
           ],
           effects: continuousEffects, // Only the scale effect is continuous
         },
@@ -793,8 +884,6 @@ const presetMetadata: PresetMetadata = {
     minTimeDiff: 0.5,
     maxBeats: 0, // Auto-detect
     isRepeatClips: true,
-    minClipDuration: 0.5,
-    maxClipDuration: 5,
     hideBeatCount: true,
   },
 };

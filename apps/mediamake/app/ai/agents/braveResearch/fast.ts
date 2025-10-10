@@ -100,5 +100,6 @@ export const fastResearchAgent = aiRouter
       icon: 'https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/brave.svg',
       title: 'Fast Researcher',
       parentTitle: 'Brave',
+      hideUI: true,
     },
   });

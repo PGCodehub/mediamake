@@ -3,6 +3,9 @@ import { z } from 'zod/v4';
 import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { TranscriptionSentence } from '@microfox/datamotion';
+import { getDatabase } from '@/lib/mongodb';
+import { Transcription } from '@/app/types/transcription';
+import dedent from 'dedent';
 
 /**
  * Transcription Meta Agent - /transcription-meta
@@ -87,6 +90,24 @@ const OverallAnalysisSchema = z.object({
     .describe('The emotional journey/arc of the transcription'),
 });
 
+const TranscriptionInfoSchema = z.object({
+  title: z
+    .string()
+    .describe(
+      'A compelling, descriptive title for the transcription (max 100 characters)',
+    ),
+  description: z
+    .string()
+    .describe(
+      'A comprehensive description of the transcription content (2-3 sentences, max 300 characters)',
+    ),
+  keywords: z
+    .array(z.string())
+    .describe(
+      '5-10 relevant keywords that describe the content, themes, and topics',
+    ),
+});
+
 const TranscriptionMetadataSchema = z.object({
   sentences: z.array(
     z.object({
@@ -103,6 +124,7 @@ const TranscriptionMetadataSchema = z.object({
     }),
   ),
   overallAnalysis: OverallAnalysisSchema.optional(),
+  transcriptionInfo: TranscriptionInfoSchema.optional(),
   totalSentences: z.number(),
   averageStrength: z.number(),
   confidence: z.number(),
@@ -117,18 +139,49 @@ export const transcriptionMetaAgent = aiRouter
         loader: 'Analyzing transcription metadata...',
       });
 
-      const { sentences, overallAnalysis } = ctx.request.params as {
-        sentences: string[];
-        overallAnalysis: boolean;
+      const { assemblyId, sentences, overallAnalysis } = ctx.request.params as {
+        assemblyId?: string;
+        sentences?: string[];
+        overallAnalysis?: boolean;
       };
 
-      if (!sentences || !Array.isArray(sentences) || sentences.length === 0) {
-        throw new Error('Invalid input: sentences array is required');
+      let sentencesToAnalyze: string[] = [];
+
+      if (assemblyId) {
+        // Get database connection
+        const db = await getDatabase();
+        const collection = db.collection<Transcription>('transcriptions');
+
+        // Find transcription by assemblyId
+        const transcription = await collection.findOne({ assemblyId });
+
+        if (!transcription) {
+          throw new Error('Transcription not found');
+        }
+
+        if (!transcription.captions || transcription.captions.length === 0) {
+          throw new Error('No captions found in transcription');
+        }
+
+        // Extract sentences from captions
+        sentencesToAnalyze = transcription.captions.map(
+          caption => caption.text,
+        );
+      } else if (
+        sentences &&
+        Array.isArray(sentences) &&
+        sentences.length > 0
+      ) {
+        sentencesToAnalyze = sentences;
+      } else {
+        throw new Error(
+          'Invalid input: either assemblyId or sentences array is required',
+        );
       }
 
       // Analyze each sentence for metadata
       const analysisResults = await Promise.all(
-        sentences.map(async (sentence, index) => {
+        sentencesToAnalyze.map(async (sentence, index) => {
           try {
             const result = await generateObject({
               model: google('gemini-2.5-flash'),
@@ -138,7 +191,7 @@ export const transcriptionMetaAgent = aiRouter
 Sentence: "${sentence}"
 
 Please analyze this sentence and provide:
-1. The most impactful keyword that would resonate in a song lyric ( it can also be a noun - name, place, thing, etc.)
+1. The most impactful keyword that would be impactful in that scentence ( it can also be a noun - name, place, thing, etc, verb, etc..)
 2. The emotional strength/power of that keyword (1-10 scale)
 3. The emotional feel/mood of the keyword
 4. Your confidence in this analysis
@@ -147,6 +200,7 @@ For Split Parts:
 - Assume you are requested to write the scentenc on a screen in stylised form, divide the one scenten into parts to suit the needs.
 - Take the keyword into consideration as well, keyowords are usually shown twice the size of the other words.
 - Not every scentence need to be split, as some scentences are single words or very short.
+- try your best to split evenly, but take the expression of the scentence into consideration.
 - MOST IMPORTANT: SPlit it so it is easy to read by human.
 
 Consider:
@@ -188,6 +242,8 @@ Consider:
       );
 
       let overallAnalysisObject = undefined;
+      let transcriptionInfoObject = undefined;
+
       // Generate overall analysis
       if (overallAnalysis) {
         const overallAnalysisResult = await generateObject({
@@ -212,10 +268,31 @@ Provide an overall analysis of the transcription's mood, structure recommendatio
         overallAnalysisObject = overallAnalysisResult.object;
         console.log('overallUsgae', overallAnalysisResult.usage);
       }
+
+      // Generate transcription info (title, description, keywords) - always generate this
+      const transcriptionInfoResult = await generateObject({
+        model: google('gemini-2.5-flash'),
+        schema: TranscriptionInfoSchema as any,
+        prompt: dedent`Based on the following transcription content, generate a title, description, and keywords:
+
+Transcription Content:
+${sentencesToAnalyze.join(' ')}
+
+Please provide:
+1. A compelling, descriptive title (max 100 characters)
+2. A comprehensive description of the content (2-3 sentences, max 300 characters)
+3. 5-10 relevant keywords that describe the content (music, narrative, monologue, self-talk, podcast etc...), themes, and topics
+
+Make the title engaging and descriptive. The description should summarize the main content and themes. Keywords should be relevant for search and categorization.`,
+        maxRetries: 2,
+      });
+      transcriptionInfoObject = transcriptionInfoResult.object;
+      console.log('transcriptionInfoUsage', transcriptionInfoResult.usage);
       const result = {
         sentences: analysisResults,
         overallAnalysis: overallAnalysisObject,
-        totalSentences: sentences.length,
+        transcriptionInfo: transcriptionInfoObject,
+        totalSentences: sentencesToAnalyze.length,
         averageStrength:
           analysisResults.reduce((sum, r) => sum + r.metadata.strength, 0) /
           analysisResults.length,
@@ -232,6 +309,54 @@ Provide an overall analysis of the transcription's mood, structure recommendatio
         ),
       } as z.infer<typeof TranscriptionMetadataSchema>;
 
+      // If assemblyId was provided, update the database with the metadata
+      if (assemblyId) {
+        const db = await getDatabase();
+        const collection = db.collection<Transcription>('transcriptions');
+
+        const transcription = await collection.findOne({ assemblyId });
+        if (transcription) {
+          // Update captions with metadata at caption level
+          const updatedCaptions = transcription.captions.map(
+            (caption, index) => {
+              const resultSentence =
+                index < result.sentences.length
+                  ? result.sentences[index]
+                  : null;
+              return {
+                ...caption,
+                metadata: resultSentence?.metadata,
+              };
+            },
+          );
+
+          const updatedTranscription = {
+            ...transcription,
+            captions: updatedCaptions,
+            // Update transcription info if available
+            ...(transcriptionInfoObject && {
+              title: transcriptionInfoObject.title,
+              description: transcriptionInfoObject.description,
+              keywords: transcriptionInfoObject.keywords,
+            }),
+            processingData: {
+              ...transcription.processingData,
+              step4: {
+                ...transcription.processingData?.step4,
+                metadata: result,
+                generatedAt: new Date().toISOString(),
+              },
+            },
+            updatedAt: new Date(),
+          };
+
+          await collection.updateOne(
+            { _id: transcription._id },
+            { $set: updatedTranscription },
+          );
+        }
+      }
+
       return result;
     } catch (error) {
       console.error('Error analyzing transcription metadata:', error);
@@ -242,19 +367,37 @@ Provide an overall analysis of the transcription's mood, structure recommendatio
     id: 'analyzeTranscriptionMetadata',
     name: 'Analyze Transcription Metadata',
     description:
-      'Analyzes sentence-split transcripts to generate metadata for lyricography, including keyword identification, emotional strength, feel, and split recommendations.',
+      'Analyzes sentence-split transcripts to generate metadata for lyricography, including keyword identification, emotional strength, feel, and split recommendations. Can work with assemblyId or direct sentences. Updates database directly when assemblyId is provided.',
     inputSchema: z.object({
+      assemblyId: z
+        .string()
+        .optional()
+        .describe(
+          'AssemblyAI transcription ID to analyze (alternative to sentences)',
+        ),
       sentences: z
         .array(z.string())
-        .describe('Array of sentence-split transcript strings to analyze'),
+        .optional()
+        .describe(
+          'Array of sentence-split transcript strings to analyze (alternative to assemblyId)',
+        ),
       overallAnalysis: z
         .boolean()
-        .describe('Whether to generated overall analysis'),
+        .optional()
+        .describe('Whether to generate overall analysis'),
     }),
     outputSchema: TranscriptionMetadataSchema,
     metadata: {
       category: 'transcription',
-      tags: ['lyricography', 'metadata', 'analysis', 'emotion', 'keywords'],
+      tags: [
+        'lyricography',
+        'metadata',
+        'analysis',
+        'emotion',
+        'keywords',
+        'database',
+      ],
+      hidden: true,
     },
   });
 

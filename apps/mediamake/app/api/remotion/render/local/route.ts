@@ -17,6 +17,7 @@ interface LocalRenderRequest {
   renderType?: 'video' | 'audio' | 'still';
   outputLocation?: string;
   fileName?: string;
+  frameTime?: number; // Frame time in seconds for still image rendering
 }
 
 export const POST = async (req: NextRequest) => {
@@ -29,6 +30,7 @@ export const POST = async (req: NextRequest) => {
       renderType = 'video',
       outputLocation,
       fileName,
+      frameTime = 0,
     }: LocalRenderRequest = await req.json();
 
     // Validate required fields
@@ -91,6 +93,7 @@ export const POST = async (req: NextRequest) => {
         serveUrl: bundleLocation,
         output: stillOutputPath,
         inputProps,
+        frame: Math.round(frameTime * composition.fps), // Convert seconds to frame number
         logLevel: 'error',
       });
 

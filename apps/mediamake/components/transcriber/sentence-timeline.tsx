@@ -276,8 +276,63 @@ export function SentenceTimeline({
         return null;
     }, [captions, currentTime]);
 
-    const handleZoomIn = () => setPixelsPerSecond(pps => Math.min(MAX_PX_PER_SEC, pps * 1.5));
-    const handleZoomOut = () => setPixelsPerSecond(pps => Math.max(MIN_PX_PER_SEC, pps / 1.5));
+    const handleZoomIn = () => {
+        const container = timelineContainerRef.current;
+        if (!container) return;
+
+        const containerWidth = container.clientWidth;
+        const playheadPosition = currentTime * pixelsPerSecond;
+        const currentScrollLeft = container.scrollLeft;
+
+        // Calculate the time at the center of the current view
+        const centerX = currentScrollLeft + containerWidth / 2;
+        const centerTime = centerX / pixelsPerSecond;
+
+        // Use playhead position if it's visible, otherwise use center
+        const focusTime = (playheadPosition >= currentScrollLeft && playheadPosition <= currentScrollLeft + containerWidth)
+            ? currentTime
+            : centerTime;
+
+        const newPixelsPerSecond = Math.min(MAX_PX_PER_SEC, pixelsPerSecond * 1.5);
+        const newFocusX = focusTime * newPixelsPerSecond;
+        const newScrollLeft = newFocusX - containerWidth / 2;
+
+        setPixelsPerSecond(newPixelsPerSecond);
+
+        // Scroll to maintain the focus position after zoom
+        setTimeout(() => {
+            container.scrollTo({ left: Math.max(0, newScrollLeft), behavior: 'smooth' });
+        }, 0);
+    };
+
+    const handleZoomOut = () => {
+        const container = timelineContainerRef.current;
+        if (!container) return;
+
+        const containerWidth = container.clientWidth;
+        const playheadPosition = currentTime * pixelsPerSecond;
+        const currentScrollLeft = container.scrollLeft;
+
+        // Calculate the time at the center of the current view
+        const centerX = currentScrollLeft + containerWidth / 2;
+        const centerTime = centerX / pixelsPerSecond;
+
+        // Use playhead position if it's visible, otherwise use center
+        const focusTime = (playheadPosition >= currentScrollLeft && playheadPosition <= currentScrollLeft + containerWidth)
+            ? currentTime
+            : centerTime;
+
+        const newPixelsPerSecond = Math.max(MIN_PX_PER_SEC, pixelsPerSecond / 1.5);
+        const newFocusX = focusTime * newPixelsPerSecond;
+        const newScrollLeft = newFocusX - containerWidth / 2;
+
+        setPixelsPerSecond(newPixelsPerSecond);
+
+        // Scroll to maintain the focus position after zoom
+        setTimeout(() => {
+            container.scrollTo({ left: Math.max(0, newScrollLeft), behavior: 'smooth' });
+        }, 0);
+    };
 
     const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (timelineContainerRef.current) {

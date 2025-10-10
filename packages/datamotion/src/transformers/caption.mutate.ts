@@ -6,6 +6,7 @@ import {
 } from '../schemas';
 
 export interface CaptionMutatorOptions {
+  idPrefix?: string;
   // Word and duration limits
   maxWordsPerSentence?: number;
   maxSentenceDuration?: number;

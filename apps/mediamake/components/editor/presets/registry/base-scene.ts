@@ -47,9 +47,13 @@ const presetExecution = (
     params.clip?.duration && params.clip?.duration > 0
       ? {}
       : { fitDurationTo: 'BaseScene' };
+  const fitDuarationToData =
+    params.clip?.duration && params.clip?.duration > 0
+      ? {}
+      : { fitDurationTo: fitDurationTo ?? 'this' };
 
   const start = params.clip?.start ? -params.clip.start : 0;
-  const durationData = params.clip ? {} : { duration: 20 };
+  const durationData = params.clip ? {} : { duration: sceneDuration ?? 20 };
   return {
     output: {
       childrenData: [
@@ -59,7 +63,7 @@ const presetExecution = (
           type: fitDurationTo ? 'layout' : ('scene' as const),
           data: {
             containerProps: {
-              className: 'flex items-center justify-center',
+              className: 'flex items-center justify-center absolute inset-0',
               style: {
                 backgroundColor: backgroundColor,
               },
@@ -70,7 +74,7 @@ const presetExecution = (
             timing: {
               start: start,
               ...durationData,
-              fitDurationTo: fitDurationTo ?? 'this',
+              ...fitDuarationToData,
             },
           },
           childrenData: [],

@@ -13,9 +13,11 @@ import { braveResearchAgent } from './agents/braveResearch';
 import { summarizeAgent } from './agents/summarize';
 import { systemAgent } from './agents/system';
 import { transcriptionMetaAgent } from './agents/words/transcriptionMetaAgent';
+import { youtubeAgent } from './agents/metadata/youtubeAgent';
 import { contextLimiter } from './middlewares/contextLimiter';
 import { onlyTextParts } from './middlewares/onlyTextParts';
 import { chatRestoreLocal } from '../api/studio/chat/sessions/chatSessionLocal';
+import transcriptionFixerAgent from './agents/words/transcriptionFixer';
 
 const aiRouter = new AiRouter();
 //aiRouter.setLogger(console);
@@ -25,6 +27,8 @@ const aiMainRouter = aiRouter
   .agent('/summarize', summarizeAgent)
   .agent('/research', braveResearchAgent)
   .agent('/transcription-meta', transcriptionMetaAgent)
+  .agent('/transcription-fixer', transcriptionFixerAgent)
+  .agent('/youtube-metadata', youtubeAgent)
   .use('/', contextLimiter(5))
   .use('/', onlyTextParts(100))
   .agent('/', async props => {
@@ -48,6 +52,7 @@ const aiMainRouter = aiRouter
         ...props.next.agentAsTool('/research'),
         ...props.next.agentAsTool('/summarize'),
         ...props.next.agentAsTool('/transcription-meta'),
+        ...props.next.agentAsTool('/youtube-metadata'),
       },
       toolChoice: 'auto',
       stopWhen: [

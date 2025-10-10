@@ -77,9 +77,10 @@ interface TiptapCaptionEditorProps {
     transcriptionData: Transcription;
     onStepChange: (step: 1 | 2 | 3) => void;
     onTranscriptionDataUpdate?: (updatedData: any) => Promise<void>;
+    onRefreshTranscription?: () => Promise<void>;
 }
 
-export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange }: TiptapCaptionEditorProps) {
+export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange, onRefreshTranscription }: TiptapCaptionEditorProps) {
     const { audioRef, isPlaying, currentTime, duration, seekTo, togglePlayPause, setVolume: setVolumeContext, formatTime, volume } = useAudioPlayer();
     const [showBubbleMenu, setShowBubbleMenu] = useState(false);
     const [bubbleMenuPosition, setBubbleMenuPosition] = useState({ x: 0, y: 0 });
@@ -96,6 +97,7 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
     }, [localCaptions]);
 
     useEffect(() => {
+        console.log("TranscriptionData captions changed, updating local captions:", transcriptionData.captions);
         setLocalCaptions(transcriptionData.captions);
     }, [transcriptionData.captions]);
 
@@ -388,7 +390,7 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
 
         // We use localCaptions as the source of truth for saving.
         // We could also parse the editor state again as a final check, but this assumes timeline is the master.
-        const finalCaptions = localCaptions;
+        let finalCaptions = localCaptions;
 
         if (!finalCaptions || finalCaptions.length === 0) {
             console.log("No changes to save or transcription ID is missing.");
@@ -397,6 +399,26 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
         }
 
         setIsSaving(true);
+
+        // recaluclate relative starts & ends for each word base don the line.
+        finalCaptions = finalCaptions.map((caption) => {
+            const captionStart = caption.absoluteStart;
+            const captionEnd = caption.absoluteEnd;
+            const captionWords = caption.words;
+            const captionWordsWithRelativeStarts = captionWords.map((word) => {
+                return {
+                    ...word,
+                    start: word.absoluteStart - captionStart,
+                    end: word.absoluteEnd - captionStart,
+                };
+            });
+            return {
+                ...caption,
+                start: captionStart,
+                end: captionEnd,
+                words: captionWordsWithRelativeStarts,
+            };
+        });
 
         await onTranscriptionDataUpdate?.({
             captions: finalCaptions,
@@ -418,7 +440,7 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
             <div className="flex-1 overflow-hidden">
                 <ResizablePanelGroup direction="horizontal" className="h-full">
                     {/* Editor Panel */}
-                    <ResizablePanel defaultSize={70} minSize={40} className="flex flex-col">
+                    <ResizablePanel defaultSize={50} minSize={30} maxSize={70} className="flex flex-col">
                         <div className="flex-1 overflow-auto">
                             <div className="relative">
                                 {/* Bubble Menu */}
@@ -488,7 +510,7 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
                     <ResizableHandle withHandle />
 
                     {/* Timeline Panel */}
-                    <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+                    <ResizablePanel defaultSize={50} minSize={30} maxSize={70}>
                         <SentenceTimeline
                             captions={localCaptions}
                             currentTime={currentTime}

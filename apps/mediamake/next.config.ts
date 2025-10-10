@@ -2,12 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactStrictMode: true,
+  reactStrictMode: false,
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  swcMinify: true,
   webpack: (config, { isServer }) => {
     // Exclude TypeScript declaration files from webpack processing
     config.module.rules.push({
@@ -36,16 +37,32 @@ const nextConfig: NextConfig = {
         esbuild: 'commonjs esbuild',
         rollup: 'commonjs rollup',
         '@rollup/rollup-linux-x64-gnu': 'commonjs @rollup/rollup-linux-x64-gnu',
+        mongodb: 'commonjs mongodb',
       });
     }
 
-    // Ignore specific problematic files
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-      os: false,
-    };
+    // // Ignore specific problematic files and Node.js modules
+    // config.resolve.fallback = {
+    //   ...config.resolve.fallback,
+    //   fs: false,
+    //   path: false,
+    //   os: false,
+    //   net: false,
+    //   tls: false,
+    //   child_process: false,
+    //   dns: false,
+    //   crypto: false,
+    //   stream: false,
+    //   util: false,
+    //   url: false,
+    //   querystring: false,
+    //   http: false,
+    //   https: false,
+    //   zlib: false,
+    //   events: false,
+    //   buffer: false,
+    //   process: false,
+    // };
 
     // Add resolve aliases to avoid problematic modules
     config.resolve.alias = {
@@ -53,6 +70,7 @@ const nextConfig: NextConfig = {
       esbuild: false,
       rollup: false,
       '@rollup/rollup-linux-x64-gnu': false,
+      mongodb: false,
     };
 
     // Suppress warnings for optional dependencies
@@ -60,6 +78,12 @@ const nextConfig: NextConfig = {
       ...(config.ignoreWarnings || []),
       /Module not found.*@remotion\/google-fonts/,
       /Can't resolve '@remotion\/google-fonts'/,
+      /Module not found.*mongodb/,
+      /Can't resolve 'mongodb'/,
+      /Module not found.*net/,
+      /Module not found.*tls/,
+      /Module not found.*child_process/,
+      /Module not found.*dns/,
     ];
 
     return config;

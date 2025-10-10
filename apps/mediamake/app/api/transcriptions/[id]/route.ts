@@ -86,6 +86,10 @@ export async function PUT(
 
     if (body.status !== undefined) updateData.status = body.status;
     if (body.tags !== undefined) updateData.tags = body.tags;
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined)
+      updateData.description = body.description;
+    if (body.keywords !== undefined) updateData.keywords = body.keywords;
     if (body.captions !== undefined) updateData.captions = body.captions;
     if (body.processingData !== undefined)
       updateData.processingData = body.processingData;

@@ -416,7 +416,10 @@ const presetExecution = (
           type: 'atom' as const,
           data: {
             src: mediaItem.src,
-            className: 'w-full h-auto object-cover',
+            className:
+              mediaItem.fit === 'cover'
+                ? 'w-full h-full object-cover'
+                : 'w-full h-auto',
             fit: mediaItem.fit ?? ('cover' as const),
             loop: mediaItem.loop ?? false,
             muted: mediaItem.mute ?? false,
@@ -533,7 +536,11 @@ const presetExecution = (
             params.trackType === 'aligned' || params.trackType === 'random'
               ? 'layout'
               : ('scene' as const),
-          data: {},
+          data: {
+            containerProps: {
+              className: 'absolute inset-0',
+            },
+          },
           context: {
             timing:
               params.trackType === 'aligned' || params.trackType === 'random'

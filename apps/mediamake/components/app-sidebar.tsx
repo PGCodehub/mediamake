@@ -21,7 +21,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react"
 
-import { NavDocuments } from "@/components/nav-documents"
+import { NavAgents } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -35,7 +35,21 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { StudioConfig } from "@/microfox.config"
-import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon, FolderOpenIcon } from "lucide-react"
+import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon, FolderOpenIcon, TvIcon } from "lucide-react"
+import { aiRouterRegistry } from "@/app/ai"
+
+const aiagents = Object.entries(aiRouterRegistry.map).map(([path, value]) => {
+  if (value.agents.length <= 0 || !value.agents[0].actAsTool || value.agents[0].actAsTool.metadata?.hideUI) {
+    return null
+  }
+  return {
+    name: value.agents[0].actAsTool.name,
+    url: `/agents/${path}`,
+    icon: value.agents[0].actAsTool.metadata?.icon,
+  }
+}).filter((item): item is NonNullable<typeof item> => item !== null).filter((agent, index, self) =>
+  index === self.findIndex(a => a.name === agent.name)
+)
 
 const data = {
   user: {
@@ -155,23 +169,12 @@ const data = {
       icon: IconSearch,
     },
   ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
-  ],
+  // documents: [],
+  documents: aiagents.map((agent, index) => ({
+    name: agent?.name,
+    url: agent?.url ?? '',
+    icon: IconDatabase,
+  })).filter(Boolean),
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -194,7 +197,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavDocuments items={data.documents} /> */}
+        <NavAgents items={data.documents} />
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>

@@ -68,6 +68,9 @@ export interface Transcription {
     | 'step3'
     | 'step4';
   tags: string[];
+  title?: string;
+  description?: string;
+  keywords?: string[];
   captions: Caption[];
   processingData: ProcessingData;
   createdAt: Date;
@@ -89,6 +92,9 @@ export interface CreateTranscriptionRequest {
     | 'step3'
     | 'step4';
   tags?: string[];
+  title?: string;
+  description?: string;
+  keywords?: string[];
   captions?: Caption[];
   processingData?: ProcessingData;
 }
@@ -96,6 +102,9 @@ export interface CreateTranscriptionRequest {
 export interface UpdateTranscriptionRequest {
   status?: 'processing' | 'completed' | 'failed' | 'step1' | 'step2' | 'step3';
   tags?: string[];
+  title?: string;
+  description?: string;
+  keywords?: string[];
   captions?: Caption[];
   processingData?: ProcessingData;
   error?: string;
@@ -129,6 +138,9 @@ export interface TranscriptionListItem {
   language?: string;
   status: Transcription['status'];
   tags: string[];
+  title?: string;
+  description?: string;
+  keywords?: string[];
   createdAt: Date;
   updatedAt: Date;
   error?: string;

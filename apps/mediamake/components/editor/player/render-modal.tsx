@@ -137,6 +137,7 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
                 renderType: settings.renderType,
                 outputLocation: settings.outputLocation,
                 fileName: settings.fileName,
+                frameTime: settings.frameTime,
             }),
         });
 
@@ -154,7 +155,7 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[700px]">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Render Video</DialogTitle>
                     <DialogDescription>
@@ -162,216 +163,236 @@ export function RenderModal({ isOpen, onClose }: RenderModalProps) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <Tabs value={renderMethod} onValueChange={(value) => setRenderMethod(value as 'aws' | 'local')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="aws">AWS Lambda</TabsTrigger>
-                        <TabsTrigger value="local">Local Render</TabsTrigger>
-                    </TabsList>
+                <div className="flex-1 overflow-y-auto">
+                    <Tabs value={renderMethod} onValueChange={(value) => setRenderMethod(value as 'aws' | 'local')} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="aws">AWS Lambda</TabsTrigger>
+                            <TabsTrigger value="local">Local Render</TabsTrigger>
+                        </TabsList>
 
-                    <TabsContent value="aws" className="space-y-4">
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="isDownloadable" className="text-right">
-                                    Downloadable
-                                </Label>
-                                <div className="col-span-3 flex items-center space-x-2">
-                                    <Switch
-                                        id="isDownloadable"
-                                        checked={settings.isDownloadable || false}
-                                        onCheckedChange={(checked) => updateSetting("isDownloadable", checked)}
-                                    />
-                                    <Label htmlFor="isDownloadable" className="text-sm text-muted-foreground">
-                                        Enable file download ( Not recommended )
+                        <TabsContent value="aws" className="space-y-4">
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="isDownloadable" className="text-right">
+                                        Downloadable
                                     </Label>
+                                    <div className="col-span-3 flex items-center space-x-2">
+                                        <Switch
+                                            id="isDownloadable"
+                                            checked={settings.isDownloadable || false}
+                                            onCheckedChange={(checked) => updateSetting("isDownloadable", checked)}
+                                        />
+                                        <Label htmlFor="isDownloadable" className="text-sm text-muted-foreground">
+                                            Enable file download ( Not recommended )
+                                        </Label>
+                                    </div>
+                                </div>
+
+                                {settings.isDownloadable && (
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="fileName" className="text-right">
+                                            File Name
+                                        </Label>
+                                        <Input
+                                            id="fileName"
+                                            value={settings.fileName}
+                                            onChange={(e) => updateSetting("fileName", e.target.value)}
+                                            className="col-span-3"
+                                            placeholder="video.mp4"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="codec" className="text-right">
+                                        Codec
+                                    </Label>
+                                    <Select
+                                        value={settings.codec}
+                                        onValueChange={(value) => updateSetting("codec", value)}
+                                    >
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select codec" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="h264">H.264</SelectItem>
+                                            <SelectItem value="h265">H.265</SelectItem>
+                                            <SelectItem value="vp8">VP8</SelectItem>
+                                            <SelectItem value="vp9">VP9</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="composition" className="text-right">
+                                        Composition
+                                    </Label>
+                                    <Input
+                                        id="composition"
+                                        value={settings.composition}
+                                        onChange={(e) => updateSetting("composition", e.target.value)}
+                                        className="col-span-3"
+                                        placeholder="CompositionLayout"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-4 items-start gap-4 max-h-[200px] overflow-y-auto">
+                                    <Label htmlFor="inputProps" className="text-right pt-2">
+                                        Input Props
+                                    </Label>
+                                    <Textarea
+                                        id="inputProps"
+                                        value={settings.inputProps}
+                                        onChange={(e) => updateSetting("inputProps", e.target.value)}
+                                        className="col-span-3 min-h-[120px] font-mono text-sm"
+                                        placeholder="Enter JSON input props..."
+                                    />
                                 </div>
                             </div>
+                        </TabsContent>
 
-                            {settings.isDownloadable && (
+                        <TabsContent value="local" className="space-y-4">
+                            <div className="grid gap-4 py-4">
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="fileName" className="text-right">
+                                    <Label htmlFor="localComposition" className="text-right">
+                                        Composition
+                                    </Label>
+                                    <Select
+                                        value={settings.composition}
+                                        onValueChange={(value) => updateSetting("composition", value)}
+                                    >
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select composition" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="DataMotion">DataMotion</SelectItem>
+                                            <SelectItem value="ExampleDataMotion">ExampleDataMotion</SelectItem>
+                                            <SelectItem value="Ripple">Ripple</SelectItem>
+                                            <SelectItem value="Waveform">Waveform</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="renderType" className="text-right">
+                                        Render Type
+                                    </Label>
+                                    <Select
+                                        value={settings.renderType}
+                                        onValueChange={(value) => updateSetting("renderType", value as 'video' | 'audio' | 'still')}
+                                    >
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select render type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="video">Video</SelectItem>
+                                            <SelectItem value="audio">Audio Only</SelectItem>
+                                            <SelectItem value="still">Still Image</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {settings.renderType === 'still' && (
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="frameTime" className="text-right">
+                                            Frame Time (seconds)
+                                        </Label>
+                                        <Input
+                                            id="frameTime"
+                                            type="number"
+                                            step="0.1"
+                                            min="0"
+                                            value={settings.frameTime || 0}
+                                            onChange={(e) => updateSetting("frameTime", parseFloat(e.target.value) || 0)}
+                                            className="col-span-3"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="localCodec" className="text-right">
+                                        Video Codec
+                                    </Label>
+                                    <Select
+                                        value={settings.codec}
+                                        onValueChange={(value) => updateSetting("codec", value)}
+                                    >
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select codec" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="h264">H.264</SelectItem>
+                                            <SelectItem value="h265">H.265</SelectItem>
+                                            <SelectItem value="vp8">VP8</SelectItem>
+                                            <SelectItem value="vp9">VP9</SelectItem>
+                                            <SelectItem value="prores">ProRes</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="audioCodec" className="text-right">
+                                        Audio Codec
+                                    </Label>
+                                    <Select
+                                        value={settings.audioCodec}
+                                        onValueChange={(value) => updateSetting("audioCodec", value)}
+                                    >
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select audio codec" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="aac">AAC</SelectItem>
+                                            <SelectItem value="mp3">MP3</SelectItem>
+                                            <SelectItem value="pcm-16">PCM-16</SelectItem>
+                                            <SelectItem value="opus">Opus</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="localFileName" className="text-right">
                                         File Name
                                     </Label>
                                     <Input
-                                        id="fileName"
+                                        id="localFileName"
                                         value={settings.fileName}
                                         onChange={(e) => updateSetting("fileName", e.target.value)}
                                         className="col-span-3"
-                                        placeholder="video.mp4"
+                                        placeholder="video"
                                     />
                                 </div>
-                            )}
 
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="codec" className="text-right">
-                                    Codec
-                                </Label>
-                                <Select
-                                    value={settings.codec}
-                                    onValueChange={(value) => updateSetting("codec", value)}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select codec" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="h264">H.264</SelectItem>
-                                        <SelectItem value="h265">H.265</SelectItem>
-                                        <SelectItem value="vp8">VP8</SelectItem>
-                                        <SelectItem value="vp9">VP9</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="outputLocation" className="text-right">
+                                        Output Location
+                                    </Label>
+                                    <Input
+                                        id="outputLocation"
+                                        value={settings.outputLocation || "./out"}
+                                        onChange={(e) => updateSetting("outputLocation", e.target.value)}
+                                        className="col-span-3"
+                                        placeholder="./out"
+                                    />
+                                </div>
 
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="composition" className="text-right">
-                                    Composition
-                                </Label>
-                                <Input
-                                    id="composition"
-                                    value={settings.composition}
-                                    onChange={(e) => updateSetting("composition", e.target.value)}
-                                    className="col-span-3"
-                                    placeholder="CompositionLayout"
-                                />
+                                <div className="grid grid-cols-4 items-start gap-4 max-h-[200px] overflow-y-auto">
+                                    <Label htmlFor="localInputProps" className="text-right pt-2">
+                                        Input Props
+                                    </Label>
+                                    <Textarea
+                                        id="localInputProps"
+                                        value={settings.inputProps}
+                                        onChange={(e) => updateSetting("inputProps", e.target.value)}
+                                        className="col-span-3 min-h-[120px] font-mono text-sm"
+                                        placeholder="Enter JSON input props..."
+                                    />
+                                </div>
                             </div>
-
-                            <div className="grid grid-cols-4 items-start gap-4 max-h-[200px] overflow-y-auto">
-                                <Label htmlFor="inputProps" className="text-right pt-2">
-                                    Input Props
-                                </Label>
-                                <Textarea
-                                    id="inputProps"
-                                    value={settings.inputProps}
-                                    onChange={(e) => updateSetting("inputProps", e.target.value)}
-                                    className="col-span-3 min-h-[120px] font-mono text-sm"
-                                    placeholder="Enter JSON input props..."
-                                />
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="local" className="space-y-4">
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="localComposition" className="text-right">
-                                    Composition
-                                </Label>
-                                <Select
-                                    value={settings.composition}
-                                    onValueChange={(value) => updateSetting("composition", value)}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select composition" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="DataMotion">DataMotion</SelectItem>
-                                        <SelectItem value="ExampleDataMotion">ExampleDataMotion</SelectItem>
-                                        <SelectItem value="Ripple">Ripple</SelectItem>
-                                        <SelectItem value="Waveform">Waveform</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="renderType" className="text-right">
-                                    Render Type
-                                </Label>
-                                <Select
-                                    value={settings.renderType}
-                                    onValueChange={(value) => updateSetting("renderType", value as 'video' | 'audio' | 'still')}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select render type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="video">Video</SelectItem>
-                                        <SelectItem value="audio">Audio Only</SelectItem>
-                                        <SelectItem value="still">Still Image</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="localCodec" className="text-right">
-                                    Video Codec
-                                </Label>
-                                <Select
-                                    value={settings.codec}
-                                    onValueChange={(value) => updateSetting("codec", value)}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select codec" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="h264">H.264</SelectItem>
-                                        <SelectItem value="h265">H.265</SelectItem>
-                                        <SelectItem value="vp8">VP8</SelectItem>
-                                        <SelectItem value="vp9">VP9</SelectItem>
-                                        <SelectItem value="prores">ProRes</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="audioCodec" className="text-right">
-                                    Audio Codec
-                                </Label>
-                                <Select
-                                    value={settings.audioCodec}
-                                    onValueChange={(value) => updateSetting("audioCodec", value)}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select audio codec" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="aac">AAC</SelectItem>
-                                        <SelectItem value="mp3">MP3</SelectItem>
-                                        <SelectItem value="pcm-16">PCM-16</SelectItem>
-                                        <SelectItem value="opus">Opus</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="localFileName" className="text-right">
-                                    File Name
-                                </Label>
-                                <Input
-                                    id="localFileName"
-                                    value={settings.fileName}
-                                    onChange={(e) => updateSetting("fileName", e.target.value)}
-                                    className="col-span-3"
-                                    placeholder="video"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="outputLocation" className="text-right">
-                                    Output Location
-                                </Label>
-                                <Input
-                                    id="outputLocation"
-                                    value={settings.outputLocation || "./out"}
-                                    onChange={(e) => updateSetting("outputLocation", e.target.value)}
-                                    className="col-span-3"
-                                    placeholder="./out"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-4 items-start gap-4 max-h-[200px] overflow-y-auto">
-                                <Label htmlFor="localInputProps" className="text-right pt-2">
-                                    Input Props
-                                </Label>
-                                <Textarea
-                                    id="localInputProps"
-                                    value={settings.inputProps}
-                                    onChange={(e) => updateSetting("inputProps", e.target.value)}
-                                    className="col-span-3 min-h-[120px] font-mono text-sm"
-                                    placeholder="Enter JSON input props..."
-                                />
-                            </div>
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                        </TabsContent>
+                    </Tabs>
+                </div>
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={isLoading}>

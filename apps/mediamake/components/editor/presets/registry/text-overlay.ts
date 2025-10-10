@@ -6,6 +6,13 @@ import {
 import z from 'zod';
 import { PresetMetadata, PresetOutput } from '../types';
 
+interface ShakeEffectData extends GenericEffectData {
+  amplitude?: number;
+  frequency?: number;
+  decay?: boolean;
+  axis?: 'x' | 'y' | 'both';
+}
+
 const presetParams = z.object({
   // Text content
   text: z.string().describe('Text content to display'),
@@ -14,158 +21,126 @@ const presetParams = z.object({
   fontFamily: z
     .string()
     .optional()
-    .describe('Font family (e.g., "Inter", "Roboto")'),
-  fontWeight: z
-    .string()
-    .optional()
-    .describe('Font weight (e.g., "400", "700", "bold")'),
+    .describe(
+      'Font family with weight and style (e.g., "Roboto:600:italic", "Inter")',
+    ),
   fontSize: z.number().optional().describe('Font size in pixels'),
-
   // Text styling
-  color: z
-    .string()
-    .optional()
-    .describe('Text color (hex, rgb, or named color)'),
-  backgroundColor: z.string().optional().describe('Background color for text'),
-  textAlign: z
-    .enum(['left', 'center', 'right', 'justify'])
-    .optional()
-    .describe('Text alignment'),
-  textDecoration: z
-    .string()
-    .optional()
-    .describe('Text decoration (underline, line-through, etc.)'),
-  textTransform: z
-    .enum(['none', 'uppercase', 'lowercase', 'capitalize'])
-    .optional()
-    .describe('Text transformation'),
   letterSpacing: z.number().optional().describe('Letter spacing in pixels'),
-  lineHeight: z.number().optional().describe('Line height multiplier'),
 
   // Positioning
-  position: z
-    .enum(['absolute', 'relative', 'fixed'])
-    .optional()
-    .describe('Position type'),
-  top: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Top position (px or %)'),
-  right: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Right position (px or %)'),
-  bottom: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Bottom position (px or %)'),
-  left: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Left position (px or %)'),
-
-  // Flex positioning (when using flex layout)
-  justifyContent: z
-    .enum([
-      'flex-start',
-      'center',
-      'flex-end',
-      'space-between',
-      'space-around',
-      'space-evenly',
-    ])
-    .optional()
-    .describe('Justify content for flex layout'),
-  alignItems: z
-    .enum(['flex-start', 'center', 'flex-end', 'stretch', 'baseline'])
-    .optional()
-    .describe('Align items for flex layout'),
-
-  // Size and spacing
-  width: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Width (px or %)'),
-  height: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Height (px or %)'),
-  maxWidth: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Maximum width'),
-  maxHeight: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Maximum height'),
-  padding: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Padding (px)'),
-  margin: z.union([z.number(), z.string()]).optional().describe('Margin (px)'),
-
+  position: z.object({
+    top: z
+      .union([z.number(), z.string()])
+      .optional()
+      .describe('Top position (px or %)'),
+    right: z
+      .union([z.number(), z.string()])
+      .optional()
+      .describe('Right position (px or %)'),
+    bottom: z
+      .union([z.number(), z.string()])
+      .optional()
+      .describe('Bottom position (px or %)'),
+    left: z
+      .union([z.number(), z.string()])
+      .optional()
+      .describe('Left position (px or %)'),
+    alignment: z
+      .enum([
+        'top-left',
+        'top-center',
+        'top-right',
+        'bottom-left',
+        'bottom-center',
+        'bottom-right',
+        'center-left',
+        'center-center',
+        'center-right',
+      ])
+      .optional()
+      .describe('Alignment'),
+  }),
+  style: z.object({
+    opacity: z.number().min(0).max(1).optional().describe('Opacity (0-1)'),
+    color: z
+      .string()
+      .optional()
+      .describe('Text color (hex, rgb, or named color)'),
+    textDecoration: z
+      .string()
+      .optional()
+      .describe('Text decoration (underline, line-through, etc.)'),
+    textTransform: z
+      .enum(['none', 'uppercase', 'lowercase', 'capitalize'])
+      .optional()
+      .describe('Text transformation'),
+    padding: z
+      .union([z.number(), z.string()])
+      .optional()
+      .describe('Padding (px)'),
+    otherProps: z.object({}).loose().optional(),
+    boxShadow: z
+      .string()
+      .optional()
+      .describe('Box shadow (e.g., "0 2px 10px rgba(0,0,0,0.3)")'),
+    textShadow: z
+      .string()
+      .optional()
+      .describe('Text shadow (e.g., "0 2px 4px rgba(0,0,0,0.5)")'),
+    border: z
+      .string()
+      .optional()
+      .describe('Border style (e.g., "1px solid #000")'),
+    borderRadius: z.string().optional().describe('Border radius in pixels'),
+    backgroundColor: z.string().optional().describe('Background color'),
+    textColor: z.string().optional().describe('Text color'),
+    filter: z.string().optional().describe('Filter (e.g., "blur(10px)")'),
+    backdropFilter: z
+      .string()
+      .optional()
+      .describe('Backdrop filter (e.g., "blur(10px)")'),
+  }),
   // Border and shadow
-  border: z
-    .string()
-    .optional()
-    .describe('Border style (e.g., "1px solid #000")'),
-  borderRadius: z.number().optional().describe('Border radius in pixels'),
-  boxShadow: z
-    .string()
-    .optional()
-    .describe('Box shadow (e.g., "0 2px 10px rgba(0,0,0,0.3)")'),
-  textShadow: z
-    .string()
-    .optional()
-    .describe('Text shadow (e.g., "0 2px 4px rgba(0,0,0,0.5)")'),
 
-  // Opacity and visibility
-  opacity: z.number().min(0).max(1).optional().describe('Opacity (0-1)'),
-
-  // Animation effects
-  fadeIn: z.boolean().optional().describe('Enable fade in animation'),
-  fadeInDuration: z.number().optional().describe('Fade in duration in seconds'),
-  slideIn: z
-    .enum(['none', 'top', 'bottom', 'left', 'right'])
-    .optional()
-    .describe('Slide in direction'),
-  slideInDuration: z
-    .number()
-    .optional()
-    .describe('Slide in duration in seconds'),
-  scaleIn: z.boolean().optional().describe('Enable scale in animation'),
-  scaleInDuration: z
-    .number()
-    .optional()
-    .describe('Scale in duration in seconds'),
-
-  // Layout container
-  containerBackground: z
-    .string()
-    .optional()
-    .describe('Container background color'),
-  containerPadding: z
-    .union([z.number(), z.string()])
-    .optional()
-    .describe('Container padding'),
-  containerBorderRadius: z
-    .number()
-    .optional()
-    .describe('Container border radius'),
-
-  // Responsive settings
-  responsiveFontSize: z
-    .boolean()
-    .optional()
-    .describe('Enable responsive font sizing'),
-  minFontSize: z
-    .number()
-    .optional()
-    .describe('Minimum font size for responsive scaling'),
-  maxFontSize: z
-    .number()
-    .optional()
-    .describe('Maximum font size for responsive scaling'),
+  // Timing and duration
+  transitions: z.object({
+    duration: z
+      .number()
+      .optional()
+      .describe('Duration of the text overlay in seconds'),
+    startOffset: z.number().optional().describe('Start offset in seconds'),
+    // Animation effects
+    fadeInTransition: z
+      .enum([
+        'none',
+        'opacity',
+        'slide-in-right',
+        'slide-in-left',
+        'slide-in-top',
+        'slide-in-bottom',
+        'scale-in',
+        'scale-out',
+        'shake-in',
+        'blur-in',
+      ])
+      .optional(),
+    fadeInDuration: z.number().optional(),
+    fadeOutTransition: z
+      .enum([
+        'none',
+        'opacity',
+        'slide-out-right',
+        'slide-out-left',
+        'slide-out-top',
+        'slide-out-bottom',
+        'scale-out',
+        'shake-out',
+        'blur-out',
+      ])
+      .optional(),
+    fadeOutDuration: z.number().optional(),
+  }),
 });
 
 const presetExecution = (
@@ -174,242 +149,399 @@ const presetExecution = (
   const {
     text,
     fontFamily,
-    fontWeight,
     fontSize = 24,
-    color = '#FFFFFF',
-    backgroundColor,
-    textAlign = 'center',
-    textDecoration,
-    textTransform,
     letterSpacing,
-    lineHeight,
-    position = 'absolute',
-    top,
-    right,
-    bottom,
-    left,
-    justifyContent = 'center',
-    alignItems = 'center',
-    width,
-    height,
-    maxWidth,
-    maxHeight,
-    padding,
-    margin,
-    border,
-    borderRadius,
-    boxShadow,
-    textShadow,
-    opacity = 1,
-    fadeIn = true,
-    fadeInDuration = 1,
-    slideIn,
-    slideInDuration = 1,
-    scaleIn = false,
-    scaleInDuration = 1,
-    containerBackground,
-    containerPadding,
-    containerBorderRadius,
-    responsiveFontSize = false,
-    minFontSize,
-    maxFontSize,
+    position,
+    style,
+    transitions,
   } = params;
 
-  // Calculate responsive font size if enabled
-  const getResponsiveFontSize = () => {
-    if (!responsiveFontSize) return fontSize;
-
-    const baseWidth = 1920; // Base width for responsive calculation
-    const scaleFactor = Math.min(1, Math.max(0.5, baseWidth / 1920));
-    const responsiveSize = fontSize * scaleFactor;
-
-    if (minFontSize && responsiveSize < minFontSize) return minFontSize;
-    if (maxFontSize && responsiveSize > maxFontSize) return maxFontSize;
-    return responsiveSize;
+  const generateId = () => {
+    return `${Math.random().toString(36).substring(2, 15)}`;
   };
+  const textAtomId = `text-atom-${generateId()}`;
+  const textContainerId = `text-container-${generateId()}`;
+  // Calculate responsive font size if enabled
+  const getResponsiveFontSize = () => fontSize;
+
+  // Map alignment keywords to flexbox alignments
+  const mapAlignmentToFlex = (
+    alignment?:
+      | 'top-left'
+      | 'top-center'
+      | 'top-right'
+      | 'bottom-left'
+      | 'bottom-center'
+      | 'bottom-right'
+      | 'center-left'
+      | 'center-center'
+      | 'center-right',
+  ) => {
+    switch (alignment) {
+      case 'top-left':
+        return {
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+        } as const;
+      case 'top-center':
+        return { alignItems: 'flex-start', justifyContent: 'center' } as const;
+      case 'top-right':
+        return {
+          alignItems: 'flex-start',
+          justifyContent: 'flex-end',
+        } as const;
+      case 'center-left':
+        return { alignItems: 'center', justifyContent: 'flex-start' } as const;
+      case 'center-center':
+        return { alignItems: 'center', justifyContent: 'center' } as const;
+      case 'center-right':
+        return { alignItems: 'center', justifyContent: 'flex-end' } as const;
+      case 'bottom-left':
+        return {
+          alignItems: 'flex-end',
+          justifyContent: 'flex-start',
+        } as const;
+      case 'bottom-center':
+        return { alignItems: 'flex-end', justifyContent: 'center' } as const;
+      case 'bottom-right':
+        return { alignItems: 'flex-end', justifyContent: 'flex-end' } as const;
+      default:
+        return { alignItems: 'center', justifyContent: 'center' } as const;
+    }
+  };
+
+  // Parse font family and extract weight/style if provided
+  let parsedFontFamily = fontFamily || 'Inter';
+  let fontStyle: any = {};
+
+  if (fontFamily && fontFamily.includes(':')) {
+    const fontParts = fontFamily.split(':');
+    parsedFontFamily = fontParts[0];
+
+    if (fontParts.length > 1) {
+      fontStyle.fontWeight = parseInt(fontParts[1]);
+    }
+    if (fontParts.length > 2) {
+      fontStyle.fontStyle = fontParts[2];
+    }
+  }
 
   // Build style object
   const textStyle: React.CSSProperties = {
     fontSize: getResponsiveFontSize(),
-    color,
-    textAlign,
-    textDecoration,
-    textTransform,
+    color: style?.textColor ?? '#FFFFFF',
+    textDecoration: style?.textDecoration,
+    textTransform: style?.textTransform,
     letterSpacing: letterSpacing ? `${letterSpacing}px` : undefined,
-    lineHeight,
-    position,
-    top: typeof top === 'number' ? `${top}px` : top,
-    right: typeof right === 'number' ? `${right}px` : right,
-    bottom: typeof bottom === 'number' ? `${bottom}px` : bottom,
-    left: typeof left === 'number' ? `${left}px` : left,
-    width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
-    maxWidth: typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth,
-    maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
-    padding: typeof padding === 'number' ? `${padding}px` : padding,
-    margin: typeof margin === 'number' ? `${margin}px` : margin,
-    border,
-    borderRadius: borderRadius ? `${borderRadius}px` : undefined,
-    boxShadow,
-    textShadow,
-    opacity,
-    backgroundColor,
+    boxShadow: style?.boxShadow,
+    textShadow: style?.textShadow,
+    backdropFilter: style?.backdropFilter,
+    backgroundColor: style?.backgroundColor,
+    opacity: style?.opacity,
+    padding:
+      typeof style?.padding === 'number'
+        ? `${style?.padding}px`
+        : style?.padding,
+    ...fontStyle,
+    border: style?.border,
+    borderRadius:
+      typeof style?.borderRadius === 'number'
+        ? `${style?.borderRadius}px`
+        : style?.borderRadius,
   };
 
-  // Build effects array
-  const effects: Array<{
-    id: string;
-    componentId: string;
-    data: GenericEffectData;
-  }> = [];
+  // Build transition effects similar to video-overlay-effects
+  const createTransitionEffects = (
+    isFadeIn: boolean = true,
+  ): (GenericEffectData | ShakeEffectData)[] => {
+    const effects: (GenericEffectData | ShakeEffectData)[] = [];
+    const transition = isFadeIn
+      ? transitions?.fadeInTransition
+      : transitions?.fadeOutTransition;
+    const effectDuration = isFadeIn
+      ? transitions?.fadeInDuration
+      : transitions?.fadeOutDuration;
 
-  // Fade in effect
-  if (fadeIn) {
-    effects.push({
-      id: 'text-fade-in',
-      componentId: 'generic',
-      data: {
-        start: 0,
-        duration: fadeInDuration,
+    if (!transition || transition === 'none') return effects;
+
+    const transitionDuration = effectDuration || (isFadeIn ? 1.0 : 1.0);
+    const totalDuration = transitions?.duration || 20; // Default duration if not specified
+
+    // Effects start times are relative ot the starts of the targeting atom.
+    const startTime = isFadeIn
+      ? 0
+      : Math.max(0, totalDuration - transitionDuration);
+
+    // Only add opacity effect for pure opacity transitions or as base for other effects
+    if (
+      transition === 'opacity' ||
+      transition.includes('slide') ||
+      transition.includes('scale') ||
+      transition.includes('blur')
+    ) {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
         mode: 'provider',
-        targetIds: ['text-overlay'],
+        targetIds: [textAtomId],
         type: 'ease-in-out',
         ranges: [
           {
             key: 'opacity',
-            val: 0,
+            val: isFadeIn ? 0 : (style?.opacity ?? 1),
             prog: 0,
           },
           {
             key: 'opacity',
-            val: opacity,
+            val: isFadeIn ? (style?.opacity ?? 1) : 0,
             prog: 1,
           },
         ],
-      },
-    });
-  }
-
-  // Slide in effect
-  if (slideIn && slideIn !== 'none') {
-    const isVertical = slideIn === 'top' || slideIn === 'bottom';
-    const translateKey = isVertical ? 'translateY' : 'translateX';
-
-    let translateValue: string;
-    if (slideIn === 'top') {
-      translateValue = '-100%';
-    } else if (slideIn === 'bottom') {
-      translateValue = '100%';
-    } else if (slideIn === 'left') {
-      translateValue = '-100%';
-    } else if (slideIn === 'right') {
-      translateValue = '100%';
-    } else {
-      translateValue = '0px';
+      });
     }
 
-    effects.push({
-      id: 'text-slide-in',
-      componentId: 'generic',
-      data: {
-        start: 0,
-        duration: slideInDuration,
-        mode: 'provider',
-        targetIds: ['text-overlay'],
-        type: 'ease-out',
-        ranges: [
-          {
-            key: translateKey,
-            val: translateValue,
-            prog: 0,
-          },
-          {
-            key: translateKey,
-            val: '0px',
-            prog: 1,
-          },
-        ],
-      },
-    });
-  }
+    if (transition.includes('slide-in') || transition.includes('slide-out')) {
+      const direction = transition.split('-')[2];
+      const isSlideIn = transition.includes('slide-in');
 
-  // Scale in effect
-  if (scaleIn) {
-    effects.push({
-      id: 'text-scale-in',
-      componentId: 'generic',
-      data: {
-        start: 0,
-        duration: scaleInDuration,
+      if (direction === 'right' || direction === 'left') {
+        effects.push({
+          start: startTime,
+          duration: transitionDuration * 0.8,
+          mode: 'provider',
+          targetIds: [textAtomId],
+          type: isSlideIn ? 'ease-out' : 'ease-in',
+          ranges: [
+            {
+              key: 'translateX',
+              val: isSlideIn
+                ? direction === 'right'
+                  ? '100px'
+                  : '-100px'
+                : direction === 'right'
+                  ? '-100px'
+                  : '100px',
+              prog: 0,
+            },
+            { key: 'translateX', val: '0px', prog: 1 },
+          ],
+        });
+      }
+
+      if (direction === 'top' || direction === 'bottom') {
+        effects.push({
+          start: startTime,
+          duration: transitionDuration * 0.8,
+          mode: 'provider',
+          targetIds: [textAtomId],
+          type: isSlideIn ? 'ease-out' : 'ease-in',
+          ranges: [
+            {
+              key: 'translateY',
+              val: isSlideIn
+                ? direction === 'top'
+                  ? '-100px'
+                  : '100px'
+                : direction === 'top'
+                  ? '100px'
+                  : '-100px',
+              prog: 0,
+            },
+            { key: 'translateY', val: '0px', prog: 1 },
+          ],
+        });
+      }
+    }
+
+    if (transition === 'scale-in') {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
         mode: 'provider',
-        targetIds: ['text-overlay'],
+        targetIds: [textAtomId],
         type: 'ease-out',
         ranges: [
+          { key: 'scale', val: 0.8, prog: 0 },
+          { key: 'scale', val: 1, prog: 1 },
+        ],
+      });
+    }
+
+    if (transition === 'scale-out') {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [textAtomId],
+        type: 'ease-in',
+        ranges: [
+          { key: 'scale', val: 1, prog: 0 },
+          { key: 'scale', val: 1.1, prog: 1 },
+        ],
+      });
+    }
+
+    if (transition === 'blur-in') {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [textAtomId],
+        type: 'ease-out',
+        ranges: [
+          { key: 'blur', val: '10px', prog: 0 },
+          { key: 'blur', val: '0px', prog: 1 },
+        ],
+      });
+    }
+
+    if (transition === 'blur-out') {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [textAtomId],
+        type: 'ease-in',
+        ranges: [
+          { key: 'blur', val: '0px', prog: 0 },
+          { key: 'blur', val: '10px', prog: 1 },
+        ],
+      });
+    }
+
+    // Shake effects - use shake component instead of generic
+    if (transition === 'shake-in') {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [textAtomId],
+        type: 'linear',
+        amplitude: 3,
+        frequency: 1,
+        decay: true,
+        axis: 'both',
+      } as ShakeEffectData);
+      effects.push({
+        start: startTime,
+        duration: 0.5,
+        mode: 'provider',
+        targetIds: [textAtomId],
+        type: 'ease-in-out',
+        ranges: [
           {
-            key: 'scale',
-            val: 0,
+            key: 'opacity',
+            val: isFadeIn ? 0 : (style?.opacity ?? 1),
             prog: 0,
           },
           {
-            key: 'scale',
-            val: 1,
+            key: 'opacity',
+            val: isFadeIn ? (style?.opacity ?? 1) : 0,
             prog: 1,
           },
         ],
-      },
-    });
-  }
+      });
+    }
+
+    if (transition === 'shake-out') {
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [textAtomId],
+        type: 'linear',
+        amplitude: 10,
+        frequency: 1,
+        decay: false,
+        axis: 'both',
+      } as ShakeEffectData);
+    }
+
+    return effects;
+  };
+
+  const transitionEffects = [
+    ...createTransitionEffects(true),
+    ...createTransitionEffects(false),
+  ];
+  const effects = transitionEffects.map((effect, index) => {
+    const isShakeEffect = 'amplitude' in effect;
+    return {
+      id: `text-overlay-effect-${generateId()}`,
+      componentId: isShakeEffect ? 'shake' : 'generic',
+      data: effect,
+    };
+  });
 
   // Text atom data
   const textAtomData: TextAtomData = {
     text,
     style: textStyle,
-    className: 'text-overlay',
-    font: fontFamily
-      ? {
-          family: fontFamily,
-          weights: fontWeight ? [fontWeight] : ['400', '700'],
-        }
-      : undefined,
+    font: {
+      family: parsedFontFamily,
+      ...(fontStyle.fontWeight
+        ? { weights: [fontStyle.fontWeight?.toString()] }
+        : {}),
+    },
   };
 
-  // Container style for BaseLayout
+  // Minimal container; styling handled by textStyle positioning
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top:
+      typeof position?.top === 'number'
+        ? `${position?.top}px`
+        : (position?.top ?? '0px'),
+    right:
+      typeof position?.right === 'number'
+        ? `${position?.right}px`
+        : (position?.right ?? '0px'),
+    bottom:
+      typeof position?.bottom === 'number'
+        ? `${position?.bottom}px`
+        : (position?.bottom ?? '0px'),
+    left:
+      typeof position?.left === 'number'
+        ? `${position?.left}px`
+        : (position?.left ?? '0px'),
+    filter: style?.filter,
     display: 'flex',
-    justifyContent,
-    alignItems,
-    backgroundColor: containerBackground,
-    padding:
-      typeof containerPadding === 'number'
-        ? `${containerPadding}px`
-        : containerPadding,
-    borderRadius: containerBorderRadius
-      ? `${containerBorderRadius}px`
-      : undefined,
+    flexDirection: 'row',
+    ...mapAlignmentToFlex(position?.alignment),
+    ...(style?.otherProps ?? {}),
   };
 
   return {
     output: {
-      config: {
-        duration: 20,
-      },
       childrenData: [
         {
-          id: 'text-overlay',
-          componentId: 'TextAtom',
-          type: 'atom' as const,
-          effects,
-          data: textAtomData,
-          context: {
-            timing: {
-              fitDurationTo: 'BaseScene',
+          id: textContainerId,
+          componentId: 'BaseLayout',
+          type: 'layout' as const,
+          data: {
+            containerProps: {
+              className: 'absolute inset-0',
+              style: containerStyle,
             },
           },
+          context: {
+            timing: {
+              start: transitions?.startOffset,
+              ...(transitions?.duration && transitions?.duration > 0
+                ? { duration: transitions?.duration }
+                : {}),
+              ...(!transitions?.duration ? { fitDurationTo: 'BaseScene' } : {}),
+            },
+          },
+          childrenData: [
+            {
+              id: textAtomId,
+              componentId: 'TextAtom',
+              type: 'atom' as const,
+              effects,
+              data: textAtomData,
+            },
+          ],
         },
       ],
     },
@@ -417,7 +549,7 @@ const presetExecution = (
       attachedToId: `BaseScene`,
       attachedContainers: [
         {
-          className: 'text-overlay-container',
+          className: 'absolute inset-0',
           style: containerStyle,
         },
       ],
@@ -438,15 +570,18 @@ const presetMetadata: PresetMetadata = {
     fontSize: 32,
     color: '#FFFFFF',
     textAlign: 'center',
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fadeIn: true,
+    position: {
+      alignment: 'center-center',
+    },
+    style: {
+      textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+    },
+    fadeInTransition: 'opacity',
     fadeInDuration: 1,
+    fadeOutTransition: 'none',
+    fadeOutDuration: 1,
     opacity: 1,
-    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-    fontFamily: 'Inter',
-    fontWeight: '600',
+    fontFamily: 'Inter:600',
   },
 };
 

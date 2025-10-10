@@ -15,51 +15,140 @@ const imageSourceSchema = z.object({
     .enum(['cover', 'contain', 'fill', 'none', 'scale-down'])
     .optional()
     .describe('How the image should fit (default: cover)'),
+  filter: z
+    .enum([
+      'none',
+      'blur',
+      'brightness',
+      'contrast',
+      'saturate',
+      'grayscale',
+      'sepia',
+      'hue-rotate',
+      'invert',
+      'distorted',
+      'vintage',
+      'dramatic',
+      'soft',
+      'sharp',
+    ])
+    .optional()
+    .describe('Image filter effect (default: none)'),
+  blendMode: z
+    .enum([
+      'normal',
+      'multiply',
+      'screen',
+      'overlay',
+      'darken',
+      'lighten',
+      'color-dodge',
+      'color-burn',
+      'hard-light',
+      'soft-light',
+      'difference',
+      'exclusion',
+      'hue',
+      'saturation',
+      'color',
+      'luminosity',
+    ])
+    .optional()
+    .describe('Blend mode for the image (default: normal)'),
+  opacity: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe('Image opacity (0-1, default: 1)'),
 });
 
 // Define the schema for effects
 const effectSchema = z.object({
-  type: z.enum(['pan', 'zoom', 'generic']).describe('Type of effect to apply'),
+  type: z
+    .enum(['pan', 'zoom', 'generic', 'shake'])
+    .describe('Type of effect to apply'),
   id: z.string().optional().describe('Custom effect ID'),
-  // Pan effect parameters
-  panDirection: z
-    .enum(['up', 'down', 'left', 'right'])
-    .optional()
-    .describe('Pan direction (for pan effect)'),
-  panDistance: z
-    .number()
-    .optional()
-    .describe('Pan distance in pixels (for pan effect)'),
-  loopTimes: z
-    .number()
-    .optional()
-    .describe('Number of times to loop the effect (for pan/zoom effects)'),
-  // Zoom effect parameters
-  zoomDirection: z
-    .enum(['in', 'out'])
-    .optional()
-    .describe('Zoom direction (for zoom effect)'),
-  zoomDepth: z
-    .number()
-    .optional()
-    .describe('Zoom depth multiplier (for zoom effect)'),
-  genericAnimationType: z
-    .enum(['ease-in-out', 'ease-out', 'ease-in', 'linear', 'spring'])
-    .optional()
-    .describe('Animation type for generic effect'),
-  // Generic effect parameters
-  animationRanges: z
-    .array(
-      z.object({
-        key: z.string().describe('CSS property name'),
-        val: z.union([z.string(), z.number()]).describe('Property value'),
-        prog: z.number().min(0).max(1).describe('Animation progress (0-1)'),
-      }),
-    )
-    .optional()
-    .describe('Animation ranges for generic effect'),
   start: z.number().optional().describe('Effect start offset time in seconds'),
   duration: z.number().optional().describe('Effect duration in seconds'),
+  // Pan effect options
+  pan: z
+    .object({
+      direction: z
+        .enum(['up', 'down', 'left', 'right'])
+        .optional()
+        .describe('Pan direction (default: up)'),
+      distance: z
+        .number()
+        .optional()
+        .describe('Pan distance in pixels (default: 200)'),
+      loopTimes: z
+        .number()
+        .optional()
+        .describe('Number of times to loop the effect (default: 1)'),
+    })
+    .optional()
+    .describe('Pan effect options'),
+  // Zoom effect options
+  zoom: z
+    .object({
+      direction: z
+        .enum(['in', 'out'])
+        .optional()
+        .describe('Zoom direction (default: in)'),
+      depth: z
+        .number()
+        .optional()
+        .describe('Zoom depth multiplier (default: 1.2)'),
+      loopTimes: z
+        .number()
+        .optional()
+        .describe('Number of times to loop the effect (default: 1)'),
+    })
+    .optional()
+    .describe('Zoom effect options'),
+  // Generic effect options
+  generic: z
+    .object({
+      animationType: z
+        .enum(['ease-in-out', 'ease-out', 'ease-in', 'linear', 'spring'])
+        .optional()
+        .describe('Animation type (default: ease-in-out)'),
+      animationRanges: z
+        .array(
+          z.object({
+            key: z.string().describe('CSS property name'),
+            val: z.union([z.string(), z.number()]).describe('Property value'),
+            prog: z.number().min(0).max(1).describe('Animation progress (0-1)'),
+          }),
+        )
+        .optional()
+        .describe('Animation ranges for generic effect'),
+    })
+    .optional()
+    .describe('Generic effect options'),
+  // Shake effect options
+  shake: z
+    .object({
+      amplitude: z
+        .number()
+        .optional()
+        .describe('Shake intensity in pixels (default: 10)'),
+      frequency: z
+        .number()
+        .optional()
+        .describe('Shake frequency (default: 0.1)'),
+      decay: z
+        .boolean()
+        .optional()
+        .describe('Whether shake should decay over time (default: true)'),
+      axis: z
+        .enum(['x', 'y', 'both'])
+        .optional()
+        .describe('Which axis to shake (default: both)'),
+    })
+    .optional()
+    .describe('Shake effect options'),
 });
 
 // Main preset parameters schema
@@ -69,6 +158,10 @@ const presetParams = z.object({
     .string()
     .optional()
     .describe('Fit duration to the track ( only for aligned/random tracks )'),
+  trackStartOffset: z
+    .number()
+    .optional()
+    .describe('Track start offset time in seconds (default: 0)'),
   images: z.array(imageSourceSchema).min(1).describe('Array of image sources'),
   effects: z.array(effectSchema).min(1).describe('Array of effects to apply'),
 });
@@ -82,6 +175,41 @@ const presetExecution = (
 ): Partial<PresetOutput> => {
   const { images, effects } = params;
   const { config } = props;
+
+  // Helper function to generate CSS filter styles
+  const generateFilterStyle = (filter: string): string => {
+    switch (filter) {
+      case 'blur':
+        return 'blur(2px)';
+      case 'brightness':
+        return 'brightness(1.2)';
+      case 'contrast':
+        return 'contrast(1.3)';
+      case 'saturate':
+        return 'saturate(1.5)';
+      case 'grayscale':
+        return 'grayscale(100%)';
+      case 'sepia':
+        return 'sepia(100%)';
+      case 'hue-rotate':
+        return 'hue-rotate(180deg)';
+      case 'invert':
+        return 'invert(100%)';
+      case 'distorted':
+        return 'contrast(1.5) saturate(1.3) hue-rotate(15deg)';
+      case 'vintage':
+        return 'sepia(50%) contrast(1.2) brightness(0.9) saturate(1.1)';
+      case 'dramatic':
+        return 'contrast(1.4) saturate(1.3) brightness(0.8)';
+      case 'soft':
+        return 'blur(0.5px) brightness(1.1) contrast(0.9)';
+      case 'sharp':
+        return 'contrast(1.2) saturate(1.1) brightness(1.05)';
+      case 'none':
+      default:
+        return 'none';
+    }
+  };
 
   const isVertical =
     config?.width && config?.height && config?.width < config?.height;
@@ -100,9 +228,9 @@ const presetExecution = (
             id: effectId,
             componentId: 'pan',
             data: {
-              panDirection: effect.panDirection || 'up',
-              panDistance: effect.panDistance || 200,
-              loopTimes: effect.loopTimes || 1,
+              panDirection: effect.pan?.direction || 'up',
+              panDistance: effect.pan?.distance || 200,
+              loopTimes: effect.pan?.loopTimes || 1,
             } as PanEffectData,
           };
 
@@ -111,9 +239,9 @@ const presetExecution = (
             id: effectId,
             componentId: 'zoom',
             data: {
-              zoomDirection: effect.zoomDirection || 'in',
-              zoomDepth: effect.zoomDepth || 1.2,
-              loopTimes: effect.loopTimes || 1,
+              zoomDirection: effect.zoom?.direction || 'in',
+              zoomDepth: effect.zoom?.depth || 1.2,
+              loopTimes: effect.zoom?.loopTimes || 1,
             } as ZoomEffectData,
           };
 
@@ -124,9 +252,9 @@ const presetExecution = (
             data: {
               mode: 'provider',
               targetIds: [`image-${imageIndex}`],
-              type: effect.genericAnimationType || 'ease-in-out',
+              type: effect.generic?.animationType || 'ease-in-out',
               ranges:
-                effect.animationRanges?.map(range => ({
+                effect.generic?.animationRanges?.map(range => ({
                   key: range.key,
                   val: isNaN(Number(range.val)) ? range.val : Number(range.val),
                   prog: range.prog,
@@ -134,6 +262,20 @@ const presetExecution = (
               duration: effect.duration || 2,
               start: effect.start || 0,
             } as GenericEffectData,
+          };
+
+        case 'shake':
+          return {
+            id: effectId,
+            componentId: 'shake',
+            data: {
+              amplitude: effect.shake?.amplitude || 10,
+              frequency: effect.shake?.frequency || 0.1,
+              decay: effect.shake?.decay ?? true,
+              axis: effect.shake?.axis || 'both',
+              duration: effect.duration || 2,
+              start: effect.start || 0,
+            },
           };
 
         default:
@@ -166,21 +308,32 @@ const presetExecution = (
         className: isPanEffect
           ? isVertical
             ? 'w-full h-auto object-cover'
-            : `w-full h-full  object-cover`
+            : `w-full  object-cover`
           : 'w-full h-full object-cover',
         fit: image.fit || 'cover',
         style: {
           ...(isPanEffect
             ? {
                 height:
-                  (props.config?.height ?? 1920) +
+                  (props.config?.height ?? 1080) +
                   ((_panEffectData?.panDistance as number) ?? 0),
               }
             : {}),
+          ...(image.filter && image.filter !== 'none'
+            ? { filter: generateFilterStyle(image.filter) }
+            : {}),
+          ...(image.blendMode && image.blendMode !== 'normal'
+            ? { mixBlendMode: image.blendMode }
+            : {}),
+          ...(image.opacity !== undefined ? { opacity: image.opacity } : {}),
         },
       },
       context: {
-        timing: isDuration ? { duration: image.duration } : {},
+        timing: isDuration
+          ? {
+              duration: image.duration,
+            }
+          : {},
       },
       effects: imageEffects,
     };
@@ -201,10 +354,14 @@ const presetExecution = (
           context: {
             timing: params.trackFitDurationTo
               ? {
-                  start: 0,
+                  start: params.trackStartOffset ?? 0,
                   fitDurationTo: params.trackFitDurationTo ?? 'this',
                 }
-              : {},
+              : params.trackStartOffset
+                ? {
+                    start: params.trackStartOffset,
+                  }
+                : {},
           },
           childrenData: imageComponents ?? [],
         },
@@ -232,19 +389,25 @@ const presetMetadata: PresetMetadata = {
   tags: ['image', 'effects', 'visual', 'animation'],
   defaultInputParams: {
     trackName: 'imageloop-track',
+    trackStartOffset: 0,
     images: [
       {
         src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
         duration: 5,
         fit: 'cover',
+        filter: 'none',
+        blendMode: 'normal',
+        opacity: 1,
       },
     ],
     effects: [
       {
         type: 'pan',
-        panDirection: 'up',
-        panDistance: 200,
-        loopTimes: 1,
+        pan: {
+          direction: 'up',
+          distance: 200,
+          loopTimes: 1,
+        },
       },
     ],
   },

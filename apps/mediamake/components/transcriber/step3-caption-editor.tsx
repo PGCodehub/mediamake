@@ -8,14 +8,16 @@ interface Step3CaptionEditorProps {
     transcriptionData: Transcription;
     onStepChange: (step: 1 | 2 | 3) => void;
     onTranscriptionDataUpdate?: (updatedData: any) => Promise<void>;
+    onRefreshTranscription?: () => Promise<void>;
 }
 
-export function Step3CaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange }: Step3CaptionEditorProps) {
+export function Step3CaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange, onRefreshTranscription }: Step3CaptionEditorProps) {
     return (
         <TiptapCaptionEditor
             transcriptionData={transcriptionData}
             onTranscriptionDataUpdate={onTranscriptionDataUpdate}
             onStepChange={onStepChange}
+            onRefreshTranscription={onRefreshTranscription}
         />
     );
 }

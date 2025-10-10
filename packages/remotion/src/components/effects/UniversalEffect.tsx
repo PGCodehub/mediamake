@@ -206,11 +206,14 @@ const calculateAnimatedValue = (
     if (sortedRanges.length === 0) return 0;
     if (sortedRanges.length === 1) return sortedRanges[0].val;
 
-    if (progress <= sortedRanges[0].prog) {
+    // Clamp progress to 0-1 range for proper keyframe interpolation
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+
+    if (clampedProgress <= sortedRanges[0].prog) {
         return sortedRanges[0].val;
     }
 
-    if (progress >= sortedRanges[sortedRanges.length - 1].prog) {
+    if (clampedProgress >= sortedRanges[sortedRanges.length - 1].prog) {
         return sortedRanges[sortedRanges.length - 1].val;
     }
 
@@ -218,8 +221,8 @@ const calculateAnimatedValue = (
         const currentRange = sortedRanges[i];
         const nextRange = sortedRanges[i + 1];
 
-        if (progress >= currentRange.prog && progress <= nextRange.prog) {
-            const localProgress = (progress - currentRange.prog) / (nextRange.prog - currentRange.prog);
+        if (clampedProgress >= currentRange.prog && clampedProgress <= nextRange.prog) {
+            const localProgress = (clampedProgress - currentRange.prog) / (nextRange.prog - currentRange.prog);
             const currentValue = currentRange.val;
             const nextValue = nextRange.val;
 
@@ -371,7 +374,7 @@ export const useUniversalAnimation = (data: UniversalEffectData, context?: any) 
     const targetIds = effectData?.targetIds || [];
     const mode = effectData?.mode || 'wrapper';
 
-    // Calculate animation progress
+    // Calculate animation progress normally
     const easing = getEasingFunction(type);
     const progress = interpolate(
         frame - start,
@@ -384,10 +387,20 @@ export const useUniversalAnimation = (data: UniversalEffectData, context?: any) 
         }
     );
 
+    // Determine if effect should contribute styles based on frame timing
+    const isActive = frame >= start && frame <= (start + duration);
+
+    // For "sticky" behavior: if not active, determine which value to use
+    const isBeforeStart = frame < start;
+    const isAfterEnd = frame > (start + duration);
+
     return {
         frame,
         fps,
         progress,
+        isActive,
+        isBeforeStart,
+        isAfterEnd,
         start,
         duration,
         type,
@@ -410,29 +423,51 @@ export const UniversalEffect: React.FC<BaseRenderableProps & {
     effectType = 'universal',
     customAnimationLogic
 }) => {
-        const { progress, frame, ranges, mode, targetIds, effectData } = useUniversalAnimation(data, context);
+        const { progress, isActive, isBeforeStart, isAfterEnd, frame, ranges, mode, targetIds, effectData } = useUniversalAnimation(data, context);
         const parentContext = useUniversalEffectOptional();
 
         const animatedStyles: React.CSSProperties = useMemo(() => {
+            const parentStyles = parentContext?.animatedStyles || {};
 
-            if (progress <= 0 || progress >= 1) {
-                return parentContext?.animatedStyles || {};
+            let currentStyles = {} as React.CSSProperties;
+
+            if (isActive) {
+                // Effect is active - use normal animation
+                if (customAnimationLogic) {
+                    currentStyles = customAnimationLogic(effectData, progress, frame);
+                } else if (ranges.length > 0) {
+                    currentStyles = rangesToCSSProperties(ranges, progress);
+                }
+            } else if (isBeforeStart) {
+                // Before start - use start values (progress = 0)
+                if (customAnimationLogic) {
+                    currentStyles = customAnimationLogic(effectData, 0, frame);
+                } else if (ranges.length > 0) {
+                    currentStyles = rangesToCSSProperties(ranges, 0);
+                }
+            } else if (isAfterEnd) {
+                // After end - use end values (progress = 1)
+                if (customAnimationLogic) {
+                    currentStyles = customAnimationLogic(effectData, 1, frame);
+                } else if (ranges.length > 0) {
+                    currentStyles = rangesToCSSProperties(ranges, 1);
+                }
             }
 
-            let currentStyles = {};
-            if (customAnimationLogic) {
-                currentStyles = customAnimationLogic(effectData, progress, frame);
-            } else if (ranges.length > 0) {
-                currentStyles = rangesToCSSProperties(ranges, progress);
-            }
+            // If we are at the boundary (progress 0), prefer parent on overlap
+            // If >=1, also prefer parent as parent's effect likely finalized
+            const preferParentOnOverlap = progress <= 0;
 
             if (parentContext && mode === 'provider') {
-                const combinedStyles = mergeCSSStyles(parentContext.animatedStyles, currentStyles);
+                const combinedStyles = mergeCSSStyles(
+                    parentStyles,
+                    currentStyles,
+                    { preferParentOnOverlap: false }
+                );
                 return combinedStyles;
             }
 
-            console.log('currentStyles', currentStyles);
-
+            // No parent or not provider: just the current styles
             return currentStyles;
         }, [ranges, progress, parentContext?.animatedStyles, mode, customAnimationLogic, effectData, frame]);
 

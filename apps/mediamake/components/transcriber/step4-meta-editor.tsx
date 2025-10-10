@@ -16,7 +16,7 @@ import {
     getHighImpactSentences,
     TranscriptionMetadataResult,
     createAnalysisSummary
-} from "@/lib/transcription-metadata";
+} from "@/components/transcriber/transcription-metadata";
 import { cn } from "@/lib/utils";
 import {
     AlertCircle,
@@ -43,12 +43,14 @@ interface Step4MetadataEditorProps {
     transcriptionData: Transcription;
     onTranscriptionDataUpdate: (data: any) => void;
     onStepChange: (step: number) => void;
+    onRefreshTranscription?: () => Promise<void>;
 }
 
 export function Step4MetadataEditor({
     transcriptionData,
     onTranscriptionDataUpdate,
-    onStepChange
+    onStepChange,
+    onRefreshTranscription
 }: Step4MetadataEditorProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [metadataResult, setMetadataResult] = useState<TranscriptionMetadataResult | null>(null);
@@ -82,11 +84,11 @@ export function Step4MetadataEditor({
         setError(null);
 
         try {
-            // Extract sentences from captions
-            const sentences = transcriptionData.captions.map(caption => caption.text.trim());
-
-            // Generate metadata using the AI agent
-            const result = await analyzeTranscriptionMetadata(sentences, shouldGenerateOverallAnalysis);
+            // Use the AI agent with assemblyId - it will handle database updates directly
+            const result = await analyzeTranscriptionMetadata(
+                transcriptionData.assemblyId,
+                shouldGenerateOverallAnalysis
+            );
 
             if (!result) {
                 setError("Failed to generate metadata");
@@ -96,27 +98,14 @@ export function Step4MetadataEditor({
 
             setMetadataResult(result);
 
-            // Save to transcription data
-            const updatedData = {
-                ...transcriptionData,
-                status: "completed",
-                captions: transcriptionData.captions.map((caption, index) => {
-                    const resultSentence = index < result.sentences.length ? result.sentences[index] : null;
-                    return {
-                        ...caption,
-                        metadata: resultSentence?.metadata,
-                    }
-                }),
-                processingData: {
-                    ...transcriptionData.processingData,
-                    step4: {
-                        ...transcriptionData.processingData?.step4,
-                        metadata: result,
-                        generatedAt: new Date().toISOString()
-                    }
-                }
-            };
-            onTranscriptionDataUpdate(updatedData);
+            // Refresh the transcription data to get the updated version from database
+            // The AI agent has already updated the database, so we just need to refresh
+            if (onRefreshTranscription) {
+                await onRefreshTranscription();
+            }
+
+            toast.success("Metadata generated and saved successfully!");
+
         } catch (err) {
             console.error("Error generating metadata:", err);
             setError(err instanceof Error ? err.message : "Failed to generate metadata");

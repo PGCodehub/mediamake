@@ -12,6 +12,7 @@ export interface RenderSettings {
     inputProps: string;
     outputLocation?: string; // Only used for local rendering
     isDownloadable?: boolean; // Only used for AWS rendering
+    frameTime?: number; // Frame time in seconds for still image rendering
 }
 
 export type RenderMethod = 'aws' | 'local';
@@ -58,7 +59,8 @@ const defaultSettings: RenderSettings = {
         style: { backgroundColor: "black" }
     } as InputCompositionProps, null, 2),
     outputLocation: "./out",
-    isDownloadable: false
+    isDownloadable: false,
+    frameTime: 0
 };
 
 const RenderContext = createContext<RenderContextType | undefined>(undefined);

@@ -381,7 +381,9 @@ const presetExecution = (
                     style: {
                       width: isVertical
                         ? container?.verticalWidth || 200
-                        : (container?.width ?? '100%'),
+                        : container?.width && container?.width > 0
+                          ? `${container?.width}px`
+                          : '100%',
                     },
                   },
                 ],

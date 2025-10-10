@@ -27,12 +27,49 @@ const parseFunctionsString = (
   return result;
 };
 
+interface MergeOptions {
+  // When true, if both parent and child define the same property/function at progress boundary,
+  // prefer the parent's value over the child's (useful when child progress is 0)
+  preferParentOnOverlap?: boolean;
+}
+
+// Merge CSS functions (like transform/filter) preserving parent order and resolving overlaps
+const mergeFunctionStrings = (
+  parentValue: string | undefined,
+  childValue: string | undefined,
+  preferParentOnOverlap: boolean
+): string => {
+  const parentFunctions = parseFunctionsString(parentValue);
+  const childFunctions = parseFunctionsString(childValue);
+
+  // Build final map while preserving the order of parent's functions
+  const orderedFunctionNames: string[] = [];
+  parentFunctions.forEach((_v, k) => orderedFunctionNames.push(k));
+  childFunctions.forEach((_v, k) => {
+    if (!orderedFunctionNames.includes(k)) {
+      orderedFunctionNames.push(k);
+    }
+  });
+
+  const finalFunctions = orderedFunctionNames.map((name) => {
+    if (preferParentOnOverlap && parentFunctions.has(name)) {
+      return parentFunctions.get(name)!;
+    }
+    // Default: child overrides when present, otherwise use parent
+    return (childFunctions.get(name) ?? parentFunctions.get(name))!;
+  });
+
+  return finalFunctions.join(' ').trim();
+};
+
 // A smarter CSS style merging function
 export const mergeCSSStyles = (
   parent: React.CSSProperties = {},
-  child: React.CSSProperties = {}
+  child: React.CSSProperties = {},
+  options: MergeOptions = {}
 ): React.CSSProperties => {
   const result: React.CSSProperties = { ...parent };
+  const preferParentOnOverlap = Boolean(options.preferParentOnOverlap);
 
   for (const key in child) {
     if (Object.prototype.hasOwnProperty.call(child, key)) {
@@ -47,30 +84,41 @@ export const mergeCSSStyles = (
       switch (key as MergeableProperties) {
         case 'transform':
         case 'filter': {
-          const parentFunctions = parseFunctionsString(
-            pValue as string | undefined
+          result[key] = mergeFunctionStrings(
+            pValue as string | undefined,
+            cValue as string | undefined,
+            preferParentOnOverlap
           );
-          const childFunctions = parseFunctionsString(
-            cValue as string | undefined
-          );
-          const mergedFunctions = new Map([
-            ...parentFunctions,
-            ...childFunctions,
-          ]);
-          result[key] = Array.from(mergedFunctions.values()).join(' ').trim();
           break;
         }
 
         case 'opacity':
-          // Multiply opacities, ensuring they are within the 0-1 range
-          const parentOpacity =
-            typeof pValue === 'number' && !isNaN(pValue) ? pValue : 1;
-          const childOpacity =
-            typeof cValue === 'number' && !isNaN(cValue) ? cValue : 1;
-          result.opacity = Math.max(
-            0,
-            Math.min(1, parentOpacity * childOpacity)
-          );
+          // At overlap preference, keep parent's opacity if both define it
+          if (
+            preferParentOnOverlap &&
+            pValue !== undefined &&
+            cValue !== undefined
+          ) {
+            const parentOpacity =
+              typeof pValue === 'number' && !isNaN(pValue as number)
+                ? (pValue as number)
+                : 1;
+            result.opacity = Math.max(0, Math.min(1, parentOpacity));
+          } else {
+            // Multiply opacities, ensuring they are within the 0-1 range
+            const parentOpacity =
+              typeof pValue === 'number' && !isNaN(pValue as number)
+                ? (pValue as number)
+                : 1;
+            const childOpacity =
+              typeof cValue === 'number' && !isNaN(cValue as number)
+                ? (cValue as number)
+                : 1;
+            result.opacity = Math.max(
+              0,
+              Math.min(1, parentOpacity * childOpacity)
+            );
+          }
           break;
 
         case 'transformOrigin':
@@ -83,9 +131,13 @@ export const mergeCSSStyles = (
           break;
 
         default:
-          // For other properties, child overrides parent.
-          // This includes numeric properties that should not be combined (e.g., width, height).
-          (result as any)[key] = cValue;
+          // For other properties, allow preferring parent on overlap
+          if (preferParentOnOverlap && pValue !== undefined) {
+            (result as any)[key] = pValue as any;
+          } else {
+            // Child overrides parent.
+            (result as any)[key] = cValue as any;
+          }
           break;
       }
     }

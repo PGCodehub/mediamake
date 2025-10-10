@@ -202,7 +202,7 @@ export const MediaMakePlayerPlain: React.FC = () => {
                 controls
                 loop
             />
-            {process.env.NODE_ENV === "development" && (
+            {(process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEV_CLIENT_ID != undefined) && (
                 <div className="absolute top-4 right-4">
                     <RenderButton />
                 </div>

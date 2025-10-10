@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AssemblyAI } from 'assemblyai';
+import { AssemblyAI, Transcript } from 'assemblyai';
 import { captionMutator } from '@microfox/datamotion';
 import {
   TranscriptionSentenceSchema,
   TranscriptionWordSchema,
 } from '@/components/editor/presets/types';
 import { generateCaptions } from '../helpers';
+import { getDatabase } from '@/lib/mongodb';
+import { Transcription } from '@/app/types/transcription';
 
 // --- AssemblyAI Schemas ---
 const AssemblyAIWordSchema = z.object({
@@ -27,6 +29,7 @@ const AssemblyAIUtteranceSchema = z.object({
 const TranscriptionRequestSchema = z.object({
   audioUrl: z.string().startsWith('https://'),
   language: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 const TranscriptionResponseSchema = z.object({
@@ -35,6 +38,7 @@ const TranscriptionResponseSchema = z.object({
   success: z.boolean(),
   captions: z.array(TranscriptionSentenceSchema),
   error: z.string().optional(),
+  transcription: z.any().optional(),
 });
 
 // --- Types ---
@@ -51,7 +55,12 @@ async function transcribeAudio(
   audioUrl: string,
   language?: string,
 ): Promise<
-  Partial<{ captions: Caption[]; id: string; language_code: string }>
+  Partial<{
+    captions: Caption[];
+    id: string;
+    language_code: string;
+    transcript: Transcript;
+  }>
 > {
   const assemblyAIKey = process.env.ASSEMBLYAI_API_KEY ?? '';
 
@@ -101,6 +110,7 @@ async function transcribeAudio(
       id: transcript.id,
       language_code: transcript.language_code,
       captions: captions,
+      transcript: transcript,
     };
   } catch (error) {
     console.error('An error occurred during AssemblyAI transcription:', error);
@@ -110,17 +120,57 @@ async function transcribeAudio(
 
 export const POST = async (req: NextRequest) => {
   try {
+    const clientId = req.headers.get('x-client-id') || undefined;
     // Parse and validate request body
     const body = await req.json();
     const validatedRequest = TranscriptionRequestSchema.parse(body);
 
-    const { audioUrl, language } = validatedRequest;
+    const { audioUrl, language, tags } = validatedRequest;
 
     // Perform transcription
-    const { captions, id, language_code } = await transcribeAudio(
+    const { captions, id, language_code, transcript } = await transcribeAudio(
       audioUrl,
       language,
     );
+
+    const db = await getDatabase();
+    const collection = db.collection<Transcription>('transcriptions');
+
+    const existing = await collection.findOne({ assemblyId: id });
+    if (existing) {
+      return NextResponse.json(
+        {
+          success: true,
+          transcription: existing,
+        },
+        { status: 200 },
+      );
+    }
+
+    const now = new Date();
+    const transcription: Omit<Transcription, '_id'> = {
+      clientId,
+      assemblyId: id as string,
+      audioUrl,
+      language: language_code,
+      status: 'completed',
+      tags: tags || [],
+      captions: captions || [],
+      processingData: {
+        step1: {
+          rawText: captions?.map(caption => caption.text).join(' '),
+          processedCaptions: captions,
+          transcript: transcript,
+        },
+      },
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await collection.insertOne(transcription);
+    const createdTranscription = await collection.findOne({
+      _id: result.insertedId,
+    });
 
     // Return successful response
     const response = {
@@ -128,6 +178,7 @@ export const POST = async (req: NextRequest) => {
       id,
       language_code,
       captions,
+      transcription: createdTranscription,
     };
 
     return NextResponse.json(response);

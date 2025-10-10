@@ -3,6 +3,7 @@ import { waveformPreset } from './waveform-full';
 import { waveformPreset as waveformChildrenPreset } from './waveform';
 import { videoStitchPreset } from './video-stitch';
 import { subVerticalFloatPreset } from './sub-vertical-float';
+import { subFastRapStaticPreset } from './sub-fast-rap-static';
 import { plainSubtitlesPreset } from './subtitles';
 import { baseScenePreset } from './base-scene';
 import { mediaTrackPreset } from './media-track';
@@ -11,6 +12,7 @@ import { imageLoopPreset } from './imageloop';
 import { musicCardPreset } from './music-card';
 import { textOverlayPreset } from './text-overlay';
 import { beatstitchPreset } from './beatstitch';
+import { subMediaStitchPreset } from './sub-media-stitch';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -25,6 +27,8 @@ export const predefinedPresets: Preset[] = [
   musicCardPreset,
   textOverlayPreset,
   beatstitchPreset,
+  subFastRapStaticPreset,
+  subMediaStitchPreset,
   // Add more predefined presets here
 ];
 

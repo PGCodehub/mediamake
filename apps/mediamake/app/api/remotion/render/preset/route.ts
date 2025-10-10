@@ -53,6 +53,7 @@ export const POST = async (req: NextRequest) => {
       audioCodec,
       composition,
     }: PresetRenderRequest = await req.json();
+    const clientId = req.headers.get('x-client-id') || undefined;
 
     // Validate required fields
     if (!presets || !Array.isArray(presets) || presets.length === 0) {
@@ -110,8 +111,15 @@ export const POST = async (req: NextRequest) => {
         }
         preset = foundPreset;
       } else if (presetType === 'database') {
+        console.log(
+          `🔍 RENDER API: Processing database preset with ID: ${presetId}`,
+        );
+
         // Validate ObjectId format
         if (!ObjectId.isValid(presetId)) {
+          console.log(
+            `❌ RENDER API: Invalid database preset ID format: ${presetId}`,
+          );
           return NextResponse.json(
             { error: `Invalid database preset ID: '${presetId}'` },
             { status: 400 },
@@ -127,11 +135,19 @@ export const POST = async (req: NextRequest) => {
 
         preset = await collection.findOne(query);
         if (!preset) {
+          console.log(`❌ RENDER API: Database preset not found: ${presetId}`);
           return NextResponse.json(
             { error: `Database preset with ID '${presetId}' not found` },
             { status: 404 },
           );
         }
+
+        console.log(`✅ RENDER API: Successfully loaded database preset:`, {
+          id: presetId,
+          title: preset.metadata?.title,
+          type: preset.metadata?.presetType,
+          clientId: clientId,
+        });
       } else {
         return NextResponse.json(
           {
@@ -217,7 +233,6 @@ export const POST = async (req: NextRequest) => {
     });
 
     // Store render history if client ID is provided
-    const clientId = req.headers.get('x-client-id');
     if (clientId) {
       await renderRequestDB.create({
         clientId,

@@ -743,8 +743,27 @@ export const MediaGrid = ({
                                 />
                             )}
                             {dialogItem.type === 'audio' && (
-                                <div className="w-full aspect-video bg-neutral-800 flex items-center justify-center">
-                                    <Volume2 className="w-8 h-8 text-neutral-400" />
+                                <div className="w-full aspect-video bg-neutral-800 flex flex-col items-center justify-center p-4">
+                                    <Volume2 className="w-8 h-8 text-neutral-400 mb-2" />
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium text-white truncate w-full" title={mediaFile.fileName}>
+                                            {mediaFile.fileName || 'Audio File'}
+                                        </p>
+                                        {mediaFile.tags && mediaFile.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-2 justify-center">
+                                                {mediaFile.tags.slice(0, 3).map((tag: string, index: number) => (
+                                                    <Badge key={index} variant="secondary" className="text-xs">
+                                                        {tag}
+                                                    </Badge>
+                                                ))}
+                                                {mediaFile.tags.length > 3 && (
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        +{mediaFile.tags.length - 3}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                             {dialogItem.type === 'document' && (
