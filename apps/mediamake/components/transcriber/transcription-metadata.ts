@@ -50,6 +50,7 @@ export type TranscriptionMetadataResult =
 export async function analyzeTranscriptionMetadata(
   assemblyIdOrSentences: string | string[],
   shouldGenerateOverallAnalysis: boolean = false,
+  userRequest?: string,
 ): Promise<AiRouterTools['analyzeTranscriptionMetadata']['output'] | null> {
   try {
     const response = await fetch('/api/studio/chat/agent/transcription-meta', {
@@ -62,10 +63,12 @@ export async function analyzeTranscriptionMetadata(
           ? {
               assemblyId: assemblyIdOrSentences,
               overallAnalysis: shouldGenerateOverallAnalysis,
+              userRequest,
             }
           : {
               sentences: assemblyIdOrSentences,
               overallAnalysis: shouldGenerateOverallAnalysis,
+              userRequest,
             },
       ),
     });

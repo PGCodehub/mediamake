@@ -18,6 +18,7 @@ interface UploadTriggerProps {
     maxFiles?: number;
     autoUpload?: boolean;
     preselectedTags?: string[];
+    pickerMode?: boolean;
 }
 
 export function UploadTrigger({
@@ -30,7 +31,8 @@ export function UploadTrigger({
     dropzoneClassName,
     maxFiles = 10,
     autoUpload = false,
-    preselectedTags = []
+    preselectedTags = [],
+    pickerMode = false
 }: UploadTriggerProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -43,6 +45,28 @@ export function UploadTrigger({
         setIsDialogOpen(false);
         setSelectedFiles([]);
     };
+
+    // Global paste handling for picker mode
+    useEffect(() => {
+        if (!pickerMode) return;
+
+        const handleGlobalPaste = async (e: ClipboardEvent) => {
+            // Don't interfere with paste in input fields, textareas, or contenteditable elements
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.contentEditable === 'true' ||
+                target.closest('input, textarea, [contenteditable]')) {
+                return;
+            }
+
+            // Use the existing handlePaste logic
+            await handlePaste(e);
+        };
+
+        document.addEventListener('paste', handleGlobalPaste);
+        return () => document.removeEventListener('paste', handleGlobalPaste);
+    }, [pickerMode]);
 
     const onDrop = (acceptedFiles: File[]) => {
         if (uiType === "dropzone") {

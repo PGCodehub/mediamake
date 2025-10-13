@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'createdAt';
     const order = searchParams.get('order') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const page = parseInt(searchParams.get('page') || '1');
+    const offset = (page - 1) * limit;
     const fields = searchParams.get('fields');
 
     const query: any = {};
@@ -93,6 +94,10 @@ export async function POST(request: NextRequest) {
   try {
     const clientId = getClientId(request);
     const body: CreateMediaFileRequest = await request.json();
+    console.log(
+      'Media file creation request body:',
+      JSON.stringify(body, null, 2),
+    );
     const {
       tags,
       contentType,
@@ -145,7 +150,7 @@ export async function POST(request: NextRequest) {
               ...finalMetadata,
               ...aiMetadata,
             };
-            console.log('AI analysis completed, metadata updated', aiMetadata);
+            console.log('AI analysis completed, metadata updated');
           } else {
             console.log('AI analysis failed or returned no metadata');
           }
@@ -181,6 +186,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Storing media file with tags:', tags);
     const mediaFile: MediaFile = {
       tags,
       clientId: clientId || 'default',

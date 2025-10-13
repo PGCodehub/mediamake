@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,104 @@ import { UrlIndexingTrigger } from "@/components/ui/url-indexing-trigger";
 import { MediaGrid, MediaOptionsDropdown } from "./media-ui";
 import useSWR from "swr";
 import { MediaSidebar } from "./media-sidebar";
+import { useMedia } from "./media-context";
+
+// Pagination component
+interface PaginationProps {
+    currentPage: number;
+    totalItems: number;
+    itemsPerPage: number;
+    onPageChange: (page: number) => void;
+}
+
+function Pagination({ currentPage, totalItems, itemsPerPage, onPageChange }: PaginationProps) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    if (totalPages <= 1) {
+        return null;
+    }
+
+    const handlePrevious = () => {
+        if (currentPage > 1) {
+            onPageChange(currentPage - 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (currentPage < totalPages) {
+            onPageChange(currentPage + 1);
+        }
+    };
+
+    const getPageNumbers = () => {
+        const pageNumbers: (number | string)[] = [];
+        const maxPagesToShow = 5;
+        const halfPagesToShow = Math.floor(maxPagesToShow / 2);
+
+        if (totalPages <= maxPagesToShow + 2) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
+            }
+        } else {
+            if (currentPage <= halfPagesToShow + 1) {
+                for (let i = 1; i <= maxPagesToShow; i++) {
+                    pageNumbers.push(i);
+                }
+                pageNumbers.push('...');
+                pageNumbers.push(totalPages);
+            } else if (currentPage >= totalPages - halfPagesToShow) {
+                pageNumbers.push(1);
+                pageNumbers.push('...');
+                for (let i = totalPages - maxPagesToShow + 1; i <= totalPages; i++) {
+                    pageNumbers.push(i);
+                }
+            } else {
+                pageNumbers.push(1);
+                pageNumbers.push('...');
+                for (let i = currentPage - halfPagesToShow; i <= currentPage + halfPagesToShow; i++) {
+                    pageNumbers.push(i);
+                }
+                pageNumbers.push('...');
+                pageNumbers.push(totalPages);
+            }
+        }
+        return pageNumbers;
+    };
+
+    const pageNumbers = getPageNumbers();
+
+    return (
+        <div className="flex items-center justify-between mt-4 p-2 border-t">
+            <span className="text-sm text-muted-foreground">
+                Total results: {totalItems}
+            </span>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
+                    Previous
+                </Button>
+                {pageNumbers.map((page, index) =>
+                    typeof page === 'number' ? (
+                        <Button
+                            key={index}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => onPageChange(page)}
+                        >
+                            {page}
+                        </Button>
+                    ) : (
+                        <span key={index} className="px-2 py-1 text-sm">
+                            {page}
+                        </span>
+                    )
+                )}
+                <Button variant="outline" size="sm" onClick={handleNext} disabled={currentPage === totalPages}>
+                    Next
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 interface MediaPickerProps {
     pickerMode?: boolean;
@@ -77,20 +175,51 @@ export function MediaPicker({
     onHashtagFiltersChange: propOnHashtagFiltersChange,
     showSidebar = true
 }: MediaPickerProps) {
-    // Internal state for picker mode
-    const [selectedTag, setSelectedTag] = useState<string | null>(propSelectedTag || null);
-    const [selectedFile, setSelectedFile] = useState<MediaFile | null>(propSelectedFile || null);
-    const [tagToAddToHashtags, setTagToAddToHashtags] = useState<string | null | "CLEAR_ALL">(propTagToAddToHashtags || null);
-    const [hashtagFilters, setHashtagFilters] = useState<string[]>(propHashtagFilters || []);
+    const {
+        selectedTag: contextSelectedTag,
+        setSelectedTag: setContextSelectedTag,
+        hashtagFilters: contextHashtagFilters,
+        setHashtagFilters: setContextHashtagFilters,
+        addHashtagFilter: contextAddHashtagFilter,
+        removeHashtagFilter: contextRemoveHashtagFilter,
+        selectedFile: contextSelectedFile,
+        setSelectedFile: setContextSelectedFile,
+        selectedFiles: contextSelectedFiles,
+        setSelectedFiles: setContextSelectedFiles
+    } = useMedia();
+
+    // Use context values or fallback to props
+    const selectedTag = propSelectedTag || contextSelectedTag;
+    const selectedFile = propSelectedFile || contextSelectedFile;
+    const hashtagFilters = propHashtagFilters || contextHashtagFilters;
+    const selectedFiles = contextSelectedFiles;
 
     // Picker-specific state
-    const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+    const [tagToAddToHashtags, setTagToAddToHashtags] = useState<string | null | "CLEAR_ALL">(propTagToAddToHashtags || null);
     const [searchQuery, setSearchQuery] = useState("");
     const [contentTypeFilter, setContentTypeFilter] = useState<string>("all");
     const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
     const [hashtagInput, setHashtagInput] = useState("");
     const [contentSourceFilter, setContentSourceFilter] = useState<string>("all");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(30);
+
+    // Reset page to 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, contentTypeFilter, sortOrder, hashtagFilters, contentSourceFilter, selectedTag]);
+
+    // Focus management for picker mode
+    useEffect(() => {
+        if (pickerMode) {
+            // Focus the dialog container to capture keyboard events
+            const dialogElement = document.querySelector('[data-media-picker-dialog]') as HTMLElement;
+            if (dialogElement) {
+                dialogElement.focus();
+            }
+        }
+    }, [pickerMode]);
 
     // Build API URL with filters
     const buildApiUrl = () => {
@@ -103,6 +232,8 @@ export function MediaPicker({
         }
         params.append('sort', 'createdAt');
         params.append('order', sortOrder === 'latest' ? 'desc' : 'asc');
+        params.append('page', currentPage.toString());
+        params.append('limit', itemsPerPage.toString());
         return `/api/media-files?${params}`;
     };
 
@@ -116,6 +247,7 @@ export function MediaPicker({
     const tags = tagsData || [];
     const isLoading = !filesData && !filesError;
 
+
     const getTagDisplayName = (tagId: string) => {
         const tag = tags.find((t: Tag) => t.id === tagId);
         return tag ? tag.displayName : tagId;
@@ -125,14 +257,14 @@ export function MediaPicker({
     const addHashtagFilter = (tag: string) => {
         if (tag.trim() && !hashtagFilters.includes(tag.trim())) {
             const newFilters = [...hashtagFilters, tag.trim()];
-            setHashtagFilters(newFilters);
+            setContextHashtagFilters(newFilters);
             propOnHashtagFiltersChange?.(newFilters);
         }
     };
 
     const removeHashtagFilter = (tag: string) => {
         const newFilters = hashtagFilters.filter(t => t !== tag);
-        setHashtagFilters(newFilters);
+        setContextHashtagFilters(newFilters);
         propOnHashtagFiltersChange?.(newFilters);
     };
 
@@ -154,28 +286,28 @@ export function MediaPicker({
     const handleTagSelection = (tagId: string | null) => {
         if (tagId) {
             setTagToAddToHashtags(tagId);
-            setSelectedTag(tagId);
-            setHashtagFilters([tagId]);
+            setContextSelectedTag(tagId);
+            setContextHashtagFilters([tagId]);
         } else {
             setTagToAddToHashtags("CLEAR_ALL");
-            setSelectedTag(null);
-            setHashtagFilters([]);
+            setContextSelectedTag(null);
+            setContextHashtagFilters([]);
         }
-        setSelectedFile(null);
+        setContextSelectedFile(null);
     };
 
     const handleHashtagFiltersChange = (filters: string[]) => {
-        setHashtagFilters(filters);
+        setContextHashtagFilters(filters);
         propOnHashtagFiltersChange?.(filters);
     };
 
     // Handle tag selection from sidebar - replace all hashtag filters
     useEffect(() => {
         if (tagToAddToHashtags === "CLEAR_ALL") {
-            setHashtagFilters([]);
+            setContextHashtagFilters([]);
             propOnTagAddedToHashtags?.();
         } else if (tagToAddToHashtags) {
-            setHashtagFilters([tagToAddToHashtags]);
+            setContextHashtagFilters([tagToAddToHashtags]);
             propOnTagAddedToHashtags?.();
         }
     }, [tagToAddToHashtags, propOnTagAddedToHashtags]);
@@ -229,7 +361,7 @@ export function MediaPicker({
     // Picker-specific functions
     const handleFileSelection = (file: MediaFile) => {
         if (!pickerMode) {
-            setSelectedFile(file);
+            setContextSelectedFile(file);
             propOnSelectFile?.(file);
             return;
         }
@@ -251,7 +383,7 @@ export function MediaPicker({
         } else {
             newSelectedFiles.add(fileId);
         }
-        setSelectedFiles(newSelectedFiles);
+        setContextSelectedFiles(newSelectedFiles);
     };
 
     const handlePickItems = () => {
@@ -266,13 +398,41 @@ export function MediaPicker({
     };
 
     const clearSelection = () => {
-        setSelectedFiles(new Set());
+        setContextSelectedFiles(new Set());
     };
 
-    const filteredFiles = files.filter((file: MediaFile) =>
-        file.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        file.contentSourceUrl?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredFiles = useMemo(() =>
+        files.filter((file: MediaFile) =>
+            file.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            file.contentSourceUrl?.toLowerCase().includes(searchQuery.toLowerCase())
+        ), [files, searchQuery]);
+
+
+    const visibleFileIds = useMemo(() =>
+        filteredFiles
+            .map((file: MediaFile) => file._id?.toString())
+            .filter((id: string | undefined): id is string => !!id),
+        [filteredFiles]
     );
+
+    const allVisibleSelected = useMemo(() =>
+        visibleFileIds.length > 0 && visibleFileIds.every((id: string) => selectedFiles.has(id)),
+        [visibleFileIds, selectedFiles]
+    );
+
+    const selectAllVisible = () => {
+        if (!pickerMode) return;
+
+        const newSelectedFiles = new Set(selectedFiles);
+        if (allVisibleSelected) {
+            // Deselect all visible
+            visibleFileIds.forEach((id: string) => newSelectedFiles.delete(id));
+        } else {
+            // Select all visible
+            visibleFileIds.forEach((id: string) => newSelectedFiles.add(id));
+        }
+        setContextSelectedFiles(newSelectedFiles);
+    };
 
     const containerClasses = pickerMode
         ? "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
@@ -287,7 +447,17 @@ export function MediaPicker({
             {pickerMode && (
                 <div className="fixed inset-0 bg-black/50" onClick={onClose} />
             )}
-            <div className={contentClasses}>
+            <div
+                className={contentClasses}
+                data-media-picker-dialog
+                tabIndex={-1}
+                onKeyDown={(e) => {
+                    // Handle escape key to close
+                    if (e.key === 'Escape' && pickerMode) {
+                        onClose?.();
+                    }
+                }}
+            >
                 <div className="flex flex-col h-full">
                     {/* Header */}
                     <div className="p-4 border-b bg-muted/30">
@@ -302,6 +472,7 @@ export function MediaPicker({
                                         mutateFiles();
                                     }}
                                     preselectedTags={hashtagFilters}
+                                    pickerMode={pickerMode}
                                 />
                                 {pickerMode && (
                                     <Button variant="ghost" size="sm" onClick={onClose}>
@@ -358,7 +529,7 @@ export function MediaPicker({
 
                                 {/* Content Type Filter */}
                                 <Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
-                                    <SelectTrigger className="w-32">
+                                    <SelectTrigger className="w-24">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -372,7 +543,7 @@ export function MediaPicker({
 
                                 {/* Content Source Filter */}
                                 <Select value={contentSourceFilter} onValueChange={setContentSourceFilter}>
-                                    <SelectTrigger className="w-36">
+                                    <SelectTrigger className="w-24">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -385,7 +556,7 @@ export function MediaPicker({
 
                                 {/* Sort Order */}
                                 <Select value={sortOrder} onValueChange={(value: "latest" | "oldest") => setSortOrder(value)}>
-                                    <SelectTrigger className="w-32">
+                                    <SelectTrigger className="w-24">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -425,6 +596,34 @@ export function MediaPicker({
                                 </div>
                             </div>
                         </div>
+
+                        {/* All Tags Horizontal List */}
+                        {tags.length > 0 && (
+                            <div className="mt-4 flex flex-col">
+                                <div className="overflow-x-auto pb-2 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        {tags.map((tag: Tag) => (
+                                            <Badge
+                                                key={tag.id}
+                                                variant={hashtagFilters.includes(tag.id) ? "default" : "outline"}
+                                                className="flex items-center gap-1 cursor-pointer hover:bg-primary/10 transition-colors whitespace-nowrap"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if (hashtagFilters.includes(tag.id)) {
+                                                        removeHashtagFilter(tag.id);
+                                                    } else {
+                                                        addHashtagFilter(tag.id);
+                                                    }
+                                                }}
+                                            >
+                                                #{tag.displayName}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Content */}
@@ -460,6 +659,7 @@ export function MediaPicker({
                                             }}
                                             dropzoneClassName="min-h-[200px]"
                                             preselectedTags={hashtagFilters}
+                                            pickerMode={pickerMode}
                                         />
                                     </div>
                                 </div>
@@ -547,6 +747,15 @@ export function MediaPicker({
                                         )}
                                     </div>
                                 )}
+
+                                {totalCount > 0 && (
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalItems={totalCount}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -559,11 +768,16 @@ export function MediaPicker({
                                     <span className="text-sm text-muted-foreground">
                                         {selectedFiles.size} item{selectedFiles.size !== 1 ? 's' : ''} selected
                                     </span>
-                                    {selectedFiles.size > 0 && (
-                                        <Button variant="ghost" size="sm" onClick={clearSelection}>
-                                            Clear Selection
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={selectAllVisible}>
+                                            {allVisibleSelected ? 'Deselect All Visible' : 'Select All Visible'}
                                         </Button>
-                                    )}
+                                        {selectedFiles.size > 0 && (
+                                            <Button variant="ghost" size="sm" onClick={clearSelection}>
+                                                Clear Selection
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Button variant="outline" onClick={onClose}>

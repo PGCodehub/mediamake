@@ -73,6 +73,8 @@ export function useFormPersistence({
           onFormDataChange?.(entry.formData);
           if (entry.output) {
             onOutputChange?.(entry.output);
+          } else {
+            onOutputChange?.(null);
           }
         }
       } catch (error) {

@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
     Dialog,
     DialogContent,
@@ -56,6 +58,7 @@ export function MetadataDialog({
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [shouldGenerateOverallAnalysis, setShouldGenerateOverallAnalysis] = useState(false);
+    const [userRequest, setUserRequest] = useState("");
 
     // Load existing metadata if available
     useEffect(() => {
@@ -76,7 +79,8 @@ export function MetadataDialog({
         try {
             const result = await analyzeTranscriptionMetadata(
                 transcriptionData.assemblyId,
-                shouldGenerateOverallAnalysis
+                shouldGenerateOverallAnalysis,
+                userRequest || undefined
             );
 
             if (!result) {
@@ -161,31 +165,51 @@ export function MetadataDialog({
                     {/* Header */}
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-2">
-                                    <p className="text-sm text-muted-foreground">
-                                        Generate AI-powered metadata for each sentence including emotional analysis,
-                                        keyword extraction, and split recommendations for optimal lyricography.
-                                    </p>
-                                    {metadataResult && (
-                                        <div className="text-sm text-green-600 flex items-center gap-1">
-                                            <CheckCircle2 className="h-4 w-4" />
-                                            Metadata generated successfully
-                                        </div>
-                                    )}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Generate AI-powered metadata for each sentence including emotional analysis,
+                                            keyword extraction, and split recommendations for optimal lyricography.
+                                        </p>
+                                        {metadataResult && (
+                                            <div className="text-sm text-green-600 flex items-center gap-1">
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                Metadata generated successfully
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Button
+                                        onClick={generateMetadata}
+                                        disabled={isGenerating}
+                                        className="flex items-center gap-2"
+                                    >
+                                        {isGenerating ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="h-4 w-4" />
+                                        )}
+                                        {isGenerating ? "Generating..." : "Generate Metadata"}
+                                    </Button>
                                 </div>
-                                <Button
-                                    onClick={generateMetadata}
-                                    disabled={isGenerating}
-                                    className="flex items-center gap-2"
-                                >
-                                    {isGenerating ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="h-4 w-4" />
-                                    )}
-                                    {isGenerating ? "Generating..." : "Generate Metadata"}
-                                </Button>
+
+                                {/* User Request Input */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="userRequest" className="text-sm font-medium">
+                                        Specific Request (Optional)
+                                    </Label>
+                                    <Textarea
+                                        id="userRequest"
+                                        value={userRequest}
+                                        onChange={(e) => setUserRequest(e.target.value)}
+                                        placeholder="e.g., Focus on emotional keywords, emphasize dramatic moments, highlight technical terms..."
+                                        rows={3}
+                                        className="resize-none"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Provide specific instructions for how you want the metadata analysis to be tailored.
+                                    </p>
+                                </div>
                             </div>
                         </CardHeader>
                     </Card>

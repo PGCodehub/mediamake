@@ -6,6 +6,7 @@ import { Link } from "lucide-react";
 import { UrlIndexingDialog } from "./url-indexing-dialog";
 import { cn } from "@/lib/utils";
 import { RagImageMetadata } from "@/app/types/media";
+import { useMedia } from "@/components/editor/media/media-context";
 
 interface UrlIndexingTriggerProps {
     onIndexingComplete?: (mediaFiles: any[]) => void;
@@ -28,6 +29,7 @@ export function UrlIndexingTrigger({
     dropzoneClassName,
     preselectedTags = []
 }: UrlIndexingTriggerProps) {
+    const { hashtagFilters, indexingLimit, setIndexingLimit } = useMedia();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isIndexing, setIsIndexing] = useState(false);
     const [indexingStatus, setIndexingStatus] = useState<string>("");
@@ -51,7 +53,7 @@ export function UrlIndexingTrigger({
     }, []);
 
     // Poll indexing progress - simple and clean
-    const pollIndexingProgress = async (id: string) => {
+    const pollIndexingProgress = async (id: string, limit: number, tags: string[]) => {
         // Clear any existing polling
         if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
@@ -59,7 +61,7 @@ export function UrlIndexingTrigger({
 
         const checkProgress = async () => {
             try {
-                const response = await fetch(`/api/ai-analysis/check?indexingId=${id}&topK=10`);
+                const response = await fetch(`/api/ai-analysis/check?indexingId=${id}&topK=${limit}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to check indexing progress');
@@ -85,7 +87,7 @@ export function UrlIndexingTrigger({
                         setIndexingStatus("Indexing completed! Processing results...");
 
                         // Process results - backend handles deduplication
-                        await processIndexingResults(data.data);
+                        await processIndexingResults(data.data, tags);
                     }
                 } else {
                     throw new Error('Invalid response format');
@@ -109,9 +111,10 @@ export function UrlIndexingTrigger({
         pollingIntervalRef.current = pollInterval;
     };
 
-    const processIndexingResults = async (data: any) => {
+    const processIndexingResults = async (data: any, tags: string[]) => {
         try {
             console.log('Processing indexing results:', data);
+            console.log('Tags passed to processIndexingResults:', tags);
             const results: {
                 id: string;
                 data: string;
@@ -128,7 +131,7 @@ export function UrlIndexingTrigger({
 
                 if (mediaUrl) {
                     const mediaFileData = {
-                        tags: preselectedTags,
+                        tags: tags,
                         contentType: metadata.mediaType || 'image',
                         contentMimeType: metadata.mimeType || 'image/jpeg',
                         contentSubType: 'indexed',
@@ -139,6 +142,8 @@ export function UrlIndexingTrigger({
                         filePath: mediaUrl,
                         metadata: metadata,
                     };
+
+                    console.log('Creating media file with tags:', tags, 'for URL:', mediaUrl);
 
                     try {
                         const response = await fetch('/api/media-files', {
@@ -284,14 +289,15 @@ export function UrlIndexingTrigger({
                     onClose={() => {
                         setIsDialogOpen(false);
                     }}
-                    onIndexingStart={(indexingId) => {
+                    onIndexingStart={(indexingId, indexingLimit, tags) => {
+                        setIndexingLimit(indexingLimit);
                         setIsIndexing(true);
                         setIndexingStatus("Starting indexing...");
                         setIndexingProgress(0);
                         setIsDialogOpen(false); // Close dialog immediately
-                        pollIndexingProgress(indexingId);
+                        pollIndexingProgress(indexingId, indexingLimit, tags);
                     }}
-                    preselectedTags={preselectedTags}
+                    preselectedTags={hashtagFilters}
                 />
             </>
         );
@@ -316,14 +322,15 @@ export function UrlIndexingTrigger({
             <UrlIndexingDialog
                 isOpen={isDialogOpen}
                 onClose={() => setIsDialogOpen(false)}
-                onIndexingStart={(indexingId) => {
+                onIndexingStart={(indexingId, indexingLimit, tags) => {
+                    setIndexingLimit(indexingLimit);
                     setIsIndexing(true);
                     setIndexingStatus("Starting indexing...");
                     setIndexingProgress(0);
                     setIsDialogOpen(false); // Close dialog immediately
-                    pollIndexingProgress(indexingId);
+                    pollIndexingProgress(indexingId, indexingLimit, tags);
                 }}
-                preselectedTags={preselectedTags}
+                preselectedTags={hashtagFilters}
             />
         </>
     );

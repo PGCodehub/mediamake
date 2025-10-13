@@ -139,10 +139,12 @@ export const transcriptionMetaAgent = aiRouter
         loader: 'Analyzing transcription metadata...',
       });
 
-      const { assemblyId, sentences, overallAnalysis } = ctx.request.params as {
+      const { assemblyId, sentences, overallAnalysis, userRequest } = ctx
+        .request.params as {
         assemblyId?: string;
         sentences?: string[];
         overallAnalysis?: boolean;
+        userRequest?: string;
       };
 
       let sentencesToAnalyze: string[] = [];
@@ -189,6 +191,7 @@ export const transcriptionMetaAgent = aiRouter
               prompt: `Analyze this sentence for lyricography metadata:
 
 Sentence: "${sentence}"
+${userRequest ? `\nUser Request: ${userRequest}` : ''}
 
 Please analyze this sentence and provide:
 1. The most impactful keyword that would be impactful in that scentence ( it can also be a noun - name, place, thing, etc, verb, etc..)
@@ -202,6 +205,7 @@ For Split Parts:
 - Not every scentence need to be split, as some scentences are single words or very short.
 - try your best to split evenly, but take the expression of the scentence into consideration.
 - MOST IMPORTANT: SPlit it so it is easy to read by human.
+${userRequest ? `\nPlease consider the user's specific request: ${userRequest}` : ''}
 
 Consider:
 - What is the most emotionally resonant word in this sentence?
@@ -261,8 +265,10 @@ ${analysisResults
    - Confidence: ${result.metadata.confidence}`,
   )
   .join('\n\n')}
+${userRequest ? `\nUser Request: ${userRequest}` : ''}
 
-Provide an overall analysis of the transcription's mood, structure recommendations, key themes, and emotional arc.`,
+Provide an overall analysis of the transcription's mood, structure recommendations, key themes, and emotional arc.
+${userRequest ? `Please consider the user's specific request: ${userRequest}` : ''}`,
           maxRetries: 2,
         });
         overallAnalysisObject = overallAnalysisResult.object;
@@ -277,13 +283,15 @@ Provide an overall analysis of the transcription's mood, structure recommendatio
 
 Transcription Content:
 ${sentencesToAnalyze.join(' ')}
+${userRequest ? `\nUser Request: ${userRequest}` : ''}
 
 Please provide:
 1. A compelling, descriptive title (max 100 characters)
 2. A comprehensive description of the content (2-3 sentences, max 300 characters)
 3. 5-10 relevant keywords that describe the content (music, narrative, monologue, self-talk, podcast etc...), themes, and topics
 
-Make the title engaging and descriptive. The description should summarize the main content and themes. Keywords should be relevant for search and categorization.`,
+Make the title engaging and descriptive. The description should summarize the main content and themes. Keywords should be relevant for search and categorization.
+${userRequest ? `Please consider the user's specific request: ${userRequest}` : ''}`,
         maxRetries: 2,
       });
       transcriptionInfoObject = transcriptionInfoResult.object;
@@ -381,6 +389,10 @@ Make the title engaging and descriptive. The description should summarize the ma
         .describe(
           'Array of sentence-split transcript strings to analyze (alternative to assemblyId)',
         ),
+      userRequest: z
+        .string()
+        .optional()
+        .describe('User-specific request for transcription processing'),
       overallAnalysis: z
         .boolean()
         .optional()

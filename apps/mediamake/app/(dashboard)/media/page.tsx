@@ -8,6 +8,7 @@ import { MediaPicker } from "@/components/editor/media/media-picker";
 import { useState } from "react";
 import { MediaFile } from "@/app/types/media";
 import { MediaLibrarySidebar } from "@/components/media/media-library-sidebar";
+import { MediaProvider } from "@/components/editor/media/media-context";
 
 export default function MediaPage() {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -30,33 +31,35 @@ export default function MediaPage() {
     };
 
     return (
-        <SidebarInset>
-            <SiteHeader title="Media Library" />
-            <div className="flex flex-1 flex-col">
-                <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 md:gap-6 ">
-                        <div className="flex h-[calc(100vh-8rem)]">
-                            <MediaLibrarySidebar
-                                selectedTag={selectedTag}
-                                onSelectTag={handleTagSelection}
-                                hashtagFilters={hashtagFilters}
-                                onHashtagFiltersChange={handleHashtagFiltersChange}
-                            />
-                            <div className="flex-1">
-                                <MediaPicker
-                                    pickerMode={false}
+        <MediaProvider>
+            <SidebarInset>
+                <SiteHeader title="Media Library" />
+                <div className="flex flex-1 flex-col">
+                    <div className="@container/main flex flex-1 flex-col gap-2">
+                        <div className="flex flex-col gap-4 md:gap-6 ">
+                            <div className="flex h-[calc(100vh-8rem)]">
+                                <MediaLibrarySidebar
                                     selectedTag={selectedTag}
-                                    selectedFile={selectedFile}
-                                    onSelectFile={(file) => setSelectedFile(file)}
+                                    onSelectTag={handleTagSelection}
                                     hashtagFilters={hashtagFilters}
                                     onHashtagFiltersChange={handleHashtagFiltersChange}
-                                    showSidebar={false}
                                 />
+                                <div className="flex-1 min-w-0">
+                                    <MediaPicker
+                                        pickerMode={false}
+                                        selectedTag={selectedTag}
+                                        selectedFile={selectedFile}
+                                        onSelectFile={(file) => setSelectedFile(file)}
+                                        hashtagFilters={hashtagFilters}
+                                        onHashtagFiltersChange={handleHashtagFiltersChange}
+                                        showSidebar={false}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </SidebarInset>
+            </SidebarInset>
+        </MediaProvider>
     );
 }

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
@@ -685,7 +685,7 @@ export const MediaGrid = ({
     selectedFiles = new Set(),
     onFileSelect
 }: {
-    mediaFiles: any[];
+    mediaFiles: MediaFile[];
     onEditDetails: (file: MediaFile) => void;
     onCopyUrl: (file: MediaFile) => void;
     onCopyId: (file: MediaFile) => void;
@@ -695,6 +695,36 @@ export const MediaGrid = ({
     onFileSelect?: (file: MediaFile) => void;
 }) => {
     const [selectedMedia, setSelectedMedia] = useState<MediaDialogItem | null>(null);
+    const [numColumns, setNumColumns] = useState(1);
+
+    useEffect(() => {
+        const getNumColumns = () => {
+            const width = window.innerWidth;
+            if (width >= 1536) return 6; // 2xl
+            if (width >= 1280) return 5; // xl
+            if (width >= 1024) return 4; // lg
+            if (width >= 768) return 3; // md
+            if (width >= 640) return 2; // sm
+            return 1;
+        };
+
+        const handleResize = () => {
+            setNumColumns(getNumColumns());
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const columns = useMemo(() => {
+        const newColumns: MediaFile[][] = Array.from({ length: numColumns }, () => []);
+        mediaFiles.forEach((file, index) => {
+            newColumns[index % numColumns].push(file);
+        });
+        return newColumns;
+    }, [mediaFiles, numColumns]);
+
 
     if (!mediaFiles || mediaFiles.length === 0) {
         return null;
@@ -702,119 +732,123 @@ export const MediaGrid = ({
 
     return (
         <>
-            <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6 gap-2 md:gap-4">
-                {mediaFiles.map((mediaFile, idx) => {
-                    const dialogItem = mapMediaFileToDialogItem(mediaFile);
-                    if (!dialogItem) return null;
+            <div className="flex gap-2 md:gap-4">
+                {columns.map((columnFiles, colIndex) => (
+                    <div key={colIndex} className="flex w-full flex-col gap-2 md:gap-4">
+                        {columnFiles.map((mediaFile, idx) => {
+                            const dialogItem = mapMediaFileToDialogItem(mediaFile);
+                            if (!dialogItem) return null;
 
-                    const fileId = mediaFile._id?.toString();
-                    const isSelected = pickerMode ? selectedFiles.has(fileId || '') : false;
+                            const fileId = mediaFile._id?.toString();
+                            const isSelected = pickerMode ? selectedFiles.has(fileId || '') : false;
 
-                    return (
-                        <div
-                            onClick={() => {
-                                if (pickerMode && onFileSelect) {
-                                    onFileSelect(mediaFile);
-                                } else {
-                                    setSelectedMedia(dialogItem);
-                                }
-                            }}
-                            key={mediaFile._id?.toString() || idx}
-                            className={`relative group/media bg-neutral-900 rounded-lg overflow-hidden cursor-pointer break-inside-avoid mb-4 ${isSelected ? 'ring-2 ring-primary bg-primary/10' : ''
-                                }`}
-                        >
-                            {dialogItem.type === 'image' && (
-                                <img
-                                    src={dialogItem.image.src ?? ""}
-                                    alt={dialogItem.image.title ?? ""}
-                                    className="w-full h-auto transition-transform duration-300 group-hover/media:scale-110"
-                                />
-                            )}
-                            {dialogItem.type === 'video-embed' && (
-                                <div className="w-full aspect-video bg-black flex items-center justify-center">
-                                    <Play className="w-8 h-8 text-white" />
-                                </div>
-                            )}
-                            {dialogItem.type === 'video-direct' && (
-                                <video
-                                    src={dialogItem.video.src}
-                                    className="w-full aspect-video object-cover"
-                                    preload="metadata"
-                                />
-                            )}
-                            {dialogItem.type === 'audio' && (
-                                <div className="w-full aspect-video bg-neutral-800 flex flex-col items-center justify-center p-4">
-                                    <Volume2 className="w-8 h-8 text-neutral-400 mb-2" />
-                                    <div className="text-center">
-                                        <p className="text-sm font-medium text-white truncate w-full" title={mediaFile.fileName}>
-                                            {mediaFile.fileName || 'Audio File'}
-                                        </p>
-                                        {mediaFile.tags && mediaFile.tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2 justify-center">
-                                                {mediaFile.tags.slice(0, 3).map((tag: string, index: number) => (
-                                                    <Badge key={index} variant="secondary" className="text-xs">
-                                                        {tag}
-                                                    </Badge>
-                                                ))}
-                                                {mediaFile.tags.length > 3 && (
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        +{mediaFile.tags.length - 3}
-                                                    </Badge>
+                            return (
+                                <div
+                                    onClick={() => {
+                                        if (pickerMode && onFileSelect) {
+                                            onFileSelect(mediaFile);
+                                        } else {
+                                            setSelectedMedia(dialogItem);
+                                        }
+                                    }}
+                                    key={mediaFile._id?.toString() || idx}
+                                    className={`relative group/media bg-neutral-900 rounded-lg overflow-hidden cursor-pointer ${isSelected ? 'ring-2 ring-primary bg-primary/10' : ''
+                                        }`}
+                                >
+                                    {dialogItem.type === 'image' && (
+                                        <img
+                                            src={dialogItem.image.src ?? ""}
+                                            alt={dialogItem.image.title ?? ""}
+                                            className="w-full h-auto transition-transform duration-300 group-hover/media:scale-110"
+                                        />
+                                    )}
+                                    {dialogItem.type === 'video-embed' && (
+                                        <div className="w-full aspect-video bg-black flex items-center justify-center">
+                                            <Play className="w-8 h-8 text-white" />
+                                        </div>
+                                    )}
+                                    {dialogItem.type === 'video-direct' && (
+                                        <video
+                                            src={dialogItem.video.src}
+                                            className="w-full aspect-video object-cover"
+                                            preload="metadata"
+                                        />
+                                    )}
+                                    {dialogItem.type === 'audio' && (
+                                        <div className="w-full aspect-video bg-neutral-800 flex flex-col items-center justify-center p-4">
+                                            <Volume2 className="w-8 h-8 text-neutral-400 mb-2" />
+                                            <div className="text-center">
+                                                <p className="text-sm font-medium text-white truncate w-full" title={mediaFile.fileName}>
+                                                    {mediaFile.fileName || 'Audio File'}
+                                                </p>
+                                                {mediaFile.tags && mediaFile.tags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-2 justify-center">
+                                                        {mediaFile.tags.slice(0, 3).map((tag: string, index: number) => (
+                                                            <Badge key={index} variant="secondary" className="text-xs">
+                                                                {tag}
+                                                            </Badge>
+                                                        ))}
+                                                        {mediaFile.tags.length > 3 && (
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                +{mediaFile.tags.length - 3}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {dialogItem.type === 'document' && (
+                                        <div className="w-full aspect-video bg-neutral-800 flex items-center justify-center">
+                                            <FileText className="w-8 h-8 text-neutral-400" />
+                                        </div>
+                                    )}
+
+                                    {/* Picker mode checkmark */}
+                                    {pickerMode && isSelected && (
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                                <Check className="w-4 h-4" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300">
+                                        {/* Top right dropdown - only show in non-picker mode */}
+                                        {!pickerMode && (
+                                            <MediaOptionsDropdown
+                                                mediaFile={mediaFile}
+                                                onEditDetails={onEditDetails}
+                                                onCopyUrl={onCopyUrl}
+                                                onCopyId={onCopyId}
+                                                onDeleteMedia={onDeleteMedia}
+                                            />
+                                        )}
+
+                                        {/* Bottom right action buttons - only show in non-picker mode */}
+                                        {!pickerMode && (
+                                            <div className="absolute bottom-3 right-3 flex items-center gap-2 transform scale-75 group-hover/media:scale-100 transition-transform duration-300">
+                                                <a href={mediaFile.filePath} target="_blank" rel="noopener noreferrer" className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="View Source" onClick={(e) => e.stopPropagation()}>
+                                                    <ExternalLink className="w-4 h-4 text-neutral-800" />
+                                                </a>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedMedia(dialogItem);
+                                                    }}
+                                                    className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors"
+                                                    title="Expand Media"
+                                                >
+                                                    <Expand className="w-4 h-4 text-neutral-800" />
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                            )}
-                            {dialogItem.type === 'document' && (
-                                <div className="w-full aspect-video bg-neutral-800 flex items-center justify-center">
-                                    <FileText className="w-8 h-8 text-neutral-400" />
-                                </div>
-                            )}
-
-                            {/* Picker mode checkmark */}
-                            {pickerMode && isSelected && (
-                                <div className="absolute top-2 left-2 z-10">
-                                    <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                        <Check className="w-4 h-4" />
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300">
-                                {/* Top right dropdown - only show in non-picker mode */}
-                                {!pickerMode && (
-                                    <MediaOptionsDropdown
-                                        mediaFile={mediaFile}
-                                        onEditDetails={onEditDetails}
-                                        onCopyUrl={onCopyUrl}
-                                        onCopyId={onCopyId}
-                                        onDeleteMedia={onDeleteMedia}
-                                    />
-                                )}
-
-                                {/* Bottom right action buttons - only show in non-picker mode */}
-                                {!pickerMode && (
-                                    <div className="absolute bottom-3 right-3 flex items-center gap-2 transform scale-75 group-hover/media:scale-100 transition-transform duration-300">
-                                        <a href={mediaFile.filePath} target="_blank" rel="noopener noreferrer" className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="View Source" onClick={(e) => e.stopPropagation()}>
-                                            <ExternalLink className="w-4 h-4 text-neutral-800" />
-                                        </a>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedMedia(dialogItem);
-                                            }}
-                                            className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors"
-                                            title="Expand Media"
-                                        >
-                                            <Expand className="w-4 h-4 text-neutral-800" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                            );
+                        })}
+                    </div>
+                ))}
             </div>
             <MediaDialog media={selectedMedia} setMedia={setSelectedMedia} />
         </>

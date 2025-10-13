@@ -51,11 +51,16 @@ export default function AgentPage() {
         try {
             const result = await callAgent(agentPath, params);
             setOutput(result);
+            return result;
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleOutputChange = (newOutput: any) => {
+        setOutput(newOutput);
     };
 
     return (
@@ -73,6 +78,7 @@ export default function AgentPage() {
                                         onRunAgent={handleRunAgent}
                                         isLoading={isLoading}
                                         agentPath={agentPath}
+                                        onOutputChange={handleOutputChange}
                                     />
                                 </div>
                             </div>

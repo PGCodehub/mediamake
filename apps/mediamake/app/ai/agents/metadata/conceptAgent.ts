@@ -1,7 +1,7 @@
-import { google } from '@ai-sdk/google';
 import { AiRouter } from '@microfox/ai-router';
 import { z } from 'zod';
-import { generateObject, convertToModelMessages } from 'ai';
+import { generateObject } from 'ai';
+import { google } from '@ai-sdk/google';
 import dedent from 'dedent';
 
 const aiRouter = new AiRouter();
@@ -14,25 +14,21 @@ const VideoType = z.enum([
   'blank',
 ]);
 
-// Final metadata schema
-const YouTubeMetadataSchema = z.object({
-  title: z.string().describe('The selected or generated title'),
-  descriptiveText: z
-    .string()
-    .describe('Compelling description (3-4 lines max)'),
-  hashtags: z
-    .array(z.string())
-    .max(8)
-    .describe('YouTube SEO hashtags (maximum 8)'),
-  thumbnailIdea: z
-    .string()
-    .describe('Detailed description of thumbnail design and elements'),
-  artworkPrompt: z
-    .string()
-    .describe('Prompt for generating artwork without titles or text'),
-  finalDescription: z
-    .string()
-    .describe('Final formatted description with user input and action trigger'),
+// Concept generation schema
+const ConceptGenerationSchema = z.object({
+  concepts: z
+    .array(
+      z.object({
+        title: z.string().describe('Creative title for the concept'),
+        ideaReasoning: z
+          .string()
+          .describe(
+            'Strategic reasoning for why this concept would work, combining user idea with trends/celebrities/high concepts',
+          ),
+      }),
+    )
+    .length(10)
+    .describe('10 creative concepts with strategic reasoning'),
 });
 
 // System prompts for different video types
@@ -80,62 +76,53 @@ const getSystemPrompt = (videoType: string, userPrompt?: string) => {
   return basePrompt + userAddition;
 };
 
-export const youtubeAgent = aiRouter
+export const conceptAgent = aiRouter
   .agent('/', async ctx => {
-    ctx.response.writeMessageMetadata({
-      loader: 'Generating YouTube metadata...',
-    });
+    try {
+      ctx.response.writeMessageMetadata({
+        loader: 'Generating creative concepts...',
+      });
 
-    const {
-      userDescription,
-      videoType,
-      model,
-      userPrompt,
-      userInsertedDescription,
-      selectedTitle,
-    } = ctx.request.params;
+      const { userDescription, videoType, model, userPrompt } =
+        ctx.request.params;
 
-    const systemPrompt = getSystemPrompt(videoType || 'blank', userPrompt);
-    const selectedModel = google(model || 'gemini-2.5-pro');
+      const systemPrompt = getSystemPrompt(videoType || 'blank', userPrompt);
+      const selectedModel = google(model || 'gemini-2.5-pro');
 
-    // Generate final metadata
-    const metadataResult = await generateObject({
-      model: selectedModel,
-      system: systemPrompt,
-      prompt: dedent`
-        Create final YouTube metadata for this content:
+      const result = await generateObject({
+        model: selectedModel,
+        system: systemPrompt,
+        prompt: dedent`
+        Based on this user description: "${userDescription}"
         
-        User Description: ${userDescription}
-        ${selectedTitle ? `Selected Title: ${selectedTitle}` : 'Generate a compelling title based on the content'}
+        Generate 10 creative, strategic concepts that combine the user's core idea with popular trends, celebrities, high concepts, or viral elements.
         
-        Generate:
-        - A compelling title (if not provided)
-        - A compelling description (3-4 lines max)
-        - 8 relevant hashtags (all lowercase, no spaces)
-        - Detailed thumbnail idea
-        - Artwork prompt (for AI art generation)
+        Think like a YouTube strategist. For example:
+        - "Epic motivational music" → "WARNING: This music will relight your fire 🔥"
+        - "Wild west music" → "John Wick X Wild West" 
+        - "Epic Suspense Music" -> No Fear - Heartbeat at 200MPH
+        - "Loner Music" -> I  Dont Lose, Ever! -  Aura of Champions  | Reflective Instrumental Music
+        
+        Each concept should have a compelling title and strategic reasoning for why it would work.
+        Focus on what people already know and love, and combine it with the user's content.
       `,
-      schema: YouTubeMetadataSchema.omit({ finalDescription: true }),
-      maxOutputTokens: 2000,
-    });
+        schema: ConceptGenerationSchema,
+        maxOutputTokens: 3000,
+      });
 
-    const metadata = metadataResult.object;
+      console.log('Concepts Result USAGE', result.usage);
 
-    // Return the complete result
-    return {
-      ...metadata,
-      finalDescription: dedent`
-        ${metadata.descriptiveText}\n
-        ${userInsertedDescription || ''}\n
-        ${metadata.hashtags.map(hashtag => `#${hashtag}`).join(', ')}
-      `,
-    };
+      return result.object;
+    } catch (error) {
+      console.error('Error generating concepts:', error);
+      throw error;
+    }
   })
   .actAsTool('/', {
-    id: 'generateYouTubeMetadata',
-    name: 'Generate YouTube Metadata',
+    id: 'generateConcepts',
+    name: 'Generate Creative Concepts',
     description:
-      'Generates comprehensive YouTube metadata including titles, hashtags, descriptions, and artwork prompts for different video types.',
+      'Generates 10 creative, strategic concepts that combine user ideas with popular trends, celebrities, and viral elements.',
     inputSchema: z.object({
       userDescription: z
         .string()
@@ -148,21 +135,11 @@ export const youtubeAgent = aiRouter
         .string()
         .optional()
         .describe('Additional user requirements to add to system prompt'),
-      userInsertedDescription: z
-        .string()
-        .optional()
-        .describe('User-provided description to include in final output'),
-      selectedTitle: z
-        .string()
-        .optional()
-        .describe(
-          'Optional pre-selected title (if not provided, will generate one)',
-        ),
     }) as any,
-    outputSchema: YouTubeMetadataSchema as any,
+    outputSchema: ConceptGenerationSchema as any,
     metadata: {
-      icon: '📺',
-      title: 'YouTube Metadata Generator',
+      icon: '💡',
+      title: 'Concept Generator',
       hideUI: false,
     },
   });

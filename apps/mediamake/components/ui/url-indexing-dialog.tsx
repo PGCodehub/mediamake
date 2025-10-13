@@ -18,11 +18,12 @@ import {
     Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { useMedia } from "@/components/editor/media/media-context";
 
 interface UrlIndexingDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onIndexingStart: (indexingId: string) => void;
+    onIndexingStart: (indexingId: string, indexingLimit: number, tags: string[]) => void;
     preselectedTags?: string[];
 }
 
@@ -39,6 +40,7 @@ export function UrlIndexingDialog({
     onIndexingStart,
     preselectedTags = []
 }: UrlIndexingDialogProps) {
+    const { hashtagFilters } = useMedia();
     const [url, setUrl] = useState("");
     const [indexingLimit, setIndexingLimit] = useState(10);
     const [crawlVideos, setCrawlVideos] = useState(true);
@@ -51,16 +53,19 @@ export function UrlIndexingDialog({
             setUrl("");
             setIndexingLimit(10);
             setCrawlVideos(true);
-            setSelectedTags(preselectedTags);
+            // Use context tags if available, otherwise use preselected tags
+            const tagsToUse = hashtagFilters.length > 0 ? hashtagFilters : preselectedTags;
+            setSelectedTags(tagsToUse);
             setIsIndexing(false);
         }
-    }, [isOpen, preselectedTags]);
+    }, [isOpen, preselectedTags, hashtagFilters]);
 
     const startIndexing = async () => {
         if (!url.trim() || selectedTags.length === 0) return;
 
         try {
             setIsIndexing(true);
+            console.log('Starting indexing with tags:', selectedTags);
 
             const response = await fetch('/api/ai-analysis', {
                 method: 'POST',
@@ -88,7 +93,7 @@ export function UrlIndexingDialog({
             }
 
             // Call the callback to start progress tracking
-            onIndexingStart(indexingId);
+            onIndexingStart(indexingId, indexingLimit, selectedTags);
 
         } catch (error) {
             console.error('Error starting indexing:', error);

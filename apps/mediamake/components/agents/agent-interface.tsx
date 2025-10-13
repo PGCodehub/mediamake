@@ -25,6 +25,7 @@ interface AgentInterfaceProps {
     onRunAgent: (params: Record<string, any>) => Promise<any>;
     isLoading: boolean;
     agentPath: string;
+    onOutputChange?: (output: any) => void;
 }
 
 interface FormField {
@@ -76,7 +77,7 @@ const getDefaultValues = (schema: any): Record<string, any> => {
     return defaults;
 };
 
-export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath }: AgentInterfaceProps) {
+export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath, onOutputChange }: AgentInterfaceProps) {
     const [activeTab, setActiveTab] = useState<"current" | "history">("current");
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [currentOutput, setCurrentOutput] = useState<any>(null);
@@ -115,6 +116,7 @@ export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath }
         },
         onOutputChange: (output) => {
             setCurrentOutput(output);
+            onOutputChange?.(output);
         }
     });
 
@@ -238,7 +240,8 @@ export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath }
                                                 const fieldValue = formData[field.key];
                                                 const isDescription = field.key.toLowerCase().includes('description') ||
                                                     field.key.toLowerCase().includes('prompt') ||
-                                                    field.key.toLowerCase().includes('content');
+                                                    field.key.toLowerCase().includes('content') ||
+                                                    field.key.toLowerCase().includes('request');
 
                                                 return (
                                                     <div key={field.key} className="space-y-2">
