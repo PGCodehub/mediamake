@@ -11,41 +11,57 @@ interface ShakeEffectData extends GenericEffectData {
 }
 
 const videoItemSchema = z.object({
-  src: z.string().url(),
+  src: z.string(),
   fit: z.enum(['cover', 'contain', 'fill', 'none', 'scale-down']).optional(),
   start: z.number().optional(),
   duration: z.number().optional(),
   style: z.any().optional(),
-  transitions: z.object({
-    fadeInTransition: z
-      .enum([
-        'none',
-        'opacity',
-        'slide-in-right',
-        'slide-in-left',
-        'slide-in-top',
-        'slide-in-bottom',
-        'scale-in',
-        'blur-in',
-        'shake-in',
-      ])
-      .optional(),
-    fadeInDuration: z.number().optional(),
-    fadeOutTransition: z
-      .enum([
-        'none',
-        'opacity',
-        'slide-out-right',
-        'slide-out-left',
-        'slide-out-top',
-        'slide-out-bottom',
-        'scale-out',
-        'blur-out',
-        'shake-out',
-      ])
-      .optional(),
-    fadeOutDuration: z.number().optional(),
-  }),
+  transition: z
+    .object({
+      start: z
+        .object({
+          type: z
+            .enum([
+              'none',
+              'opacity',
+              'slide-in-right',
+              'slide-in-left',
+              'slide-in-top',
+              'slide-in-bottom',
+              'scale-in',
+              'zoom-in',
+              'spin-in',
+              'blur-in',
+              'shake-in',
+            ])
+            .optional(),
+          duration: z.number().optional(),
+          intensity: z.number().min(0).optional(),
+        })
+        .optional(),
+      end: z
+        .object({
+          type: z
+            .enum([
+              'none',
+              'opacity',
+              'slide-out-right',
+              'slide-out-left',
+              'slide-out-top',
+              'slide-out-bottom',
+              'scale-out',
+              'zoom-out',
+              'spin-out',
+              'blur-out',
+              'shake-out',
+            ])
+            .optional(),
+          duration: z.number().optional(),
+          intensity: z.number().min(0).optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 const presetParams = z.object({
@@ -54,7 +70,7 @@ const presetParams = z.object({
     .string()
     .describe("Aspect ratio for the video (e.g., '16:9', '9:16', '1:1')"),
   videoUrls: z
-    .array(z.string().url())
+    .array(z.string())
     .optional()
     .describe('Array of video URLs to stitch together in sequence (no transitions)'),
   videoItems: z.array(videoItemSchema).optional(),
@@ -82,42 +98,56 @@ const presetExecution = async (
   const createTransitionEffects = (
     videoItem: z.infer<typeof videoItemSchema>,
     videoId: string,
-    isFadeIn: boolean = true,
+    isFadeIn: boolean,
   ): BaseEffect[] => {
     const effects: (GenericEffectData | ShakeEffectData)[] = [];
-    const { transitions, style } = videoItem;
-    const transition = isFadeIn
-      ? transitions.fadeInTransition
-      : transitions.fadeOutTransition;
-    const effectDuration = isFadeIn
-      ? transitions.fadeInDuration
-      : transitions.fadeOutDuration;
+    const { transition } = videoItem;
 
-    // The duration of the video item itself. If not present, we can't do a fade-out.
+    const transitionProps = isFadeIn ? transition?.start : transition?.end;
+
+    if (!transitionProps || !transitionProps.type || transitionProps.type === 'none') {
+      return [];
+    }
+
+    const {
+      type: transitionType,
+      duration: effectDuration,
+      intensity: itemIntensity,
+    } = transitionProps;
+
     const videoDuration = videoItem.duration;
 
-    if (
-      !transition ||
-      transition === 'none' ||
-      (!isFadeIn && !videoDuration) // Cannot do fade-out without a duration
-    ) {
+    if (!isFadeIn && !videoDuration) {
       return [];
     }
 
     const transitionDuration = effectDuration || 1.0;
-    const totalDuration = videoDuration || 5; // Use default if duration is not set for timing calcs
+    const totalDuration = videoDuration || 5;
 
     const startTime = isFadeIn
       ? 0
       : Math.max(0, totalDuration - transitionDuration);
 
+    let finalIntensity: number;
+    if (isFadeIn) {
+      finalIntensity = itemIntensity ?? 1.0;
+    } else {
+      finalIntensity = itemIntensity ?? 1.0;
+    }
 
-    if (
-      transition === 'opacity' ||
-      transition.includes('slide') ||
-      transition.includes('scale') ||
-      transition.includes('blur')
-    ) {
+    // For opacity, intensity is capped at 1 to calculate the minimum
+    const opacityIntensity = Math.min(finalIntensity, 1.0);
+    const minOpacity = 1 - opacityIntensity;
+
+    const isSlide = transitionType.includes('slide');
+    const isScale = transitionType.includes('scale');
+    const isZoom = transitionType.includes('zoom');
+    const isSpin = transitionType.includes('spin');
+    const isBlur = transitionType.includes('blur');
+    const isShake = transitionType.includes('shake');
+
+    // Add opacity fade for 'opacity' and 'slide' transitions
+    if (transitionType === 'opacity' || isSlide) {
       effects.push({
         start: startTime,
         duration: transitionDuration,
@@ -125,155 +155,150 @@ const presetExecution = async (
         targetIds: [videoId],
         type: 'ease-in-out',
         ranges: [
-          { key: 'opacity', val: isFadeIn ? 0 : 1, prog: 0 },
-          { key: 'opacity', val: isFadeIn ? 1 : 0, prog: 1 },
+          { key: 'opacity', val: isFadeIn ? minOpacity : 1, prog: 0 },
+          { key: 'opacity', val: isFadeIn ? 1 : minOpacity, prog: 1 },
         ],
       });
     }
 
-    if (transition.includes('slide-in') || transition.includes('slide-out')) {
-      const direction = transition.split('-')[2];
-      const isSlideIn = transition.includes('slide-in');
+    // Handle specific transition types
+    if (isSlide) {
+      const direction = transitionType.split('-')[2];
+      const axis = direction === 'top' || direction === 'bottom' ? 'Y' : 'X';
+      const key = `translate${axis}`;
+      const multiplier = direction === 'left' || direction === 'top' ? -1 : 1;
+      const distance = finalIntensity * 100;
 
-      if (direction === 'right' || direction === 'left') {
+      const startVal = isFadeIn ? `${distance * multiplier}px` : '0px';
+      const endVal = isFadeIn ? '0px' : `${distance * multiplier}px`;
+
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [videoId],
+        type: isFadeIn ? 'ease-out' : 'ease-in',
+        ranges: [
+          { key, val: startVal, prog: 0 },
+          { key, val: endVal, prog: 1 },
+        ],
+      });
+    } else if (isScale) {
+      const scaleFactor = (1 - finalIntensity) / 2;
+      const startScale = isFadeIn ? 1 + scaleFactor : 1;
+      const endScale = isFadeIn ? 1 : 1 - scaleFactor;
+
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [videoId],
+        type: isFadeIn ? 'ease-out' : 'ease-in',
+        ranges: [
+          { key: 'scale', val: startScale, prog: 0 },
+          { key: 'scale', val: endScale, prog: 1 },
+        ],
+      });
+    } else if (isZoom) {
+      const scaleFactor = finalIntensity / 2;
+      const startScale = isFadeIn ? 1 + scaleFactor : 1;
+      const endScale = isFadeIn ? 1 : 1 + scaleFactor;
+
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [videoId],
+        type: isFadeIn ? 'ease-out' : 'ease-in',
+        ranges: [
+          { key: 'scale', val: startScale, prog: 0 },
+          { key: 'scale', val: endScale, prog: 1 },
+        ],
+      });
+    } else if (isSpin) {
+      const rotation = finalIntensity * 90;
+      const startRotation = isFadeIn ? `${-rotation}deg` : '0deg';
+      const endRotation = isFadeIn ? '0deg' : `${rotation}deg`;
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [videoId],
+        type: isFadeIn ? 'ease-out' : 'ease-in',
+        ranges: [
+          { key: 'rotate', val: startRotation, prog: 0 },
+          { key: 'rotate', val: endRotation, prog: 1 },
+        ],
+      });
+    } else if (isBlur) {
+      const blurAmount = finalIntensity * 10;
+      const startBlur = isFadeIn ? `${blurAmount}px` : '0px';
+      const endBlur = isFadeIn ? '0px' : `${blurAmount}px`;
+      effects.push({
+        start: startTime,
+        duration: transitionDuration,
+        mode: 'provider',
+        targetIds: [videoId],
+        type: isFadeIn ? 'ease-out' : 'ease-in',
+        ranges: [
+          { key: 'blur', val: startBlur, prog: 0 },
+          { key: 'blur', val: endBlur, prog: 1 },
+        ],
+      });
+    } else if (isShake) {
+      if (isFadeIn) {
         effects.push({
           start: startTime,
-          duration: transitionDuration * 0.8,
+          duration: transitionDuration,
           mode: 'provider',
           targetIds: [videoId],
-          type: isSlideIn ? 'ease-out' : 'ease-in',
+          type: 'linear',
+          amplitude: finalIntensity * 3,
+          frequency: 1,
+          decay: true,
+          axis: 'both',
+        } as ShakeEffectData);
+        effects.push({
+          start: startTime,
+          duration: 0.5,
+          mode: 'provider',
+          targetIds: [videoId],
+          type: 'ease-in-out',
           ranges: [
-            {
-              key: 'translateX',
-              val: isSlideIn
-                ? direction === 'right'
-                  ? '100px'
-                  : '-100px'
-                : '0px',
-              prog: 0,
-            },
-            {
-              key: 'translateX',
-              val: isSlideIn
-                ? '0px'
-                : direction === 'right'
-                  ? '-100px'
-                  : '100px',
-              prog: 1,
-            },
+            { key: 'opacity', val: 0, prog: 0 },
+            { key: 'opacity', val: 1, prog: 1 },
+          ],
+        });
+      } else {
+        effects.push({
+          start: startTime,
+          duration: transitionDuration,
+          mode: 'provider',
+          targetIds: [videoId],
+          type: 'linear',
+          amplitude: finalIntensity * 10,
+          frequency: 1,
+          decay: false,
+          axis: 'both',
+        } as ShakeEffectData);
+        effects.push({
+          start: startTime,
+          duration: transitionDuration,
+          mode: 'provider',
+          targetIds: [videoId],
+          type: 'ease-in-out',
+          ranges: [
+            { key: 'opacity', val: 1, prog: 0 },
+            { key: 'opacity', val: 1 - Math.min(finalIntensity, 1), prog: 1 },
           ],
         });
       }
     }
 
-    if (transition === 'scale-in') {
-      effects.push({
-        start: startTime,
-        duration: transitionDuration,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'ease-out',
-        ranges: [
-          { key: 'scale', val: 0.8, prog: 0 },
-          { key: 'scale', val: 1, prog: 1 },
-        ],
-      });
-    }
-
-    if (transition === 'scale-out') {
-      effects.push({
-        start: startTime,
-        duration: transitionDuration,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'ease-in',
-        ranges: [
-          { key: 'scale', val: 1, prog: 0 },
-          { key: 'scale', val: 1.1, prog: 1 },
-        ],
-      });
-    }
-
-    if (transition === 'blur-in') {
-      effects.push({
-        start: startTime,
-        duration: transitionDuration,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'ease-out',
-        ranges: [
-          { key: 'blur', val: '10px', prog: 0 },
-          { key: 'blur', val: '0px', prog: 1 },
-        ],
-      });
-    }
-
-    if (transition === 'blur-out') {
-      effects.push({
-        start: startTime,
-        duration: transitionDuration,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'ease-in',
-        ranges: [
-          { key: 'blur', val: '0px', prog: 0 },
-          { key: 'blur', val: '10px', prog: 1 },
-        ],
-      });
-    }
-
-    if (transition === 'shake-in') {
-      effects.push({
-        start: startTime,
-        duration: transitionDuration,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'linear',
-        amplitude: 3,
-        frequency: 1,
-        decay: true,
-        axis: 'both',
-      } as ShakeEffectData);
-      effects.push({
-        start: startTime,
-        duration: 0.5,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'ease-in-out',
-        ranges: [
-          {
-            key: 'opacity',
-            val: isFadeIn ? 0 : 1,
-            prog: 0,
-          },
-          {
-            key: 'opacity',
-            val: isFadeIn ? 1 : 0,
-            prog: 1,
-          },
-        ],
-      });
-    }
-
-    if (transition === 'shake-out') {
-      effects.push({
-        start: startTime,
-        duration: transitionDuration,
-        mode: 'provider',
-        targetIds: [videoId],
-        type: 'linear',
-        amplitude: 10,
-        frequency: 1,
-        decay: false,
-        axis: 'both',
-      } as ShakeEffectData);
-    }
-
     return effects.map((effect) => {
       const isShakeEffect = 'amplitude' in effect;
       return {
-        id: `${videoId}-transition-${isFadeIn ? 'in' : 'out'
-          }-${transition}`,
+        id: `${videoId}-transition-${isFadeIn ? 'in' : 'out'}-${transitionType}`,
         componentId: isShakeEffect ? 'shake' : 'generic',
         data: effect,
       };
@@ -394,24 +419,32 @@ const videoStitchPresetMetadata: PresetMetadata = {
     videoItems: [
       {
         src: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-        // duration: 5, // Example of omitting duration
-        // start: 0,
-        transitions: {
-          fadeInTransition: 'slide-in-left',
-          fadeInDuration: 1,
-          fadeOutTransition: 'opacity',
-          fadeOutDuration: 1,
+        transition: {
+          start: {
+            type: 'slide-in-left',
+            duration: 1,
+          },
+          end: {
+            type: 'zoom-out',
+            duration: 1.5,
+            intensity: 0.7, // A 70% intensity zoom-out
+          },
         },
       },
       {
         src: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-        duration: 8, // Example of providing duration
-        // start: 5,
-        transitions: {
-          fadeInTransition: 'opacity',
-          fadeInDuration: 1,
-          fadeOutTransition: 'slide-out-right',
-          fadeOutDuration: 1,
+        duration: 8,
+        transition: {
+          start: {
+            type: 'blur-in',
+            duration: 1.5,
+            // This will inherit the 0.7 intensity from the previous clip
+          },
+          end: {
+            type: 'spin-out',
+            duration: 1,
+            // This will use the default intensity of 1.0
+          },
         },
       },
     ],
