@@ -38,6 +38,8 @@ const nextConfig: NextConfig = {
         rollup: 'commonjs rollup',
         '@rollup/rollup-linux-x64-gnu': 'commonjs @rollup/rollup-linux-x64-gnu',
         mongodb: 'commonjs mongodb',
+        '@ffmpeg-installer/ffmpeg': 'commonjs @ffmpeg-installer/ffmpeg',
+        '@ffprobe-installer/ffprobe': 'commonjs @ffprobe-installer/ffprobe',
       });
     }
 
