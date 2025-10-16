@@ -444,11 +444,11 @@ export const MediaDialog = ({
                                         </div>
                                     )}
 
-                                    {media.image.metadata.userTags && media.image.metadata.userTags.length > 0 && (
+                                    {(media.image.metadata as any).userTags && (media.image.metadata as any).userTags.length > 0 && (
                                         <div className="mb-8">
                                             <h3 className="text-xs uppercase tracking-[0.5em] text-neutral-300 mb-2">User Folders</h3>
                                             <div className="flex flex-wrap gap-2">
-                                                {media.image.metadata.userTags.map((word) => (
+                                                {(media.image.metadata as any).userTags.map((word: string) => (
                                                     <Badge
                                                         key={word}
                                                         variant="outline"
