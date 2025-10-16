@@ -71,7 +71,6 @@ export async function GET(req: NextRequest) {
     }
 
     const responseData = await response.json();
-    console.log('responseData - indexing status check', responseData);
     const validatedResponse = IndexingStatusSchema.parse(responseData);
 
     return NextResponse.json(validatedResponse);

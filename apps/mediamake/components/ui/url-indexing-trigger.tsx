@@ -84,10 +84,20 @@ export function UrlIndexingTrigger({
                         }
 
                         setIndexingProgress(100);
-                        setIndexingStatus("Indexing completed! Processing results...");
+                        setIndexingStatus("Indexing completed!");
 
                         // Process results - backend handles deduplication
-                        await processIndexingResults(data.data, tags);
+                        // await processIndexingResults(data.data, tags);
+
+                        setIndexingStatus("Indexing completed!");
+                        // onIndexingComplete?.();
+
+                        // Reset after 1 seconds
+                        setTimeout(() => {
+                            setIsIndexing(false);
+                            setIndexingStatus("");
+                            setIndexingProgress(0);
+                        }, 1000);
                     }
                 } else {
                     throw new Error('Invalid response format');
@@ -114,7 +124,6 @@ export function UrlIndexingTrigger({
     const processIndexingResults = async (data: any, tags: string[]) => {
         try {
             console.log('Processing indexing results:', data);
-            console.log('Tags passed to processIndexingResults:', tags);
             const results: {
                 id: string;
                 data: string;
@@ -131,7 +140,7 @@ export function UrlIndexingTrigger({
 
                 if (mediaUrl) {
                     const mediaFileData = {
-                        tags: tags,
+                        tags: metadata.userTags,
                         contentType: metadata.mediaType || 'image',
                         contentMimeType: metadata.mimeType || 'image/jpeg',
                         contentSubType: 'indexed',
@@ -143,7 +152,7 @@ export function UrlIndexingTrigger({
                         metadata: metadata,
                     };
 
-                    console.log('Creating media file with tags:', tags, 'for URL:', mediaUrl);
+                    console.log('Creating media file with tags:', metadata.userTags, 'for URL:', mediaUrl);
 
                     try {
                         const response = await fetch('/api/media-files', {

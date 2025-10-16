@@ -7,12 +7,6 @@ import { NextRequest } from 'next/server';
  * @returns client ID string or null if not found
  */
 export function getClientId(req: NextRequest): string | null {
-  // Check for Authorization header first (new format)
-  const authHeader = req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.replace('Bearer ', '');
-  }
-
   // Fallback to x-client-id for backward compatibility
   return req.headers.get('x-client-id');
 }

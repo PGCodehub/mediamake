@@ -15,6 +15,7 @@ import { systemAgent } from './agents/system';
 import { transcriptionMetaAgent } from './agents/words/transcriptionMetaAgent';
 import { youtubeAgent } from './agents/metadata/youtubeAgent';
 import { conceptAgent } from './agents/metadata/conceptAgent';
+import { musicStitchAgent } from './agents/video/shorts/musicStitch';
 import { contextLimiter } from './middlewares/contextLimiter';
 import { onlyTextParts } from './middlewares/onlyTextParts';
 import { chatRestoreLocal } from '../api/studio/chat/sessions/chatSessionLocal';
@@ -31,6 +32,7 @@ const aiMainRouter = aiRouter
   .agent('/transcription-fixer', transcriptionFixerAgent)
   .agent('/youtube-metadata', youtubeAgent)
   .agent('/concept-generation', conceptAgent)
+  .agent('/video/shorts/music-stitch', musicStitchAgent)
   .use('/', contextLimiter(5))
   .use('/', onlyTextParts(100))
   .agent('/', async props => {
@@ -56,6 +58,7 @@ const aiMainRouter = aiRouter
         ...props.next.agentAsTool('/transcription-meta'),
         ...props.next.agentAsTool('/youtube-metadata'),
         ...props.next.agentAsTool('/concept-generation'),
+        ...props.next.agentAsTool('/music-stitch'),
       },
       toolChoice: 'auto',
       stopWhen: [

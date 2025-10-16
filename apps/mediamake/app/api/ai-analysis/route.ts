@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AI_ANALYSIS_CONFIG } from '@/lib/sparkbaord/config';
+import { encrypt } from '@/lib/jwt';
 
 // Request body schema for URL indexing
 const IndexingRequestSchema = z.object({
@@ -50,7 +51,6 @@ export async function POST(req: NextRequest) {
 
     const { siteLinks, indexingLimit, tags, crawlVideos, dbFolder } =
       validatedBody;
-
     // Call the AI analysis service to trigger indexing
     const response = await fetch(
       `${AI_ANALYSIS_CONFIG.baseUrl}/images/trigger`,
@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
           tags,
           crawlVideos,
           dbFolder,
+          webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/media-files/webhook`,
+          // the developer key gets encrypted, and the api gets called with the correct authentication bearer of dev api key in middleware checks while it gets calle, as decription is sdon internally in the sparkboard.
+          webhookSecret: encrypt(
+            process.env.NEXT_PUBLIC_DEV_API_KEY ?? '',
+            process.env.SPARKBOARD_API_KEY ?? '',
+          ),
         }),
       },
     );

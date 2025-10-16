@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMedia } from "@/components/editor/media/media-context";
+import { encrypt } from "@/lib/jwt";
 
 interface UrlIndexingDialogProps {
     isOpen: boolean;
@@ -77,7 +78,7 @@ export function UrlIndexingDialog({
                     indexingLimit,
                     tags: selectedTags,
                     crawlVideos,
-                    dbFolder: `mediamake/scraped/${process.env.NEXT_PUBLIC_DEV_CLIENT_ID || 'default'}`
+                    dbFolder: `mediamake/scraped/${process.env.NEXT_PUBLIC_DEV_CLIENT_ID || 'default'}`,
                 }),
             });
 

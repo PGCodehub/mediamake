@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,8 @@ import {
     Grid3X3,
     List,
     Check,
-    X as XIcon
+    X as XIcon,
+    Loader2
 } from "lucide-react";
 import { MediaFile, Tag } from "@/app/types/media";
 import { UploadTrigger } from "@/components/ui/upload-trigger";
@@ -34,6 +36,9 @@ import { MediaGrid, MediaOptionsDropdown } from "./media-ui";
 import useSWR from "swr";
 import { MediaSidebar } from "./media-sidebar";
 import { useMedia } from "./media-context";
+import { MediaEditDialog } from "./media-edit-dialog";
+import { BulkEditToolbar } from "./bulk-edit-toolbar";
+import { toast } from "sonner";
 
 // Pagination component
 interface PaginationProps {
@@ -205,6 +210,13 @@ export function MediaPicker({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(30);
 
+    // Edit functionality state
+    const [editMode, setEditMode] = useState(false);
+    const [bulkSelectedFiles, setBulkSelectedFiles] = useState<Set<string>>(new Set());
+    const [editingFile, setEditingFile] = useState<MediaFile | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isPicking, setIsPicking] = useState(false);
+
     // Reset page to 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -340,7 +352,84 @@ export function MediaPicker({
     };
 
     const handleEditDetails = (file: MediaFile) => {
-        console.log('Edit details for:', file);
+        setEditingFile(file);
+    };
+
+    // Bulk operations
+    const handleBulkSelectAll = () => {
+        const allFileIds = files.map((file: MediaFile) => file._id?.toString()).filter(Boolean) as string[];
+        setBulkSelectedFiles(new Set(allFileIds));
+    };
+
+    const handleBulkDeselectAll = () => {
+        setBulkSelectedFiles(new Set());
+    };
+
+    const handleBulkFileSelect = (fileId: string, selected: boolean) => {
+        const newSelection = new Set(bulkSelectedFiles);
+        if (selected) {
+            newSelection.add(fileId);
+        } else {
+            newSelection.delete(fileId);
+        }
+        setBulkSelectedFiles(newSelection);
+    };
+
+    const handleBulkUpdate = async (fileIds: string[], operation: 'add' | 'remove' | 'replace', tags: string[]) => {
+        try {
+            setIsUpdating(true);
+            const response = await fetch('/api/media-files/bulk', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    fileIds,
+                    operation,
+                    tags
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update files');
+            }
+
+            // Refresh the files data
+            await mutateFiles();
+            toast.success(`Updated ${fileIds.length} file${fileIds.length > 1 ? 's' : ''}`);
+        } catch (error) {
+            console.error('Error in bulk update:', error);
+            toast.error('Failed to update files');
+            throw error;
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleSaveFile = async (fileId: string, updates: { tags: string[]; fileName?: string }) => {
+        try {
+            setIsUpdating(true);
+            const response = await fetch(`/api/media-files/${fileId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updates),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update file');
+            }
+
+            // Refresh the files data
+            await mutateFiles();
+        } catch (error) {
+            console.error('Error updating file:', error);
+            toast.error('Failed to update file');
+            throw error;
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     const handleDeleteMedia = async (file: MediaFile) => {
@@ -386,15 +475,30 @@ export function MediaPicker({
         setContextSelectedFiles(newSelectedFiles);
     };
 
-    const handlePickItems = () => {
+    const handlePickItems = async () => {
         if (selectedFiles.size === 0) return;
 
-        const selectedFilesArray = files.filter((file: MediaFile) =>
-            file._id && selectedFiles.has(file._id.toString())
-        );
+        try {
+            setIsPicking(true);
+            // Fetch all selected files by their IDs
+            const selectedFileIds = Array.from(selectedFiles);
+            const response = await fetch(`/api/media-files?ids=${selectedFileIds.join(',')}`);
 
-        onSelect?.(selectedFilesArray);
-        onClose?.();
+            if (!response.ok) {
+                throw new Error('Failed to fetch selected files');
+            }
+
+            const data = await response.json();
+            const selectedFilesArray = data.files || [];
+
+            onSelect?.(selectedFilesArray);
+            onClose?.();
+        } catch (error) {
+            console.error('Error fetching selected files:', error);
+            toast.error('Failed to fetch selected files');
+        } finally {
+            setIsPicking(false);
+        }
     };
 
     const clearSelection = () => {
@@ -439,13 +543,13 @@ export function MediaPicker({
         : "flex-1 bg-background";
 
     const contentClasses = pickerMode
-        ? "fixed right-0 top-0 h-full w-[80vw] md:w-[80vw] bg-background border-l shadow-lg"
+        ? "fixed right-0 top-0 h-full w-[80vw] md:w-[80vw] bg-background border-l shadow-lg z-50"
         : "flex-1 bg-background";
 
-    return (
+    const pickerContent = (
         <div className={containerClasses}>
             {pickerMode && (
-                <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+                <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
             )}
             <div
                 className={contentClasses}
@@ -466,6 +570,21 @@ export function MediaPicker({
                                 {pickerMode ? "Select Media" : (selectedTag ? `Files tagged with "${getTagDisplayName(selectedTag)}"` : 'All Files')}
                             </h2>
                             <div className="flex items-center gap-2">
+                                {!pickerMode && (
+                                    <Button
+                                        variant={editMode ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => {
+                                            setEditMode(!editMode);
+                                            if (editMode) {
+                                                setBulkSelectedFiles(new Set());
+                                            }
+                                        }}
+                                    >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        {editMode ? 'Exit Edit' : 'Edit Mode'}
+                                    </Button>
+                                )}
                                 <UploadTrigger
                                     autoUpload={true}
                                     onUploadComplete={() => {
@@ -663,6 +782,16 @@ export function MediaPicker({
                                         />
                                     </div>
                                 </div>
+                                {/* Bulk Edit Toolbar */}
+                                {editMode && (
+                                    <BulkEditToolbar
+                                        selectedFiles={bulkSelectedFiles}
+                                        onClearSelection={handleBulkDeselectAll}
+                                        onBulkUpdate={handleBulkUpdate}
+                                        isUpdating={isUpdating}
+                                    />
+                                )}
+
                                 {isLoading ? (
                                     <div className="text-center text-muted-foreground py-8">
                                         Loading files...
@@ -682,6 +811,12 @@ export function MediaPicker({
                                                 pickerMode={pickerMode}
                                                 selectedFiles={selectedFiles}
                                                 onFileSelect={handleFileSelection}
+                                                editMode={editMode}
+                                                onBulkSelect={handleBulkSelectAll}
+                                                onBulkSelectAll={handleBulkSelectAll}
+                                                onBulkDeselectAll={handleBulkDeselectAll}
+                                                bulkSelectedFiles={bulkSelectedFiles}
+                                                onBulkFileSelect={handleBulkFileSelect}
                                             />
                                         ) : (
                                             <div className="space-y-2">
@@ -785,9 +920,16 @@ export function MediaPicker({
                                     </Button>
                                     <Button
                                         onClick={handlePickItems}
-                                        disabled={selectedFiles.size === 0}
+                                        disabled={selectedFiles.size === 0 || isPicking}
                                     >
-                                        Pick Items ({selectedFiles.size})
+                                        {isPicking ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Picking...
+                                            </>
+                                        ) : (
+                                            `Pick Items (${selectedFiles.size})`
+                                        )}
                                     </Button>
                                 </div>
                             </div>
@@ -795,6 +937,21 @@ export function MediaPicker({
                     )}
                 </div>
             </div>
+
+            {/* Media Edit Dialog */}
+            <MediaEditDialog
+                isOpen={!!editingFile}
+                onClose={() => setEditingFile(null)}
+                mediaFile={editingFile}
+                onSave={handleSaveFile}
+            />
         </div>
     );
+
+    // Use portal for picker mode to escape sidebar z-index constraints
+    if (pickerMode && typeof window !== 'undefined') {
+        return createPortal(pickerContent, document.body);
+    }
+
+    return pickerContent;
 }

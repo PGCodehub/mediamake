@@ -26,11 +26,18 @@ import { Transcription } from "@/app/types/transcription";
 const availableFonts = getAvailableFonts();
 
 interface SchemaFormProps {
-    metadata: PresetMetadata;
+    metadata?: PresetMetadata;
     schema: any;
     value: any;
     onChange: (value: any) => void;
     className?: string;
+    showTabs?: boolean;
+    showResetButton?: boolean;
+    resetButtonText?: string;
+    onReset?: () => void;
+    customActions?: React.ReactNode;
+    title?: string;
+    description?: string;
 }
 
 interface FormField {
@@ -75,6 +82,20 @@ function isFontField(fieldKey: string, field: FormField): boolean {
     const descLower = (field.description || '').toLowerCase();
 
     return fontKeywords.some(keyword =>
+        keyLower.includes(keyword) ||
+        titleLower.includes(keyword) ||
+        descLower.includes(keyword)
+    );
+}
+
+// Helper function to detect if a field should use a large textarea
+function isLargeTextField(fieldKey: string, field: FormField): boolean {
+    const textKeywords = ['description', 'content', 'prompt'];
+    const keyLower = fieldKey.toLowerCase();
+    const titleLower = (field.title || '').toLowerCase();
+    const descLower = (field.description || '').toLowerCase();
+
+    return textKeywords.some(keyword =>
         keyLower.includes(keyword) ||
         titleLower.includes(keyword) ||
         descLower.includes(keyword)
@@ -321,6 +342,7 @@ function renderField(
 
                 const isUrl = isUrlField(fieldKey, field);
                 const isFont = isFontField(fieldKey, field);
+                const isLargeText = isLargeTextField(fieldKey, field);
 
                 if (isUrl) {
                     return (
@@ -348,6 +370,18 @@ function renderField(
                             value={typeof fieldValue === 'string' ? fieldValue : ""}
                             onChange={(val) => handleChange(fieldKey, val)}
                             placeholder={field.description || `Select or type font name`}
+                        />
+                    );
+                }
+
+                if (isLargeText) {
+                    return (
+                        <Textarea
+                            value={typeof fieldValue === 'string' ? fieldValue : ""}
+                            onChange={(e) => handleChange(fieldKey, e.target.value)}
+                            placeholder={field.description || `Enter ${field.title || fieldKey}`}
+                            rows={8}
+                            className="resize-none overflow-y-auto"
                         />
                     );
                 }
@@ -847,7 +881,20 @@ function getDefaultValues(schema: any): any {
     return defaults;
 }
 
-export function SchemaForm({ schema, value, onChange, className = "", metadata }: SchemaFormProps) {
+export function SchemaForm({
+    schema,
+    value,
+    onChange,
+    className = "",
+    metadata,
+    showTabs = true,
+    showResetButton = true,
+    resetButtonText = "Reset to default values",
+    onReset,
+    customActions,
+    title = "Input Parameters",
+    description
+}: SchemaFormProps) {
     const [formData, setFormData] = useState(value || {});
     const [activeTab, setActiveTab] = useState<"form" | "json">("form");
 
@@ -881,7 +928,9 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
     };
 
     const handleReset = () => {
-        if (metadata.defaultInputParams) {
+        if (onReset) {
+            onReset();
+        } else if (metadata?.defaultInputParams) {
             setFormData(metadata.defaultInputParams);
             onChange(metadata.defaultInputParams);
         } else {
@@ -928,39 +977,75 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
     return (
         <div className={className}>
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Input Parameters</h3>
+                <div>
+                    <h3 className="text-lg font-semibold">{title}</h3>
+                    {description && (
+                        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                    )}
+                </div>
                 <div className="flex items-center gap-2">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                onClick={handleReset}
-                                variant="outline"
-                                size="sm"
-                            >
-                                <RotateCcw className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Reset to default values</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
-                        <TabsList>
-                            <TabsTrigger value="form" className="flex items-center gap-2">
-                                <Eye className="h-4 w-4" />
-                                Form
-                            </TabsTrigger>
-                            <TabsTrigger value="json" className="flex items-center gap-2">
-                                <Code className="h-4 w-4" />
-                                JSON
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                    {customActions}
+                    {showResetButton && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={handleReset}
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    <RotateCcw className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{resetButtonText}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {showTabs && (
+                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
+                            <TabsList>
+                                <TabsTrigger value="form" className="flex items-center gap-2">
+                                    <Eye className="h-4 w-4" />
+                                    Form
+                                </TabsTrigger>
+                                <TabsTrigger value="json" className="flex items-center gap-2">
+                                    <Code className="h-4 w-4" />
+                                    JSON
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    )}
                 </div>
             </div>
             <div>
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
-                    <TabsContent value="form" className="space-y-4">
+                {showTabs ? (
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
+                        <TabsContent value="form" className="space-y-4">
+                            {fields.length > 0 ? (
+                                <div className="space-y-4">
+                                    {fields.map((field) => {
+                                        const fieldValue = formData[field.key];
+                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema);
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    No input parameters defined for this preset
+                                </p>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="json">
+                            <JsonEditor
+                                value={formData}
+                                onChange={handleJsonChange}
+                                height="400px"
+                                className="border rounded-md"
+                            />
+                        </TabsContent>
+                    </Tabs>
+                ) : (
+                    <div className="space-y-4">
                         {fields.length > 0 ? (
                             <div className="space-y-4">
                                 {fields.map((field) => {
@@ -973,17 +1058,8 @@ export function SchemaForm({ schema, value, onChange, className = "", metadata }
                                 No input parameters defined for this preset
                             </p>
                         )}
-                    </TabsContent>
-
-                    <TabsContent value="json">
-                        <JsonEditor
-                            value={formData}
-                            onChange={handleJsonChange}
-                            height="400px"
-                            className="border rounded-md"
-                        />
-                    </TabsContent>
-                </Tabs>
+                    </div>
+                )}
             </div>
         </div>
     );

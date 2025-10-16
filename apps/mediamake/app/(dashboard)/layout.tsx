@@ -4,6 +4,7 @@ import "../globals.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
+import { MediaProvider } from "@/components/editor/media/media-context";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -26,16 +27,18 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <SidebarProvider
-            style={
-                {
-                    "--sidebar-width": "calc(var(--spacing) * 72)",
-                    "--header-height": "calc(var(--spacing) * 12)",
-                } as React.CSSProperties
-            }
-        >
-            <AppSidebar variant="inset" />
-            {children}
-        </SidebarProvider>
+        <MediaProvider>
+            <SidebarProvider
+                style={
+                    {
+                        "--sidebar-width": "calc(var(--spacing) * 72)",
+                        "--header-height": "calc(var(--spacing) * 12)",
+                    } as React.CSSProperties
+                }
+            >
+                <AppSidebar variant="inset" />
+                {children}
+            </SidebarProvider>
+        </MediaProvider>
     );
 }

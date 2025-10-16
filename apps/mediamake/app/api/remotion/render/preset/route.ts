@@ -165,7 +165,7 @@ export const POST = async (req: NextRequest) => {
           config: finalComposition.config,
           style: finalComposition.style,
           clip,
-          fetcher: createCachedFetcher((url: string, data: any) =>
+          fetcher: (url: string, data: any) =>
             fetch(url, {
               method: 'POST',
               headers: {
@@ -173,7 +173,6 @@ export const POST = async (req: NextRequest) => {
               },
               body: JSON.stringify(data),
             }),
-          ),
         },
       );
       if (!presetOutput) {
