@@ -45,6 +45,10 @@ const presetParams = z.object({
       .describe('text alignment within parts'),
   }),
   subtitleSync: z.object({
+    eachWordAScentence: z
+      .boolean()
+      .optional()
+      .describe('each word as a sentence'),
     // Transition styles optimized for fast rap
     transitionStyle: z
       .enum([
@@ -208,6 +212,44 @@ const presetExecution = (
         words: processedWords,
       };
     });
+  };
+
+  // Pre-processes captions to split each word into its own caption
+  const preprocessCaptionsForEachWord = (captions: any[]) => {
+    const wordCaptions: any[] = [];
+
+    captions.forEach((caption, captionIndex) => {
+      caption.words.forEach((word: any, wordIndex: number) => {
+        const wordCaption = {
+          ...caption,
+          id: `word-caption-${captionIndex}-${wordIndex}`,
+          text: word.text,
+          absoluteStart: word.absoluteStart,
+          absoluteEnd: word.absoluteEnd,
+          start: 0, // Relative to caption, so always 0
+          end: word.absoluteEnd - word.absoluteStart, // Duration
+          duration: word.absoluteEnd - word.absoluteStart,
+          words: [
+            {
+              ...word,
+              start: 0, // Relative to caption, so always 0
+              duration: word.absoluteEnd - word.absoluteStart,
+              absoluteStart: word.absoluteStart,
+              absoluteEnd: word.absoluteEnd,
+            },
+          ],
+          metadata: {
+            ...caption.metadata,
+            isWordCaption: true,
+            originalCaptionIndex: captionIndex,
+            wordIndex: wordIndex,
+          },
+        };
+        wordCaptions.push(wordCaption);
+      });
+    });
+
+    return wordCaptions;
   };
 
   // Splits sentence into parts using metadata.splitParts if available
@@ -1057,9 +1099,15 @@ const presetExecution = (
     transitionDuration?: number,
     staticWordOpacity?: number,
     highlightIntensity?: number,
-  ) => {
-    // Pre-process captions to split combined words
-    const preprocessedCaptions = preprocessCaptions(inputCaptions);
+    eachWordAScentence?: boolean,
+  ): { captionsChildrenData: any[]; finalCaptions: any[] } => {
+    // Pre-process captions based on eachWordAScentence option
+    let preprocessedCaptions;
+    if (eachWordAScentence) {
+      preprocessedCaptions = preprocessCaptionsForEachWord(inputCaptions);
+    } else {
+      preprocessedCaptions = preprocessCaptions(inputCaptions);
+    }
 
     // Apply negative offset to all captions
     const offsetCaptions = preprocessedCaptions.map(caption => ({
@@ -1069,12 +1117,9 @@ const presetExecution = (
     }));
 
     // Apply noGaps extension if enabled
-    const processedCaptions = applyNoGapsExtension(
-      offsetCaptions,
-      noGapsConfig,
-    );
+    const finalCaptions = applyNoGapsExtension(offsetCaptions, noGapsConfig);
 
-    return processedCaptions.map(
+    const captionsChildrenData = finalCaptions.map(
       (caption: Transcription['captions'][number], _i: number) => {
         const scentenceId = `caption-${_i}`;
 
@@ -1204,6 +1249,8 @@ const presetExecution = (
         } as RenderableComponentData;
       },
     );
+
+    return { captionsChildrenData, finalCaptions };
   };
 
   // Select random font and color choices
@@ -1219,7 +1266,7 @@ const presetExecution = (
         };
 
   // Process all captions with highlighting and effects
-  const captionsChildrenData = processCaptions(
+  const { captionsChildrenData, finalCaptions } = processCaptions(
     inputCaptions,
     subtitleSync?.negativeOffset,
     subtitleSync?.noGaps,
@@ -1234,6 +1281,7 @@ const presetExecution = (
     subtitleSync?.transitionDuration,
     subtitleSync?.staticWordOpacity,
     subtitleSync?.highlightIntensity,
+    subtitleSync?.eachWordAScentence,
   );
 
   // Generate final composition structure
@@ -1261,8 +1309,11 @@ const presetExecution = (
               })
               .map((child, _j) => {
                 // Get position based on position configuration
+                // Use the processed captions for text length calculation
+                const captionForPosition = finalCaptions[_j];
+                const textLength = captionForPosition?.text?.length || 0;
                 const positionStyle = getPosition(
-                  inputCaptions[_j].text.length > 20 ? 800 : 600,
+                  textLength > 20 ? 800 : 600,
                   position,
                 );
 
