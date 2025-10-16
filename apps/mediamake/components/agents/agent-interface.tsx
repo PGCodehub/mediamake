@@ -3,20 +3,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SchemaForm } from "../editor/presets/schema-form";
 import { toJSONSchema } from "zod";
 import {
-    Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
-    RotateCcw, Image, FileAudio, Loader2, Play, History, Clock, CheckCircle,
-    MoreVertical, Download, Trash2 as TrashIcon
+    RotateCcw, Loader2, Play, History, Clock, CheckCircle,
+    MoreVertical, Trash2 as TrashIcon
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -26,18 +21,6 @@ interface AgentInterfaceProps {
     isLoading: boolean;
     agentPath: string;
     onOutputChange?: (output: any) => void;
-}
-
-interface FormField {
-    key: string;
-    type: string;
-    title?: string;
-    description?: string;
-    enum?: string[];
-    default?: any;
-    required: boolean;
-    properties?: any;
-    items?: any;
 }
 
 // Helper function to generate smart title from form data
@@ -61,18 +44,27 @@ const getDefaultValues = (schema: any): Record<string, any> => {
     if (!schema || !schema.properties) return {};
 
     const defaults: Record<string, any> = {};
+    const requiredFields = schema.required || [];
+
     Object.entries(schema.properties).forEach(([key, field]: [string, any]) => {
+        // Only set default values for:
+        // 1. Fields with explicit default values
+        // 2. Required fields that need a default value
         if (field.default !== undefined) {
             defaults[key] = field.default;
-        } else if (field.type === 'array') {
-            defaults[key] = [];
-        } else if (field.type === 'object') {
-            defaults[key] = {};
-        } else if (field.type === 'boolean') {
-            defaults[key] = false;
-        } else {
-            defaults[key] = '';
+        } else if (requiredFields.includes(key)) {
+            // Only set defaults for required fields
+            if (field.type === 'array') {
+                defaults[key] = [];
+            } else if (field.type === 'object') {
+                defaults[key] = {};
+            } else if (field.type === 'boolean') {
+                defaults[key] = false;
+            } else {
+                defaults[key] = '';
+            }
         }
+        // For non-required fields without explicit defaults, leave them undefined
     });
     return defaults;
 };
@@ -120,16 +112,11 @@ export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath, 
         }
     });
 
-    const handleFieldChange = useCallback((key: string, fieldValue: any) => {
-        setFormData(prev => ({ ...prev, [key]: fieldValue }));
-    }, []);
-
-    const handleJsonChange = useCallback((newData: any) => {
+    const handleFormChange = useCallback((newData: any) => {
         setFormData(newData);
     }, []);
 
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = useCallback(async () => {
         try {
             const result = await onRunAgent(formData);
             setCurrentOutput(result);
@@ -180,25 +167,13 @@ export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath, 
         );
     }
 
-    const fields = Object.entries(jsonSchema.properties).map(([key, field]: [string, any]) => ({
-        key,
-        type: field.type || "string",
-        title: field.title,
-        description: field.description,
-        enum: field.enum,
-        default: field.default,
-        required: Array.isArray(jsonSchema.required) && jsonSchema.required.includes(key),
-        properties: field.properties,
-        items: field.items
-    }));
-
     return (
         <div className="h-full flex flex-col">
             {/* Tabs above the form */}
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "current" | "history")} className="mb-4">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="current" className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
+                        <Play className="h-4 w-4" />
                         Current
                     </TabsTrigger>
                     <TabsTrigger value="history" className="flex items-center gap-2">
@@ -209,113 +184,23 @@ export function AgentInterface({ inputSchema, onRunAgent, isLoading, agentPath, 
 
                 <TabsContent value="current" className="flex-1">
                     <Card className="h-[80vh] overflow-y-auto flex flex-col">
-                        <CardHeader className="pb-4 flex-shrink-0">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-semibold">Agent Parameters</CardTitle>
-                                <div className="flex items-center gap-2">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                onClick={handleReset}
-                                                variant="outline"
-                                                size="sm"
-                                            >
-                                                <RotateCcw className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Reset to default values</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            </div>
-                        </CardHeader>
-
                         <CardContent className="flex-1 flex flex-col overflow-hidden">
                             <div className="flex-1 overflow-y-auto">
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    {fields.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {fields.map((field) => {
-                                                const fieldValue = formData[field.key];
-                                                const isDescription = field.key.toLowerCase().includes('description') ||
-                                                    field.key.toLowerCase().includes('prompt') ||
-                                                    field.key.toLowerCase().includes('content') ||
-                                                    field.key.toLowerCase().includes('request');
-
-                                                return (
-                                                    <div key={field.key} className="space-y-2">
-                                                        <Label htmlFor={field.key} className="text-sm font-medium">
-                                                            {field.title || field.key}
-                                                            {field.required && <span className="text-red-500 ml-1">*</span>}
-                                                        </Label>
-                                                        {field.description && (
-                                                            <p className="text-xs text-muted-foreground">{field.description}</p>
-                                                        )}
-
-                                                        {field.type === 'string' && (
-                                                            isDescription ? (
-                                                                <Textarea
-                                                                    id={field.key}
-                                                                    value={fieldValue || ''}
-                                                                    onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                                                                    placeholder={field.title || field.key}
-                                                                    rows={6}
-                                                                    className="resize-none"
-                                                                />
-                                                            ) : (
-                                                                <Input
-                                                                    id={field.key}
-                                                                    value={fieldValue || ''}
-                                                                    onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                                                                    placeholder={field.title || field.key}
-                                                                />
-                                                            )
-                                                        )}
-
-                                                        {field.type === 'boolean' && (
-                                                            <Checkbox
-                                                                id={field.key}
-                                                                checked={fieldValue || false}
-                                                                onCheckedChange={(checked) => handleFieldChange(field.key, checked)}
-                                                            />
-                                                        )}
-
-                                                        {field.enum && (
-                                                            <Select
-                                                                value={fieldValue || ''}
-                                                                onValueChange={(value) => handleFieldChange(field.key, value)}
-                                                            >
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder={`Select ${field.title || field.key}`} />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {field.enum.map((option: string) => (
-                                                                        <SelectItem key={option} value={option}>
-                                                                            {option}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">
-                                            No input parameters defined for this agent
-                                        </p>
-                                    )}
-                                </form>
+                                <SchemaForm
+                                    schema={jsonSchema}
+                                    value={formData}
+                                    onChange={handleFormChange}
+                                    onReset={handleReset}
+                                    title="Agent Parameters"
+                                    showTabs={true}
+                                    showResetButton={true}
+                                />
                             </div>
-
-                            <div className="flex-shrink-0 pt-4 border-t">
+                            <div className="mt-4 pt-4 border-t">
                                 <Button
-                                    type="submit"
+                                    onClick={handleSubmit}
                                     className="w-full"
                                     disabled={isLoading}
-                                    onClick={handleSubmit}
                                 >
                                     {isLoading ? (
                                         <>

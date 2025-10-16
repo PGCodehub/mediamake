@@ -24,7 +24,7 @@ interface MediaContextType {
     setIndexingLimit: (limit: number) => void;
 }
 
-const MediaContext = createContext<MediaContextType | undefined>(undefined);
+export const MediaContext = createContext<MediaContextType | undefined>(undefined);
 
 export function MediaProvider({ children }: { children: ReactNode }) {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);

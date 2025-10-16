@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 import {
   CreateMediaFileRequest,
   MediaFile,
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
     const contentType = searchParams.get('contentType');
     const contentSource = searchParams.get('contentSource');
     const contentSourceUrl = searchParams.get('contentSourceUrl');
+    const ids = searchParams.get('ids');
     const sort = searchParams.get('sort') || 'createdAt';
     const order = searchParams.get('order') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -36,6 +38,10 @@ export async function GET(request: NextRequest) {
     if (contentType) query.contentType = contentType;
     if (contentSource) query.contentSource = contentSource;
     if (contentSourceUrl) query.contentSourceUrl = contentSourceUrl;
+    if (ids) {
+      const objectIds = ids.split(',').map(id => new ObjectId(id.trim()));
+      query._id = { $in: objectIds };
+    }
 
     const sortObject = { [sort]: order as 'asc' | 'desc' };
 

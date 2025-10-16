@@ -263,8 +263,6 @@ export const MediaDialog = ({
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [showFullKeywords, setShowFullKeywords] = useState(false);
 
-    console.log('MEDIA', media);
-
     return (
         <Dialog open={!!media} onOpenChange={(open) => !open && setMedia(null)}>
             <DialogPortal>
@@ -440,6 +438,23 @@ export const MediaDialog = ({
                                                         }}
                                                     >
                                                         !{word}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {media.image.metadata.userTags && media.image.metadata.userTags.length > 0 && (
+                                        <div className="mb-8">
+                                            <h3 className="text-xs uppercase tracking-[0.5em] text-neutral-300 mb-2">User Folders</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {media.image.metadata.userTags.map((word) => (
+                                                    <Badge
+                                                        key={word}
+                                                        variant="outline"
+                                                        className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border-none"
+                                                    >
+                                                        {word}
                                                     </Badge>
                                                 ))}
                                             </div>
@@ -683,7 +698,14 @@ export const MediaGrid = ({
     onDeleteMedia,
     pickerMode = false,
     selectedFiles = new Set(),
-    onFileSelect
+    onFileSelect,
+    // New props for bulk editing
+    editMode = false,
+    onBulkSelect,
+    onBulkSelectAll,
+    onBulkDeselectAll,
+    bulkSelectedFiles = new Set(),
+    onBulkFileSelect
 }: {
     mediaFiles: MediaFile[];
     onEditDetails: (file: MediaFile) => void;
@@ -693,6 +715,13 @@ export const MediaGrid = ({
     pickerMode?: boolean;
     selectedFiles?: Set<string>;
     onFileSelect?: (file: MediaFile) => void;
+    // New props for bulk editing
+    editMode?: boolean;
+    onBulkSelect?: (fileIds: string[]) => void;
+    onBulkSelectAll?: () => void;
+    onBulkDeselectAll?: () => void;
+    bulkSelectedFiles?: Set<string>;
+    onBulkFileSelect?: (fileId: string, selected: boolean) => void;
 }) => {
     const [selectedMedia, setSelectedMedia] = useState<MediaDialogItem | null>(null);
     const [numColumns, setNumColumns] = useState(1);
@@ -725,6 +754,30 @@ export const MediaGrid = ({
         return newColumns;
     }, [mediaFiles, numColumns]);
 
+    // Bulk selection helpers
+    const allFileIds = useMemo(() =>
+        mediaFiles.map(file => file._id?.toString()).filter(Boolean) as string[],
+        [mediaFiles]
+    );
+
+    const allBulkSelected = useMemo(() =>
+        allFileIds.length > 0 && allFileIds.every(id => bulkSelectedFiles.has(id)),
+        [allFileIds, bulkSelectedFiles]
+    );
+
+    const handleBulkSelectAll = () => {
+        if (allBulkSelected) {
+            onBulkDeselectAll?.();
+        } else {
+            onBulkSelectAll?.();
+        }
+    };
+
+    const handleBulkFileToggle = (fileId: string) => {
+        const isSelected = bulkSelectedFiles.has(fileId);
+        onBulkFileSelect?.(fileId, !isSelected);
+    };
+
 
     if (!mediaFiles || mediaFiles.length === 0) {
         return null;
@@ -732,6 +785,37 @@ export const MediaGrid = ({
 
     return (
         <>
+            {/* Bulk Selection Header */}
+            {editMode && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleBulkSelectAll}
+                                className="h-8"
+                            >
+                                {allBulkSelected ? 'Deselect All' : 'Select All'}
+                            </Button>
+                            <span className="text-sm text-muted-foreground">
+                                {bulkSelectedFiles.size} of {allFileIds.length} selected
+                            </span>
+                        </div>
+                        {bulkSelectedFiles.size > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onBulkDeselectAll}
+                                className="text-destructive hover:text-destructive"
+                            >
+                                Clear Selection
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="flex gap-2 md:gap-4">
                 {columns.map((columnFiles, colIndex) => (
                     <div key={colIndex} className="flex w-full flex-col gap-2 md:gap-4">
@@ -741,11 +825,14 @@ export const MediaGrid = ({
 
                             const fileId = mediaFile._id?.toString();
                             const isSelected = pickerMode ? selectedFiles.has(fileId || '') : false;
+                            const isBulkSelected = editMode ? bulkSelectedFiles.has(fileId || '') : false;
 
                             return (
                                 <div
                                     onClick={() => {
-                                        if (pickerMode && onFileSelect) {
+                                        if (editMode && onBulkFileSelect) {
+                                            handleBulkFileToggle(fileId || '');
+                                        } else if (pickerMode && onFileSelect) {
                                             onFileSelect(mediaFile);
                                         } else {
                                             setSelectedMedia(dialogItem);
@@ -753,7 +840,7 @@ export const MediaGrid = ({
                                     }}
                                     key={mediaFile._id?.toString() || idx}
                                     className={`relative group/media bg-neutral-900 rounded-lg overflow-hidden cursor-pointer ${isSelected ? 'ring-2 ring-primary bg-primary/10' : ''
-                                        }`}
+                                        } ${isBulkSelected ? 'ring-2 ring-blue-500 bg-blue-500/10' : ''}`}
                                 >
                                     {dialogItem.type === 'image' && (
                                         <img
@@ -778,7 +865,7 @@ export const MediaGrid = ({
                                         <div className="w-full aspect-video bg-neutral-800 flex flex-col items-center justify-center p-4">
                                             <Volume2 className="w-8 h-8 text-neutral-400 mb-2" />
                                             <div className="text-center">
-                                                <p className="text-sm font-medium text-white truncate w-full" title={mediaFile.fileName}>
+                                                <p className="text-sm font-medium text-white truncate w-full max-w-[14ch] line-clamp-2" title={mediaFile.fileName}>
                                                     {mediaFile.fileName || 'Audio File'}
                                                 </p>
                                                 {mediaFile.tags && mediaFile.tags.length > 0 && (
@@ -804,7 +891,7 @@ export const MediaGrid = ({
                                         </div>
                                     )}
 
-                                    {/* Picker mode checkmark */}
+                                    {/* Selection indicators */}
                                     {pickerMode && isSelected && (
                                         <div className="absolute top-2 left-2 z-10">
                                             <div className="bg-primary text-primary-foreground rounded-full p-1">
@@ -813,9 +900,27 @@ export const MediaGrid = ({
                                         </div>
                                     )}
 
+                                    {/* Bulk selection checkbox */}
+                                    {editMode && (
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <div
+                                                className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer ${isBulkSelected
+                                                    ? 'bg-blue-500 border-blue-500 text-white'
+                                                    : 'bg-white/80 border-white/80 hover:bg-white'
+                                                    }`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleBulkFileToggle(fileId || '');
+                                                }}
+                                            >
+                                                {isBulkSelected && <Check className="w-3 h-3" />}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300">
-                                        {/* Top right dropdown - only show in non-picker mode */}
-                                        {!pickerMode && (
+                                        {/* Top right dropdown - only show in non-picker mode and non-edit mode */}
+                                        {!pickerMode && !editMode && (
                                             <MediaOptionsDropdown
                                                 mediaFile={mediaFile}
                                                 onEditDetails={onEditDetails}
@@ -825,8 +930,8 @@ export const MediaGrid = ({
                                             />
                                         )}
 
-                                        {/* Bottom right action buttons - only show in non-picker mode */}
-                                        {!pickerMode && (
+                                        {/* Bottom right action buttons - only show in non-picker mode and non-edit mode */}
+                                        {!pickerMode && !editMode && (
                                             <div className="absolute bottom-3 right-3 flex items-center gap-2 transform scale-75 group-hover/media:scale-100 transition-transform duration-300">
                                                 <a href={mediaFile.filePath} target="_blank" rel="noopener noreferrer" className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="View Source" onClick={(e) => e.stopPropagation()}>
                                                     <ExternalLink className="w-4 h-4 text-neutral-800" />
@@ -841,6 +946,35 @@ export const MediaGrid = ({
                                                 >
                                                     <Expand className="w-4 h-4 text-neutral-800" />
                                                 </button>
+                                            </div>
+                                        )}
+
+                                        {/* Edit mode action buttons */}
+                                        {editMode && (
+                                            <div className="absolute bottom-3 right-3 flex items-center gap-2 transform scale-75 group-hover/media:scale-100 transition-transform duration-300">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEditDetails(mediaFile);
+                                                    }}
+                                                    className="bg-blue-500/80 hover:bg-blue-500 p-2 rounded-full transition-colors"
+                                                    title="Edit Details"
+                                                >
+                                                    <Edit className="w-4 h-4 text-white" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteMedia(mediaFile);
+                                                    }}
+                                                    className="bg-red-500/80 hover:bg-red-500 p-2 rounded-full transition-colors"
+                                                    title="Delete Media"
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-white" />
+                                                </button>
+                                                <a href={mediaFile.filePath} target="_blank" rel="noopener noreferrer" className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="View Source" onClick={(e) => e.stopPropagation()}>
+                                                    <ExternalLink className="w-4 h-4 text-neutral-800" />
+                                                </a>
                                             </div>
                                         )}
                                     </div>

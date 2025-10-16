@@ -6,13 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { PresetUI } from "./preset-ui";
+import { RenderProvider } from "../editor/player";
 
 interface AgentOutputProps {
     output: any;
     isLoading: boolean;
+    customUIType?: string;
 }
 
-export function AgentOutput({ output, isLoading }: AgentOutputProps) {
+export function AgentOutput({ output, isLoading, customUIType }: AgentOutputProps) {
     const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
 
     const copyToClipboard = async (text: string, key: string) => {
@@ -106,6 +109,15 @@ export function AgentOutput({ output, isLoading }: AgentOutputProps) {
 
         return <span className="text-sm">{String(value)}</span>;
     };
+
+
+    console.log('output', output);
+    // Handle custom UI for presets
+    if (customUIType === 'presets' && output?.presetSets) {
+        return <RenderProvider>
+            <PresetUI presetSets={output.presetSets} isLoading={isLoading} />
+        </RenderProvider>
+    }
 
     if (isLoading) {
         return (
