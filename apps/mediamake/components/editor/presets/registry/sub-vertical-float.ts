@@ -55,9 +55,19 @@ const presetParams = z.object({
         'melodic-wave-breathing', // gentle wave-like floating with soft breathing effects for melodic rhythm
         'melodic-color-flow', // smooth color transitions with gentle drift for melodic flow
         'melodic-gentle-drift', // subtle position and scale drift with soft fade for melodic feel
+        'horizontal-slide-reveal', // words slide in from left to right, perfect for horizontal layouts
+        'horizontal-typewriter', // typewriter effect with horizontal flow, ideal for horizontal text
+        'horizontal-bounce-flow', // words bounce in sequence from left to right with flow
+        'horizontal-ripple-expand', // ripple effect expanding horizontally across words
+        'horizontal-zoom-cascade', // zoom effect cascading from left to right
       ])
       .default('word-fade-letterspace-float')
       .optional(),
+    layout: z
+      .enum(['horizontal', 'vertical'])
+      .default('vertical')
+      .optional()
+      .describe('layout direction for parts - horizontal or vertical'),
     negativeOffset: z.number().optional(),
     maxLines: z.number().optional(),
     noGaps: z.object({
@@ -73,6 +83,21 @@ const presetParams = z.object({
       .boolean()
       .optional()
       .describe('ignore all metadata provided in captions'),
+    fontScaling: z
+      .object({
+        highlighted: z
+          .number()
+          .default(1.35)
+          .optional()
+          .describe('font size multiplier for highlighted words'),
+        normal: z
+          .number()
+          .default(0.85)
+          .optional()
+          .describe('font size multiplier for normal words'),
+      })
+      .optional()
+      .describe('font size scaling for different word types'),
   }),
   fontChoices: z
     .array(
@@ -868,6 +893,161 @@ const presetExecution = (
     };
   };
 
+  // Creates horizontal slide reveal effect - words slide in from left to right
+  const createHorizontalSlideRevealEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+  ): GenericEffectData => {
+    const slideDistance = 100 + wordIndex * 20; // Staggered slide distance
+    const delay = wordIndex * 0.1; // Staggered delay
+
+    return {
+      type: 'ease-out',
+      start: word.start + delay,
+      duration: 0.8,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'translateX', val: -slideDistance, prog: 0 },
+        { key: 'translateX', val: 0, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.3 },
+      ],
+    };
+  };
+
+  // Creates horizontal typewriter effect - words appear sequentially from left to right
+  const createHorizontalTypewriterEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+  ): GenericEffectData => {
+    const typewriterDelay = wordIndex * 0.15; // Sequential delay
+
+    return {
+      type: 'ease-out',
+      start: word.start + typewriterDelay,
+      duration: 0.6,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.5 },
+        { key: 'scale', val: 0.8, prog: 0 },
+        { key: 'scale', val: 1.05, prog: 0.7 },
+        { key: 'scale', val: 1, prog: 1 },
+      ],
+    };
+  };
+
+  // Creates horizontal bounce flow effect - words bounce in sequence
+  const createHorizontalBounceFlowEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    impact: number,
+  ): GenericEffectData => {
+    const bounceDelay = wordIndex * 0.12;
+    const bounceHeight = 20 * impact;
+
+    return {
+      type: 'spring',
+      start: word.start + bounceDelay,
+      duration: 1.2,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'translateY', val: bounceHeight, prog: 0 },
+        { key: 'translateY', val: -bounceHeight * 0.3, prog: 0.3 },
+        { key: 'translateY', val: bounceHeight * 0.1, prog: 0.6 },
+        { key: 'translateY', val: 0, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.2 },
+      ],
+    };
+  };
+
+  // Creates horizontal ripple expand effect - ripple effect across words
+  const createHorizontalRippleExpandEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    selectedColorChoice: any,
+    impact: number,
+  ): GenericEffectData => {
+    const rippleDelay = wordIndex * 0.08;
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start + rippleDelay,
+      duration: 1.0,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'scale', val: 0.5, prog: 0 },
+        { key: 'scale', val: 1.1 * impact, prog: 0.4 },
+        { key: 'scale', val: 1, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.3 },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))` as any,
+          prog: 0,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${12 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8))` as any,
+          prog: 0.5,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${6 * impact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.6))` as any,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates horizontal zoom cascade effect - zoom effect cascading from left to right
+  const createHorizontalZoomCascadeEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    impact: number,
+  ): GenericEffectData => {
+    const cascadeDelay = wordIndex * 0.1;
+    const zoomIntensity = 0.3 * impact;
+
+    return {
+      type: 'ease-out',
+      start: word.start + cascadeDelay,
+      duration: 0.9,
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'scale', val: 0.3, prog: 0 },
+        { key: 'scale', val: 1.2 + zoomIntensity, prog: 0.5 },
+        { key: 'scale', val: 1, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.4 },
+        { key: 'translateY', val: 10, prog: 0 },
+        { key: 'translateY', val: -5, prog: 0.5 },
+        { key: 'translateY', val: 0, prog: 1 },
+      ],
+    };
+  };
+
   // Generates word data with effects and styling
   const generateWordsData = (
     words: any[],
@@ -879,6 +1059,7 @@ const presetExecution = (
     scentenceId: string,
     style?: any,
     animationStyle?: string,
+    fontScaling?: { highlighted?: number; normal?: number },
   ) => {
     const isAllWordsHighlighted = words.every(
       word => word.metadata?.isHighlight,
@@ -1253,13 +1434,149 @@ const presetExecution = (
             impact,
           ),
         });
+      } else if (animationStyle === 'horizontal-slide-reveal') {
+        // Words slide in from left to right, perfect for horizontal layouts
+        const impact = isHighlight ? 1.2 : 1.0;
+
+        effects.push({
+          id: `horizontal-slide-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalSlideRevealEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+          ),
+        });
+
+        // Add glow effect for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
+      } else if (animationStyle === 'horizontal-typewriter') {
+        // Typewriter effect with horizontal flow, ideal for horizontal text
+        const impact = isHighlight ? 1.1 : 0.9;
+
+        effects.push({
+          id: `horizontal-typewriter-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalTypewriterEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+          ),
+        });
+
+        // Add letter spacing for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `letter-spacing-${wordId}`,
+            componentId: 'generic',
+            data: createLetterSpacingEffect(
+              wordId,
+              word,
+              syncDuration,
+              shouldAnimate,
+              impact,
+            ),
+          });
+        }
+      } else if (animationStyle === 'horizontal-bounce-flow') {
+        // Words bounce in sequence from left to right with flow
+        const impact = isHighlight ? 1.3 : 1.0;
+
+        effects.push({
+          id: `horizontal-bounce-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalBounceFlowEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            impact,
+          ),
+        });
+
+        // Add glow effect for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
+      } else if (animationStyle === 'horizontal-ripple-expand') {
+        // Ripple effect expanding horizontally across words
+        const impact = isHighlight ? 1.4 : 1.1;
+
+        effects.push({
+          id: `horizontal-ripple-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalRippleExpandEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            selectedColorChoice,
+            impact,
+          ),
+        });
+      } else if (animationStyle === 'horizontal-zoom-cascade') {
+        // Zoom effect cascading from left to right
+        const impact = isHighlight ? 1.2 : 0.9;
+
+        effects.push({
+          id: `horizontal-zoom-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalZoomCascadeEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            impact,
+          ),
+        });
+
+        // Add glow effect for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
       }
 
       // Calculate font size and style
       let fontSize = avgFontSize ?? 50;
+      const highlightedMultiplier = fontScaling?.highlighted ?? 1.35;
+      const normalMultiplier = fontScaling?.normal ?? 0.85;
       const fontCalculatedSize = isHighlight
-        ? fontSize * 1.35
-        : fontSize * 0.85;
+        ? fontSize * highlightedMultiplier
+        : fontSize * normalMultiplier;
       const font = isHighlight
         ? selectedFontChoice.headerFont
         : selectedFontChoice.primaryFont;
@@ -1569,6 +1886,8 @@ const presetExecution = (
     textAlign?: string,
     style?: any,
     animationStyle?: string,
+    layout?: string,
+    fontScaling?: { highlighted?: number; normal?: number },
   ) => {
     const wordsData = generateWordsData(
       partWords,
@@ -1580,6 +1899,7 @@ const presetExecution = (
       scentenceId,
       style,
       animationStyle,
+      fontScaling,
     );
 
     // Calculate displacement based on character count or floatThreshold
@@ -1594,56 +1914,96 @@ const presetExecution = (
         ? floatThreshold
         : Math.max(5, Math.min(30, partCharacterCount * 1.5)); // Scale with character count, min 5, max 30
 
-    // Create part-specific effects using provider mode
-    const partRanges = [
-      {
-        key: 'translateX',
-        val: partIndex % 2 === 0 ? displacement : -displacement,
-        prog: 0,
-      },
-      {
-        key: 'translateX',
-        val: partIndex % 2 === 0 ? -displacement : displacement,
-        prog: 1,
-      },
-    ];
-
-    const partEffect: GenericEffectData = {
-      type: 'ease-out',
-      start: 0,
-      duration: 8,
-      mode: 'provider',
-      targetIds: [partId],
-      ranges: partRanges,
-    };
-
-    return {
-      type: 'layout',
-      id: partId,
-      componentId: 'BaseLayout',
-      effects: [
+    // Create part-specific effects using provider mode - only apply horizontal effects if layout is vertical
+    const effects = [];
+    if (layout === 'vertical') {
+      const partRanges = [
         {
-          id: `part-effects-${partId}`,
-          componentId: 'generic',
-          data: partEffect,
+          key: 'translateX',
+          val: partIndex % 2 === 0 ? displacement : -displacement,
+          prog: 0,
         },
-      ],
-      data: {
-        containerProps: {
-          className: 'relative flex flex-row gap-8 items-center justify-center',
+        {
+          key: 'translateX',
+          val: partIndex % 2 === 0 ? -displacement : displacement,
+          prog: 1,
         },
-      },
-      context: {
-        boundaries: {
-          reset: true,
+      ];
+
+      const partEffect: GenericEffectData = {
+        type: 'ease-out',
+        start: 0,
+        duration: 8,
+        mode: 'provider',
+        targetIds: [partId],
+        ranges: partRanges,
+      };
+
+      effects.push({
+        id: `part-effects-${partId}`,
+        componentId: 'generic',
+        data: partEffect,
+      });
+    }
+
+    // Determine container classes based on layout
+    if (layout === 'horizontal') {
+      // Calculate gap based on font size - use a percentage of the font size
+      const baseFontSize = avgFontSize || 50;
+      const gapSize = Math.max(8, Math.floor(baseFontSize * 0.3)); // 30% of font size, minimum 8px
+      const containerClassName =
+        'relative flex flex-row items-center justify-center';
+
+      return {
+        type: 'layout',
+        id: partId,
+        componentId: 'BaseLayout',
+        effects: effects,
+        data: {
+          containerProps: {
+            className: containerClassName,
+            style: {
+              gap: `${gapSize}px`,
+            },
+          },
         },
-        timing: {
-          start: 0,
-          duration: caption.duration,
+        context: {
+          boundaries: {
+            reset: true,
+          },
+          timing: {
+            start: 0,
+            duration: caption.duration,
+          },
         },
-      },
-      childrenData: wordsData,
-    } as RenderableComponentData;
+        childrenData: wordsData,
+      } as RenderableComponentData;
+    } else {
+      const containerClassName =
+        'relative flex flex-col gap-8 items-center justify-center';
+
+      return {
+        type: 'layout',
+        id: partId,
+        componentId: 'BaseLayout',
+        effects: effects,
+        data: {
+          containerProps: {
+            className: containerClassName,
+          },
+        },
+        context: {
+          boundaries: {
+            reset: true,
+          },
+          timing: {
+            start: 0,
+            duration: caption.duration,
+          },
+        },
+        childrenData: wordsData,
+      } as RenderableComponentData;
+    }
   };
 
   // Processes captions and applies highlighting logic
@@ -1660,6 +2020,8 @@ const presetExecution = (
     disableMetadata?: boolean,
     style?: any,
     animationStyle?: string,
+    layout?: string,
+    fontScaling?: { highlighted?: number; normal?: number },
   ) => {
     // Pre-process captions to split combined words
     const preprocessedCaptions = preprocessCaptions(inputCaptions);
@@ -1860,36 +2222,77 @@ const presetExecution = (
             textAlign,
             style,
             animationStyle,
+            layout,
+            fontScaling,
           );
         });
 
         // Main sentence block layout
-        return {
-          type: 'layout',
-          id: scentenceId,
-          componentId: 'BaseLayout',
-          data: {
-            containerProps: {
-              className: `h-full flex flex-col ${
-                textAlign === 'left'
-                  ? 'items-start'
-                  : textAlign === 'right'
-                    ? 'items-end'
-                    : 'items-center'
-              } justify-center text-white gap-2 pl-10`,
+        if (layout === 'horizontal') {
+          // Calculate gap based on font size for horizontal layout
+          const baseFontSize = avgFontSize || 50;
+          const gapSize = Math.max(8, Math.floor(baseFontSize * 0.2)); // 20% of font size for main container, minimum 8px
+          const mainLayoutClassName = `h-full flex flex-row ${
+            textAlign === 'left'
+              ? 'items-start'
+              : textAlign === 'right'
+                ? 'items-end'
+                : 'items-center'
+          } justify-center text-white pl-10`;
+
+          return {
+            type: 'layout',
+            id: scentenceId,
+            componentId: 'BaseLayout',
+            data: {
+              containerProps: {
+                className: mainLayoutClassName,
+                style: {
+                  gap: `${gapSize}px`,
+                },
+              },
             },
-          },
-          context: {
-            boundaries: {
-              reset: true,
+            context: {
+              boundaries: {
+                reset: true,
+              },
+              timing: {
+                start: caption.absoluteStart,
+                duration: caption.duration,
+              },
             },
-            timing: {
-              start: caption.absoluteStart,
-              duration: caption.duration,
+            childrenData: partsData,
+          } as RenderableComponentData;
+        } else {
+          const mainLayoutClassName = `h-full flex flex-col ${
+            textAlign === 'left'
+              ? 'items-start'
+              : textAlign === 'right'
+                ? 'items-end'
+                : 'items-center'
+          } justify-center text-white gap-2 pl-10`;
+
+          return {
+            type: 'layout',
+            id: scentenceId,
+            componentId: 'BaseLayout',
+            data: {
+              containerProps: {
+                className: mainLayoutClassName,
+              },
             },
-          },
-          childrenData: partsData,
-        } as RenderableComponentData;
+            context: {
+              boundaries: {
+                reset: true,
+              },
+              timing: {
+                start: caption.absoluteStart,
+                duration: caption.duration,
+              },
+            },
+            childrenData: partsData,
+          } as RenderableComponentData;
+        }
       },
     );
   };
@@ -1920,6 +2323,8 @@ const presetExecution = (
     subtitleSync?.disableMetadata,
     style,
     subtitleSync?.animationStyle,
+    subtitleSync?.layout,
+    subtitleSync?.fontScaling,
   );
 
   // Generate final composition structure
@@ -1987,12 +2392,13 @@ const presetMetadata: PresetMetadata = {
   id: 'sub-vertical-float',
   title: 'Subtitles Vertical Float',
   description:
-    'Kinetic Subtitle in Vertical Layout with smooth melodic animations including fade-blur, wave-breathing, color-flow, and gentle drift effects perfect for melodic content',
+    'Kinetic Subtitle with configurable layout (horizontal or vertical) and smooth melodic animations including fade-blur, wave-breathing, color-flow, and gentle drift effects perfect for melodic content',
   type: 'predefined',
   presetType: 'children',
   tags: [
     'subtitles',
     'vertical',
+    'horizontal',
     'float',
     'melodic',
     'smooth',
@@ -2002,10 +2408,17 @@ const presetMetadata: PresetMetadata = {
     'breathing',
     'color-flow',
     'drift',
+    'slide',
+    'typewriter',
+    'bounce',
+    'ripple',
+    'zoom',
+    'cascade',
   ],
   defaultInputParams: {
     subtitleSync: {
-      animationStyle: 'melodic-fade-blur-float',
+      animationStyle: 'horizontal-slide-reveal',
+      layout: 'horizontal',
       negativeOffset: 0.15,
       maxLines: 5,
       floatThreshold: 15,
@@ -2013,6 +2426,10 @@ const presetMetadata: PresetMetadata = {
       noGaps: {
         enabled: false,
         maxLength: 3,
+      },
+      fontScaling: {
+        highlighted: 1.35,
+        normal: 0.85,
       },
     },
     position: {
