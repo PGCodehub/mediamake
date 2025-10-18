@@ -6,6 +6,7 @@ import { AppliedPresetsState, AppliedPreset, PresetInputData, PresetConfiguratio
 import { useRender } from '../player/render-provider';
 import useLocalState from '../../studio/context/hooks/useLocalState';
 import useIndexedDbState from '@/components/studio/context/hooks/useIndexedDbState';
+import { toast } from 'sonner';
 
 interface PresetContextType {
     // Applied presets state
@@ -113,7 +114,10 @@ export function PresetProvider({ children }: PresetProviderProps) {
     const refreshPreset = useCallback((presetId: string) => {
         setAppliedPresets((prev: AppliedPresetsState) => {
             const presetToRefresh = prev.presets.find((p: AppliedPreset) => p.id === presetId);
-            if (!presetToRefresh) return prev;
+            if (!presetToRefresh) {
+                toast.error('Preset not found');
+                return prev;
+            }
 
             // For predefined presets, reload from registry
             if (presetToRefresh.preset.metadata.type === 'predefined') {
@@ -136,6 +140,9 @@ export function PresetProvider({ children }: PresetProviderProps) {
                                     : p
                             )
                         }));
+                        toast.success('Preset refreshed successfully!');
+                    } else {
+                        toast.error('Failed to refresh preset');
                     }
                 });
             }

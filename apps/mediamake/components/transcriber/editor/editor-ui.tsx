@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,10 @@ import {
     Download,
     Copy,
     RefreshCw,
-    Loader2
+    Loader2,
+    Edit2,
+    Check,
+    X
 } from "lucide-react";
 import { useTranscriber } from "../contexts/transcriber-context";
 import { AudioPlayerProvider, useAudioPlayer } from "../audio-player-context";
@@ -22,6 +26,7 @@ import { TiptapCaptionEditor } from "../tiptap/tiptap-caption-editor";
 import { MetadataDialog } from "../dialogs/metadata-dialog";
 import { AutofixDialog } from "../dialogs/autofix-dialog";
 import { Transcription } from "@/app/types/transcription";
+import { toast } from "sonner";
 
 // Internal component that uses the audio player context
 function EditorUIInner() {
@@ -40,6 +45,9 @@ function EditorUIInner() {
 
     const [showMetadataDialog, setShowMetadataDialog] = useState(false);
     const [showAutofixDialog, setShowAutofixDialog] = useState(false);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [editedTitle, setEditedTitle] = useState("");
+    const [isSavingTitle, setIsSavingTitle] = useState(false);
 
     // Set audio URL when transcription data changes
     useEffect(() => {
@@ -114,6 +122,17 @@ function EditorUIInner() {
         };
 
         navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+        toast.success('Caption JSON copied to clipboard');
+    };
+
+    const copyAudioUrl = () => {
+        if (!transcriptionData?.audioUrl) {
+            toast.error('No audio URL available');
+            return;
+        }
+
+        navigator.clipboard.writeText(transcriptionData.audioUrl);
+        toast.success('Audio URL copied to clipboard');
     };
 
     // Show loading state first (even if transcriptionData is null during loading)
@@ -179,6 +198,57 @@ function EditorUIInner() {
         );
     }
 
+    // Handler to save the edited title
+    const handleSaveTitle = async () => {
+        if (!transcriptionData?._id || !editedTitle.trim()) {
+            setIsEditingTitle(false);
+            return;
+        }
+
+        setIsSavingTitle(true);
+        try {
+            const response = await fetch(`/api/transcriptions/${transcriptionData._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: editedTitle.trim(),
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update title');
+            }
+
+            // Update local state
+            setTranscriptionData({
+                ...transcriptionData,
+                title: editedTitle.trim(),
+            });
+
+            setIsEditingTitle(false);
+            toast.success('Title updated successfully');
+        } catch (error) {
+            console.error('Error updating title:', error);
+            toast.error('Failed to update title');
+        } finally {
+            setIsSavingTitle(false);
+        }
+    };
+
+    // Handler to start editing
+    const handleStartEditingTitle = () => {
+        setEditedTitle(transcriptionData.title || 'Untitled Transcription');
+        setIsEditingTitle(true);
+    };
+
+    // Handler to cancel editing
+    const handleCancelEditingTitle = () => {
+        setIsEditingTitle(false);
+        setEditedTitle("");
+    };
+
     return (
         <div className="flex-1 flex flex-col h-full">
             {/* Header */}
@@ -187,9 +257,57 @@ function EditorUIInner() {
                     <div className="flex items-center gap-3 min-w-0 flex-1 max-w-[50%]">
                         <FileAudio className="h-6 w-6 text-primary flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                            <h1 className="text-xl font-bold truncate">
-                                {transcriptionData.title || 'Untitled Transcription'}
-                            </h1>
+                            {isEditingTitle ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={editedTitle}
+                                        onChange={(e) => setEditedTitle(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSaveTitle();
+                                            if (e.key === 'Escape') handleCancelEditingTitle();
+                                        }}
+                                        className="text-xl font-bold h-auto py-1"
+                                        autoFocus
+                                        disabled={isSavingTitle}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={handleSaveTitle}
+                                        disabled={isSavingTitle}
+                                        className="flex-shrink-0"
+                                    >
+                                        {isSavingTitle ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Check className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={handleCancelEditingTitle}
+                                        disabled={isSavingTitle}
+                                        className="flex-shrink-0"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 group">
+                                    <h1 className="text-xl font-bold truncate">
+                                        {transcriptionData.title || 'Untitled Transcription'}
+                                    </h1>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={handleStartEditingTitle}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-6 w-6 p-0"
+                                    >
+                                        <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            )}
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 {transcriptionData.tags?.map((tag, index) => (
                                     <Badge key={index} variant="secondary" className="text-xs flex-shrink-0">
@@ -223,6 +341,15 @@ function EditorUIInner() {
                         >
                             <Brain className="h-4 w-4" />
                             Metadata
+                        </Button>
+                        <Button
+                            onClick={copyAudioUrl}
+                            variant="outline"
+                            size="sm"
+                            disabled={!transcriptionData?.audioUrl}
+                        >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Audio URL
                         </Button>
                         <Button
                             onClick={copyCaptionJson}
