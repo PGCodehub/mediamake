@@ -1,83 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
-import {
-  Transcription,
-  UpdateTranscriptionRequest,
-} from '@/app/types/transcription';
+import { Transcription, UpdateTranscriptionRequest } from '@/app/types/transcription';
 
 // GET /api/transcriptions/[id] - Get a specific transcription
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const clientId = req.headers.get('x-client-id') || undefined;
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid transcription ID' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const db = await getDatabase();
     const collection = db.collection<Transcription>('transcriptions');
 
-    const query: any = { _id: new ObjectId(id) };
-    if (clientId) query.clientId = clientId;
-
-    const transcription = await collection.findOne(query);
+    const transcription = await collection.findOne({ _id: new ObjectId(id) });
 
     if (!transcription) {
       return NextResponse.json(
         { error: 'Transcription not found' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, transcription });
+    return NextResponse.json({ transcription }, { status: 200 });
   } catch (error) {
     console.error('Error fetching transcription:', error);
     return NextResponse.json(
       { error: 'Failed to fetch transcription' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
-// PUT /api/transcriptions/[id] - Update a specific transcription
-export async function PUT(
+// PATCH /api/transcriptions/[id] - Update a specific transcription
+export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const clientId = req.headers.get('x-client-id') || undefined;
-    const body: UpdateTranscriptionRequest = await req.json();
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid transcription ID' },
-        { status: 400 },
+        { status: 400 }
       );
     }
+
+    const body: UpdateTranscriptionRequest = await req.json();
 
     const db = await getDatabase();
     const collection = db.collection<Transcription>('transcriptions');
-
-    const query: any = { _id: new ObjectId(id) };
-    if (clientId) query.clientId = clientId;
-
-    // Check if transcription exists
-    const existing = await collection.findOne(query);
-    if (!existing) {
-      return NextResponse.json(
-        { error: 'Transcription not found' },
-        { status: 404 },
-      );
-    }
 
     // Build update object
     const updateData: any = {
@@ -87,35 +68,35 @@ export async function PUT(
     if (body.status !== undefined) updateData.status = body.status;
     if (body.tags !== undefined) updateData.tags = body.tags;
     if (body.title !== undefined) updateData.title = body.title;
-    if (body.description !== undefined)
-      updateData.description = body.description;
+    if (body.description !== undefined) updateData.description = body.description;
     if (body.keywords !== undefined) updateData.keywords = body.keywords;
     if (body.captions !== undefined) updateData.captions = body.captions;
-    if (body.processingData !== undefined)
-      updateData.processingData = body.processingData;
+    if (body.processingData !== undefined) updateData.processingData = body.processingData;
     if (body.error !== undefined) updateData.error = body.error;
+    if (body.audioUrl !== undefined) updateData.audioUrl = body.audioUrl;
 
-    const result = await collection.updateOne(query, { $set: updateData });
+    const result = await collection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
 
-    if (result.matchedCount === 0) {
+    if (!result) {
       return NextResponse.json(
         { error: 'Transcription not found' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    // Fetch the updated document
-    const updatedTranscription = await collection.findOne(query);
-
-    return NextResponse.json({
-      success: true,
-      transcription: updatedTranscription,
-    });
+    return NextResponse.json(
+      { success: true, transcription: result },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error updating transcription:', error);
     return NextResponse.json(
       { error: 'Failed to update transcription' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -123,40 +104,39 @@ export async function PUT(
 // DELETE /api/transcriptions/[id] - Delete a specific transcription
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const clientId = req.headers.get('x-client-id') || undefined;
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid transcription ID' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const db = await getDatabase();
     const collection = db.collection<Transcription>('transcriptions');
 
-    const query: any = { _id: new ObjectId(id) };
-    if (clientId) query.clientId = clientId;
-
-    const result = await collection.deleteOne(query);
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
       return NextResponse.json(
         { error: 'Transcription not found' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true, message: 'Transcription deleted' },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error deleting transcription:', error);
     return NextResponse.json(
       { error: 'Failed to delete transcription' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

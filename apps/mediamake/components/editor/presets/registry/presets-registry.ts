@@ -9,13 +9,17 @@ import { baseScenePreset } from './base-scene';
 import { mediaTrackPreset } from './media-track';
 import { thinkerVisualsPreset } from './thinker-visuals';
 import { imageLoopPreset } from './imageloop';
+import { imageLoopSoundPreset } from './imageloop-sound';
 import { musicCardPreset } from './music-card';
 import { textOverlayPreset } from './text-overlay';
 import { beatstitchPreset } from './beatstitch';
 import { subMediaStitchPreset } from './sub-media-stitch';
+import { customThemeBackgroundPreset } from './custom-theme-background';
+import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
+  customThemeBackgroundPreset,
   mediaTrackPreset,
   waveformPreset,
   waveformChildrenPreset,
@@ -24,11 +28,13 @@ export const predefinedPresets: Preset[] = [
   plainSubtitlesPreset,
   thinkerVisualsPreset,
   imageLoopPreset,
+  imageLoopSoundPreset,
   musicCardPreset,
   textOverlayPreset,
   beatstitchPreset,
   subFastRapStaticPreset,
   subMediaStitchPreset,
+  advancedSubtitlesAnimsPreset,
   // Add more predefined presets here
 ];
 

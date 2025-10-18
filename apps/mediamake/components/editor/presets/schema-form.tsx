@@ -568,7 +568,7 @@ function renderField(
 
     // For object and array types with properties/items, don't show labels here as they're handled by their components
     if ((field.type === 'object' && field.properties) || (field.type === 'array' && field.items)) {
-        return renderInput();
+        return <div key={fieldKey}>{renderInput()}</div>;
     }
 
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
@@ -1050,7 +1050,7 @@ export function SchemaForm({
                             <div className="space-y-4">
                                 {fields.map((field) => {
                                     const fieldValue = formData[field.key];
-                                    return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema);
+                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema)}</div>;
                                 })}
                             </div>
                         ) : (
