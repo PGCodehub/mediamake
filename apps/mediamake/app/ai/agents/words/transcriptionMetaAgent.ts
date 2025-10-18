@@ -16,7 +16,9 @@ const aiRouter = new AiRouter();
 
 // Schema for sentence metadata analysis
 const SentenceMetadataSchema = z.object({
-  keyword: z.string().describe('The most impactful keyword in the sentence'),
+  keyword: z
+    .string()
+    .describe('The most impactful keyword or keyords in the sentence'),
   strength: z
     .number()
     .min(1)
@@ -198,6 +200,10 @@ Please analyze this sentence and provide:
 2. The emotional strength/power of that keyword (1-10 scale)
 3. The emotional feel/mood of the keyword
 4. Your confidence in this analysis
+
+For keyword:
+- It can be a singl word 
+- It can be multiple words only if they are together placed.
 
 For Split Parts:
 - Assume you are requested to write the scentenc on a screen in stylised form, divide the one scenten into parts to suit the needs.

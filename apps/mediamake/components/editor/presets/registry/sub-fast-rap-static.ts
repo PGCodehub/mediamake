@@ -836,11 +836,45 @@ const presetExecution = (
           break;
       }
 
+      const effects = [];
+
+      if (isHighlight) {
+        const accentRgb = hexToRgb(selectedColorChoice.accent);
+        effects.push({
+          id: `glow-effect-${wordId}`,
+          componentId: 'generic',
+          data: {
+            type: 'ease-out',
+            start: 0,
+            duration: caption.duration,
+            mode: 'provider',
+            targetIds: [wordId],
+            ranges: [
+              {
+                key: 'filter',
+                val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))`,
+                prog: 0,
+              },
+              {
+                key: 'filter',
+                val: `drop-shadow(0 0 8px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.7))`,
+                prog: 0.5,
+              },
+              {
+                key: 'filter',
+                val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))`,
+                prog: 1,
+              },
+            ],
+          } as GenericEffectData,
+        });
+      }
+
       return {
         type: 'atom',
         id: wordId,
         componentId: 'TextAtom',
-        effects: [], // No word-level effects for static approach
+        effects: effects, // No word-level effects for static approach
         data: {
           text: transformedText,
           className: isHighlight
@@ -1131,43 +1165,46 @@ const presetExecution = (
         );
 
         // Determine which word to highlight
-        let highlightedWordIndex = -1;
-
+        const highlightedWordIndices: number[] = [];
         if (!disableMetadata && caption.metadata?.keyword?.length > 0) {
-          // Find the word index that contains the keyword
-          const keywordWordIndex = caption.words.findIndex(word =>
-            word.text
+          const cleanKeywords = caption.metadata?.keyword
+            .toLowerCase()
+            .split(' ')
+            .map((keyword: string) => keyword.replace(/[^a-zA-Z0-9]/g, ''));
+          caption.words.forEach((word, index) => {
+            const cleanWord = word.text
               ?.toLowerCase()
-              ?.includes(caption.metadata?.keyword?.toLowerCase() || ''),
-          );
-          if (keywordWordIndex !== -1) {
-            highlightedWordIndex = keywordWordIndex;
-          }
+              .replace(/[^a-zA-Z0-9]/g, '');
+            if (
+              cleanKeywords.some((_keyword: string) =>
+                cleanWord?.includes(_keyword),
+              )
+            ) {
+              highlightedWordIndices.push(index);
+            }
+          });
         }
 
         // Only apply fallback logic if no keyword was found in metadata
-        if (highlightedWordIndex === -1) {
-          highlightedWordIndex = selectHighlightWord(
+        if (highlightedWordIndices.length === 0) {
+          let highlightedWordIndex = selectHighlightWord(
             caption.words,
             caption.metadata,
           );
-        }
 
-        // Ensure at least one word is highlighted
-        if (highlightedWordIndex === -1) {
-          highlightedWordIndex = 0; // Fallback to first word
+          // Ensure at least one word is highlighted
+          if (highlightedWordIndex === -1) {
+            highlightedWordIndex = 0; // Fallback to first word
+          }
+          highlightedWordIndices.push(highlightedWordIndex);
         }
 
         // Apply highlighting logic to words
         const captionWords = caption.words.map((word, _j: number) => {
-          let isHighlight = false;
-
-          // Check if this word should be highlighted (including sub-words)
-          if ((word as any).originalWordIndex === highlightedWordIndex) {
-            isHighlight = true;
-          } else {
-            isHighlight = _j === highlightedWordIndex;
-          }
+          const isHighlight =
+            highlightedWordIndices.includes(_j) ||
+            ((word as any).isSubWord &&
+              highlightedWordIndices.includes((word as any).originalWordIndex));
 
           return {
             ...word,
