@@ -108,6 +108,7 @@ export interface UpdateTranscriptionRequest {
   captions?: Caption[];
   processingData?: ProcessingData;
   error?: string;
+  audioUrl?: string;
 }
 
 export interface TranscriptionListResponse {

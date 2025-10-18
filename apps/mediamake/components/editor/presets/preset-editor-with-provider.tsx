@@ -9,6 +9,7 @@ import AudioScene from "../../remotion/test.json";
 import { RenderProvider } from "../player";
 import { config } from "process";
 import { createCachedFetcher } from "@/lib/audio-cache";
+import { toast } from "sonner";
 
 interface PresetEditorWithProviderProps {
     selectedPresets: (Preset | DatabasePreset)[];
@@ -145,8 +146,10 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
             // This ensures presets can override user settings when generating output
 
             setGeneratedOutput(baseComposition);
+            toast.success('Video generated successfully!');
         } catch (error) {
             console.error('Error generating output:', error);
+            toast.error('Failed to generate video. Please try again.');
         } finally {
             setIsGenerating(false);
         }

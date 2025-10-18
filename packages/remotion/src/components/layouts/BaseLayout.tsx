@@ -45,9 +45,9 @@ export const Layout: ComponentType<BaseLayoutProps> = ({ id, children, data, con
                 id={id}
                 {...containerProps} style={enhancedStyle}>
                 {childrenArray.map((child, index) => (
-                    <>
+                    <React.Fragment key={index}>
                         {child}
-                    </>
+                    </React.Fragment>
                 ))}
             </div>
         );

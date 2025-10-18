@@ -288,6 +288,11 @@ const calculateAnimatedValue = (
 const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): React.CSSProperties => {
     const styles: React.CSSProperties = {};
 
+    // Safety check: ensure ranges is defined and is an array
+    if (!ranges || !Array.isArray(ranges) || ranges.length === 0) {
+        return styles;
+    }
+
     const rangesByKey = ranges.reduce((acc, range) => {
         if (!acc[range.key]) {
             acc[range.key] = [];

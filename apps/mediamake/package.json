@@ -87,6 +87,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.18",
     "dedent": "^1.7.0",
+    "elevenlabs": "^1.59.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.12",
     "idb": "^8.0.3",

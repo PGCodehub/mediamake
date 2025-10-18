@@ -13,10 +13,12 @@ import {
     Clock,
     FileAudio,
     Tag,
-    Loader2
+    Loader2,
+    Copy
 } from "lucide-react";
 import { useTranscriber } from "../contexts/transcriber-context";
 import { Transcription } from "@/app/types/transcription";
+import { toast } from "sonner";
 
 export function ExplorerUI() {
     const { setSelectedTranscription, setCurrentView } = useTranscriber();
@@ -101,6 +103,18 @@ export function ExplorerUI() {
             return `${Math.round(lastCaption.absoluteEnd || 0)}s`;
         }
         return 'Unknown';
+    };
+
+    const copyAudioUrl = (e: React.MouseEvent, audioUrl: string | undefined) => {
+        e.stopPropagation(); // Prevent card click
+        
+        if (!audioUrl) {
+            toast.error('No audio URL available');
+            return;
+        }
+
+        navigator.clipboard.writeText(audioUrl);
+        toast.success('Audio URL copied to clipboard');
     };
 
     if (isLoading) {
@@ -227,15 +241,27 @@ export function ExplorerUI() {
                                     </div>
 
                                     {/* Metadata */}
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            {getDuration(transcription)}
+                                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="h-3 w-3" />
+                                                {getDuration(transcription)}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                {formatDate(transcription.createdAt?.toString() || new Date().toISOString())}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {formatDate(transcription.createdAt?.toString() || new Date().toISOString())}
-                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={(e) => copyAudioUrl(e, transcription.audioUrl)}
+                                            disabled={!transcription.audioUrl}
+                                            className="h-6 px-2 text-xs"
+                                        >
+                                            <Copy className="h-3 w-3 mr-1" />
+                                            Audio URL
+                                        </Button>
                                     </div>
                                 </div>
                             ))}
