@@ -55,9 +55,19 @@ const presetParams = z.object({
         'melodic-wave-breathing', // gentle wave-like floating with soft breathing effects for melodic rhythm
         'melodic-color-flow', // smooth color transitions with gentle drift for melodic flow
         'melodic-gentle-drift', // subtle position and scale drift with soft fade for melodic feel
+        'horizontal-slide-reveal', // words slide in from left to right, perfect for horizontal layouts
+        'horizontal-typewriter', // typewriter effect with horizontal flow, ideal for horizontal text
+        'horizontal-bounce-flow', // words bounce in sequence from left to right with flow
+        'horizontal-ripple-expand', // ripple effect expanding horizontally across words
+        'horizontal-zoom-cascade', // zoom effect cascading from left to right
       ])
       .default('word-fade-letterspace-float')
       .optional(),
+    layout: z
+      .enum(['horizontal', 'vertical'])
+      .default('vertical')
+      .optional()
+      .describe('layout direction for parts - horizontal or vertical'),
     negativeOffset: z.number().optional(),
     maxLines: z.number().optional(),
     noGaps: z.object({
@@ -73,6 +83,28 @@ const presetParams = z.object({
       .boolean()
       .optional()
       .describe('ignore all metadata provided in captions'),
+    fontScaling: z
+      .object({
+        highlighted: z
+          .number()
+          .default(1.35)
+          .optional()
+          .describe('font size multiplier for highlighted words'),
+        normal: z
+          .number()
+          .default(0.85)
+          .optional()
+          .describe('font size multiplier for normal words'),
+      })
+      .optional()
+      .describe('font size scaling for different word types'),
+    impact: z
+      .number()
+      .default(1.0)
+      .optional()
+      .describe(
+        'global impact multiplier for all animations (0.1 = very subtle, 2.0 = very intense)',
+      ),
   }),
   fontChoices: z
     .array(
@@ -868,6 +900,168 @@ const presetExecution = (
     };
   };
 
+  // Creates horizontal slide reveal effect - words slide in from left to right
+  const createHorizontalSlideRevealEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    globalImpact: number = 1.0,
+  ): GenericEffectData => {
+    const slideDistance = (30 + wordIndex * 5) * globalImpact; // Scale with global impact
+    const delay = wordIndex * 0.05; // Reduced delay
+
+    return {
+      type: 'ease-out',
+      start: word.start + delay,
+      duration: 0.5, // Faster animation
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'translateX', val: -slideDistance, prog: 0 },
+        { key: 'translateX', val: 0, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.4 },
+        { key: 'filter', val: `blur(${3 * globalImpact}px)`, prog: 0 },
+        { key: 'filter', val: `blur(${1 * globalImpact}px)`, prog: 0.6 },
+        { key: 'filter', val: `blur(0px)`, prog: 1 },
+      ],
+    };
+  };
+
+  // Creates horizontal typewriter effect - words appear sequentially from left to right
+  const createHorizontalTypewriterEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    globalImpact: number = 1.0,
+  ): GenericEffectData => {
+    const typewriterDelay = wordIndex * 0.08; // Reduced delay
+
+    return {
+      type: 'ease-out',
+      start: word.start + typewriterDelay,
+      duration: 0.3, // Much faster
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.6 },
+        { key: 'scale', val: 0.95, prog: 0 },
+        { key: 'scale', val: 1 + 0.02 * globalImpact, prog: 0.8 },
+        { key: 'scale', val: 1, prog: 1 },
+      ],
+    };
+  };
+
+  // Creates horizontal bounce flow effect - words bounce in sequence
+  const createHorizontalBounceFlowEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    impact: number,
+    globalImpact: number = 1.0,
+  ): GenericEffectData => {
+    const bounceDelay = wordIndex * 0.06; // Reduced delay
+    const bounceHeight = 8 * impact * globalImpact; // Scale with global impact
+
+    return {
+      type: 'spring',
+      start: word.start + bounceDelay,
+      duration: 0.6, // Much faster settling
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'translateY', val: bounceHeight, prog: 0 },
+        { key: 'translateY', val: -bounceHeight * 0.2, prog: 0.4 },
+        { key: 'translateY', val: 0, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.3 },
+      ],
+    };
+  };
+
+  // Creates horizontal ripple expand effect - ripple effect across words
+  const createHorizontalRippleExpandEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    selectedColorChoice: any,
+    impact: number,
+    globalImpact: number = 1.0,
+  ): GenericEffectData => {
+    const rippleDelay = wordIndex * 0.04; // Reduced delay
+    const accentRgb = hexToRgb(selectedColorChoice.accent) || {
+      r: 255,
+      g: 107,
+      b: 107,
+    };
+
+    return {
+      type: 'ease-out',
+      start: word.start + rippleDelay,
+      duration: 0.5, // Much faster
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'scale', val: 0.9, prog: 0 },
+        { key: 'scale', val: 1 + 0.03 * impact * globalImpact, prog: 0.5 },
+        { key: 'scale', val: 1, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.4 },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))` as any,
+          prog: 0,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${4 * impact * globalImpact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.6))` as any,
+          prog: 0.6,
+        },
+        {
+          key: 'filter',
+          val: `drop-shadow(0 0 ${2 * impact * globalImpact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.4))` as any,
+          prog: 1,
+        },
+      ],
+    };
+  };
+
+  // Creates horizontal zoom cascade effect - zoom effect cascading from left to right
+  const createHorizontalZoomCascadeEffect = (
+    wordId: string,
+    word: any,
+    wordIndex: number,
+    totalWords: number,
+    impact: number,
+    globalImpact: number = 1.0,
+  ): GenericEffectData => {
+    const cascadeDelay = wordIndex * 0.05; // Reduced delay
+    const zoomIntensity = 0.1 * impact * globalImpact; // Scale with global impact
+
+    return {
+      type: 'ease-out',
+      start: word.start + cascadeDelay,
+      duration: 0.4, // Much faster settling
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges: [
+        { key: 'scale', val: 0.8, prog: 0 },
+        { key: 'scale', val: 1.05 + zoomIntensity, prog: 0.6 },
+        { key: 'scale', val: 1, prog: 1 },
+        { key: 'opacity', val: 0, prog: 0 },
+        { key: 'opacity', val: 1, prog: 0.3 },
+        { key: 'translateY', val: 3 * globalImpact, prog: 0 },
+        { key: 'translateY', val: -1 * globalImpact, prog: 0.6 },
+        { key: 'translateY', val: 0, prog: 1 },
+      ],
+    };
+  };
+
   // Generates word data with effects and styling
   const generateWordsData = (
     words: any[],
@@ -879,6 +1073,8 @@ const presetExecution = (
     scentenceId: string,
     style?: any,
     animationStyle?: string,
+    fontScaling?: { highlighted?: number; normal?: number },
+    globalImpact?: number,
   ) => {
     const isAllWordsHighlighted = words.every(
       word => word.metadata?.isHighlight,
@@ -1253,13 +1449,154 @@ const presetExecution = (
             impact,
           ),
         });
+      } else if (animationStyle === 'horizontal-slide-reveal') {
+        // Words slide in from left to right, perfect for horizontal layouts
+        const impact = isHighlight ? 1.1 : 1.0;
+
+        effects.push({
+          id: `horizontal-slide-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalSlideRevealEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            globalImpact || 1.0,
+          ),
+        });
+
+        // Add glow effect for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
+      } else if (animationStyle === 'horizontal-typewriter') {
+        // Typewriter effect with horizontal flow, ideal for horizontal text
+        const impact = isHighlight ? 1.05 : 1.0;
+
+        effects.push({
+          id: `horizontal-typewriter-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalTypewriterEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            globalImpact || 1.0,
+          ),
+        });
+
+        // Add letter spacing for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `letter-spacing-${wordId}`,
+            componentId: 'generic',
+            data: createLetterSpacingEffect(
+              wordId,
+              word,
+              syncDuration,
+              shouldAnimate,
+              impact,
+            ),
+          });
+        }
+      } else if (animationStyle === 'horizontal-bounce-flow') {
+        // Words bounce in sequence from left to right with flow
+        const impact = isHighlight ? 1.1 : 1.0;
+
+        effects.push({
+          id: `horizontal-bounce-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalBounceFlowEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            impact,
+            globalImpact || 1.0,
+          ),
+        });
+
+        // Add glow effect for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
+      } else if (animationStyle === 'horizontal-ripple-expand') {
+        // Ripple effect expanding horizontally across words
+        const impact = isHighlight ? 1.1 : 1.0;
+
+        effects.push({
+          id: `horizontal-ripple-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalRippleExpandEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            selectedColorChoice,
+            impact,
+            globalImpact || 1.0,
+          ),
+        });
+      } else if (animationStyle === 'horizontal-zoom-cascade') {
+        // Zoom effect cascading from left to right
+        const impact = isHighlight ? 1.05 : 1.0;
+
+        effects.push({
+          id: `horizontal-zoom-${wordId}`,
+          componentId: 'generic',
+          data: createHorizontalZoomCascadeEffect(
+            wordId,
+            word,
+            _j,
+            words.length,
+            impact,
+            globalImpact || 1.0,
+          ),
+        });
+
+        // Add glow effect for highlighted words
+        if (isHighlight) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
+            ),
+          });
+        }
       }
 
       // Calculate font size and style
       let fontSize = avgFontSize ?? 50;
+      const highlightedMultiplier = fontScaling?.highlighted ?? 1.35;
+      const normalMultiplier = fontScaling?.normal ?? 0.85;
       const fontCalculatedSize = isHighlight
-        ? fontSize * 1.35
-        : fontSize * 0.85;
+        ? fontSize * highlightedMultiplier
+        : fontSize * normalMultiplier;
       const font = isHighlight
         ? selectedFontChoice.headerFont
         : selectedFontChoice.primaryFont;
@@ -1569,6 +1906,9 @@ const presetExecution = (
     textAlign?: string,
     style?: any,
     animationStyle?: string,
+    layout?: string,
+    fontScaling?: { highlighted?: number; normal?: number },
+    globalImpact?: number,
   ) => {
     const wordsData = generateWordsData(
       partWords,
@@ -1580,6 +1920,8 @@ const presetExecution = (
       scentenceId,
       style,
       animationStyle,
+      fontScaling,
+      globalImpact,
     );
 
     // Calculate displacement based on character count or floatThreshold
@@ -1594,56 +1936,98 @@ const presetExecution = (
         ? floatThreshold
         : Math.max(5, Math.min(30, partCharacterCount * 1.5)); // Scale with character count, min 5, max 30
 
-    // Create part-specific effects using provider mode
-    const partRanges = [
-      {
-        key: 'translateX',
-        val: partIndex % 2 === 0 ? displacement : -displacement,
-        prog: 0,
-      },
-      {
-        key: 'translateX',
-        val: partIndex % 2 === 0 ? -displacement : displacement,
-        prog: 1,
-      },
-    ];
-
-    const partEffect: GenericEffectData = {
-      type: 'ease-out',
-      start: 0,
-      duration: 8,
-      mode: 'provider',
-      targetIds: [partId],
-      ranges: partRanges,
-    };
-
-    return {
-      type: 'layout',
-      id: partId,
-      componentId: 'BaseLayout',
-      effects: [
+    // Create part-specific effects using provider mode - only apply horizontal effects if layout is vertical
+    const effects = [];
+    if (layout === 'vertical') {
+      const partRanges = [
         {
-          id: `part-effects-${partId}`,
-          componentId: 'generic',
-          data: partEffect,
+          key: 'translateX',
+          val: partIndex % 2 === 0 ? displacement : -displacement,
+          prog: 0,
         },
-      ],
-      data: {
-        containerProps: {
-          className: 'relative flex flex-row gap-8 items-center justify-center',
+        {
+          key: 'translateX',
+          val: partIndex % 2 === 0 ? -displacement : displacement,
+          prog: 1,
         },
-      },
-      context: {
-        boundaries: {
-          reset: true,
+      ];
+
+      const partEffect: GenericEffectData = {
+        type: 'ease-out',
+        start: 0,
+        duration: 8,
+        mode: 'provider',
+        targetIds: [partId],
+        ranges: partRanges,
+      };
+
+      effects.push({
+        id: `part-effects-${partId}`,
+        componentId: 'generic',
+        data: partEffect,
+      });
+    }
+
+    // Part containers should always be horizontal (words within a part are horizontal)
+    // The layout parameter only affects the main container (how parts are arranged)
+    if (layout === 'horizontal') {
+      // Calculate gap based on font size - use a percentage of the font size
+      const baseFontSize = avgFontSize || 50;
+      const gapSize = Math.max(8, Math.floor(baseFontSize * 0.3)); // 30% of font size, minimum 8px
+      const containerClassName =
+        'relative flex flex-row items-center justify-center';
+
+      return {
+        type: 'layout',
+        id: partId,
+        componentId: 'BaseLayout',
+        effects: effects,
+        data: {
+          containerProps: {
+            className: containerClassName,
+            style: {
+              gap: `${gapSize}px`,
+            },
+          },
         },
-        timing: {
-          start: 0,
-          duration: caption.duration,
+        context: {
+          boundaries: {
+            reset: true,
+          },
+          timing: {
+            start: 0,
+            duration: caption.duration,
+          },
         },
-      },
-      childrenData: wordsData,
-    } as RenderableComponentData;
+        childrenData: wordsData,
+      } as RenderableComponentData;
+    } else {
+      // For vertical layout, parts are vertical but words within each part are horizontal
+      const containerClassName =
+        'relative flex flex-row gap-8 items-center justify-center';
+
+      return {
+        type: 'layout',
+        id: partId,
+        componentId: 'BaseLayout',
+        effects: effects,
+        data: {
+          containerProps: {
+            className: containerClassName,
+          },
+        },
+        context: {
+          boundaries: {
+            reset: true,
+          },
+          timing: {
+            start: 0,
+            duration: caption.duration,
+          },
+        },
+        childrenData: wordsData,
+      } as RenderableComponentData;
+    }
   };
 
   // Processes captions and applies highlighting logic
@@ -1660,6 +2044,9 @@ const presetExecution = (
     disableMetadata?: boolean,
     style?: any,
     animationStyle?: string,
+    layout?: string,
+    fontScaling?: { highlighted?: number; normal?: number },
+    globalImpact?: number,
   ) => {
     // Pre-process captions to split combined words
     const preprocessedCaptions = preprocessCaptions(inputCaptions);
@@ -1689,76 +2076,103 @@ const presetExecution = (
         );
 
         // Determine which part to highlight
+        const highlightedWordIndices: number[] = [];
+        if (!disableMetadata && caption.metadata?.keyword?.length > 0) {
+          const cleanKeywords = caption.metadata?.keyword
+            .toLowerCase()
+            .split(' ')
+            .map((keyword: string) => keyword.replace(/[^a-zA-Z0-9]/g, ''));
+          caption.words.forEach((word, index) => {
+            const cleanWord = word.text
+              ?.toLowerCase()
+              .replace(/[^a-zA-Z0-9]/g, '');
+            if (
+              cleanKeywords.some((_keyword: string) =>
+                cleanWord?.includes(_keyword),
+              )
+            ) {
+              highlightedWordIndices.push(index);
+            }
+          });
+        }
+
         let highlightedPartIndex = -1;
         let highlightedWordIndex = -1;
 
-        if (!disableMetadata && caption.metadata?.keyword?.length > 0) {
-          // Find the word index that contains the keyword
-          const keywordWordIndex = caption.words.findIndex(word =>
-            word.text
-              ?.toLowerCase()
-              ?.includes(caption.metadata?.keyword?.toLowerCase() || ''),
-          );
-          if (keywordWordIndex !== -1) {
-            // Find which part contains this word
-            let wordCount = 0;
-            for (let i = 0; i < sentenceParts.length; i++) {
-              const part = sentenceParts[i];
-              if (keywordWordIndex < wordCount + part.length) {
-                // Check if the part is too long (more than 2 words or 10 characters)
-                const partCharacterCount = part.reduce(
-                  (sum, word) => sum + word.text.length,
-                  0,
-                );
-                const isPartTooLong =
-                  part.length > 2 || partCharacterCount > 10;
+        if (highlightedWordIndices.length === 0) {
+          if (!disableMetadata && caption.metadata?.keyword?.length > 0) {
+            // Find the word index that contains the keyword
+            const keywordWordIndex = caption.words.findIndex(word =>
+              caption.metadata?.keyword
+                ?.toLowerCase()
+                ?.includes(word.text?.toLowerCase() || ''),
+            );
+            if (keywordWordIndex !== -1) {
+              // Find which part contains this word
+              let wordCount = 0;
+              for (let i = 0; i < sentenceParts.length; i++) {
+                const part = sentenceParts[i];
+                if (keywordWordIndex < wordCount + part.length) {
+                  // Check if the part is too long (more than 2 words or 10 characters)
+                  const partCharacterCount = part.reduce(
+                    (sum, word) => sum + word.text.length,
+                    0,
+                  );
+                  const isPartTooLong =
+                    part.length > 2 || partCharacterCount > 10;
 
-                if (isPartTooLong) {
-                  // Only highlight the specific word containing the keyword
-                  highlightedPartIndex = -1; // Don't highlight entire part
-                  highlightedWordIndex = keywordWordIndex;
-                } else {
-                  // Highlight the entire part if it's short enough
-                  highlightedPartIndex = i;
-                  highlightedWordIndex = keywordWordIndex;
+                  if (isPartTooLong) {
+                    // Only highlight the specific word containing the keyword
+                    highlightedPartIndex = -1; // Don't highlight entire part
+                    highlightedWordIndex = keywordWordIndex;
+                  } else {
+                    // Highlight the entire part if it's short enough
+                    highlightedPartIndex = i;
+                    highlightedWordIndex = keywordWordIndex;
+                  }
+                  break;
                 }
-                break;
+                wordCount += part.length;
               }
-              wordCount += part.length;
+            }
+          }
+
+          // Only apply fallback logic if no keyword was found in metadata
+          if (highlightedPartIndex === -1 && highlightedWordIndex === -1) {
+            // Always select a single word to highlight, never entire parts
+            const allWords = caption.words;
+            const wordDurations = allWords.map(word => word.duration);
+            const avgDuration =
+              wordDurations.reduce((sum, dur) => sum + dur, 0) /
+              allWords.length;
+            const maxDuration = Math.max(...wordDurations);
+
+            // Find the word with the longest duration that's above average
+            const significantWords = allWords
+              .map((word, index) => ({ word, index, duration: word.duration }))
+              .filter(
+                w =>
+                  w.duration >= avgDuration * 0.8 ||
+                  w.duration >= maxDuration * 0.7,
+              )
+              .sort((a, b) => b.duration - a.duration);
+
+            if (significantWords.length > 0) {
+              // Select the most significant word
+              highlightedWordIndex = significantWords[0].index;
+            } else {
+              // Fallback: select the word with maximum duration
+              highlightedWordIndex = wordDurations.indexOf(maxDuration);
             }
           }
         }
 
-        // Only apply fallback logic if no keyword was found in metadata
-        if (highlightedPartIndex === -1 && highlightedWordIndex === -1) {
-          // Always select a single word to highlight, never entire parts
-          const allWords = caption.words;
-          const wordDurations = allWords.map(word => word.duration);
-          const avgDuration =
-            wordDurations.reduce((sum, dur) => sum + dur, 0) / allWords.length;
-          const maxDuration = Math.max(...wordDurations);
-
-          // Find the word with the longest duration that's above average
-          const significantWords = allWords
-            .map((word, index) => ({ word, index, duration: word.duration }))
-            .filter(
-              w =>
-                w.duration >= avgDuration * 0.8 ||
-                w.duration >= maxDuration * 0.7,
-            )
-            .sort((a, b) => b.duration - a.duration);
-
-          if (significantWords.length > 0) {
-            // Select the most significant word
-            highlightedWordIndex = significantWords[0].index;
-          } else {
-            // Fallback: select the word with maximum duration
-            highlightedWordIndex = wordDurations.indexOf(maxDuration);
-          }
-        }
-
         // Ensure at least one word is highlighted
-        if (highlightedPartIndex === -1 && highlightedWordIndex === -1) {
+        if (
+          highlightedWordIndices.length === 0 &&
+          highlightedPartIndex === -1 &&
+          highlightedWordIndex === -1
+        ) {
           highlightedWordIndex = 0; // Fallback to first word
         }
 
@@ -1766,64 +2180,75 @@ const presetExecution = (
         const captionWords = caption.words.map((word, _j: number) => {
           let isHighlight = false;
 
-          // If we have a specific word to highlight (from keyword metadata or fallback)
-          if (highlightedWordIndex >= 0 && highlightedPartIndex === -1) {
-            // Check if this word should be highlighted (including sub-words)
-            if ((word as any).originalWordIndex === highlightedWordIndex) {
-              isHighlight = true;
-            } else {
-              isHighlight = _j === highlightedWordIndex;
-            }
-          } else if (highlightedWordIndex >= 0) {
-            // If we have both part and word index, prioritize word index
-            if ((word as any).originalWordIndex === highlightedWordIndex) {
-              isHighlight = true;
-            } else {
-              isHighlight = _j === highlightedWordIndex;
-            }
-          } else if (highlightedPartIndex >= 0) {
-            const highlightedPart = sentenceParts[highlightedPartIndex];
-            const isLastPart =
-              highlightedPartIndex === sentenceParts.length - 1;
+          if (highlightedWordIndices.length > 0) {
+            isHighlight =
+              highlightedWordIndices.includes(_j) ||
+              ((word as any).isSubWord &&
+                highlightedWordIndices.includes(
+                  (word as any).originalWordIndex,
+                ));
+          } else {
+            // If we have a specific word to highlight (from keyword metadata or fallback)
+            if (highlightedWordIndex >= 0 && highlightedPartIndex === -1) {
+              // Check if this word should be highlighted (including sub-words)
+              if ((word as any).originalWordIndex === highlightedWordIndex) {
+                isHighlight = true;
+              } else {
+                isHighlight = _j === highlightedWordIndex;
+              }
+            } else if (highlightedWordIndex >= 0) {
+              // If we have both part and word index, prioritize word index
+              if ((word as any).originalWordIndex === highlightedWordIndex) {
+                isHighlight = true;
+              } else {
+                isHighlight = _j === highlightedWordIndex;
+              }
+            } else if (highlightedPartIndex >= 0) {
+              const highlightedPart = sentenceParts[highlightedPartIndex];
+              const isLastPart =
+                highlightedPartIndex === sentenceParts.length - 1;
 
-            if (isLastPart) {
-              // Find which part this word belongs to
-              let wordPartIndex = -1;
-              let currentIndex = 0;
+              if (isLastPart) {
+                // Find which part this word belongs to
+                let wordPartIndex = -1;
+                let currentIndex = 0;
 
-              for (
-                let partIndex = 0;
-                partIndex < sentenceParts.length;
-                partIndex++
-              ) {
-                const part = sentenceParts[partIndex];
-                if (_j >= currentIndex && _j < currentIndex + part.length) {
-                  wordPartIndex = partIndex;
-                  break;
+                for (
+                  let partIndex = 0;
+                  partIndex < sentenceParts.length;
+                  partIndex++
+                ) {
+                  const part = sentenceParts[partIndex];
+                  if (_j >= currentIndex && _j < currentIndex + part.length) {
+                    wordPartIndex = partIndex;
+                    break;
+                  }
+                  currentIndex += part.length;
                 }
-                currentIndex += part.length;
+
+                isHighlight = wordPartIndex === highlightedPartIndex;
+              } else {
+                // For first part, find a representative word to highlight
+                if (highlightedWordIndex === -1) {
+                  const partStartIndex = sentenceParts
+                    .slice(0, highlightedPartIndex)
+                    .reduce((sum, part) => sum + part.length, 0);
+                  const partEndIndex = partStartIndex + highlightedPart.length;
+                  const partWords = caption.words.slice(
+                    partStartIndex,
+                    partEndIndex,
+                  );
+
+                  const maxDuration = Math.max(
+                    ...partWords.map(w => w.duration),
+                  );
+                  highlightedWordIndex =
+                    partWords.findIndex(w => w.duration === maxDuration) +
+                    partStartIndex;
+                }
+
+                isHighlight = _j === highlightedWordIndex;
               }
-
-              isHighlight = wordPartIndex === highlightedPartIndex;
-            } else {
-              // For first part, find a representative word to highlight
-              if (highlightedWordIndex === -1) {
-                const partStartIndex = sentenceParts
-                  .slice(0, highlightedPartIndex)
-                  .reduce((sum, part) => sum + part.length, 0);
-                const partEndIndex = partStartIndex + highlightedPart.length;
-                const partWords = caption.words.slice(
-                  partStartIndex,
-                  partEndIndex,
-                );
-
-                const maxDuration = Math.max(...partWords.map(w => w.duration));
-                highlightedWordIndex =
-                  partWords.findIndex(w => w.duration === maxDuration) +
-                  partStartIndex;
-              }
-
-              isHighlight = _j === highlightedWordIndex;
             }
           }
 
@@ -1860,36 +2285,78 @@ const presetExecution = (
             textAlign,
             style,
             animationStyle,
+            layout,
+            fontScaling,
+            globalImpact,
           );
         });
 
         // Main sentence block layout
-        return {
-          type: 'layout',
-          id: scentenceId,
-          componentId: 'BaseLayout',
-          data: {
-            containerProps: {
-              className: `h-full flex flex-col ${
-                textAlign === 'left'
-                  ? 'items-start'
-                  : textAlign === 'right'
-                    ? 'items-end'
-                    : 'items-center'
-              } justify-center text-white gap-2 pl-10`,
+        if (layout === 'horizontal') {
+          // Calculate gap based on font size for horizontal layout
+          const baseFontSize = avgFontSize || 50;
+          const gapSize = Math.max(8, Math.floor(baseFontSize * 0.2)); // 20% of font size for main container, minimum 8px
+          const mainLayoutClassName = `h-full flex flex-row ${
+            textAlign === 'left'
+              ? 'items-start'
+              : textAlign === 'right'
+                ? 'items-end'
+                : 'items-center'
+          } justify-center text-white pl-10`;
+
+          return {
+            type: 'layout',
+            id: scentenceId,
+            componentId: 'BaseLayout',
+            data: {
+              containerProps: {
+                className: mainLayoutClassName,
+                style: {
+                  gap: `${gapSize}px`,
+                },
+              },
             },
-          },
-          context: {
-            boundaries: {
-              reset: true,
+            context: {
+              boundaries: {
+                reset: true,
+              },
+              timing: {
+                start: caption.absoluteStart,
+                duration: caption.duration,
+              },
             },
-            timing: {
-              start: caption.absoluteStart,
-              duration: caption.duration,
+            childrenData: partsData,
+          } as RenderableComponentData;
+        } else {
+          const mainLayoutClassName = `h-full flex flex-col ${
+            textAlign === 'left'
+              ? 'items-start'
+              : textAlign === 'right'
+                ? 'items-end'
+                : 'items-center'
+          } justify-center text-white gap-2 pl-10`;
+
+          return {
+            type: 'layout',
+            id: scentenceId,
+            componentId: 'BaseLayout',
+            data: {
+              containerProps: {
+                className: mainLayoutClassName,
+              },
             },
-          },
-          childrenData: partsData,
-        } as RenderableComponentData;
+            context: {
+              boundaries: {
+                reset: true,
+              },
+              timing: {
+                start: caption.absoluteStart,
+                duration: caption.duration,
+              },
+            },
+            childrenData: partsData,
+          } as RenderableComponentData;
+        }
       },
     );
   };
@@ -1920,6 +2387,9 @@ const presetExecution = (
     subtitleSync?.disableMetadata,
     style,
     subtitleSync?.animationStyle,
+    subtitleSync?.layout,
+    subtitleSync?.fontScaling,
+    subtitleSync?.impact,
   );
 
   // Generate final composition structure
@@ -1987,12 +2457,13 @@ const presetMetadata: PresetMetadata = {
   id: 'sub-vertical-float',
   title: 'Subtitles Vertical Float',
   description:
-    'Kinetic Subtitle in Vertical Layout with smooth melodic animations including fade-blur, wave-breathing, color-flow, and gentle drift effects perfect for melodic content',
+    'Kinetic Subtitle with configurable layout (horizontal or vertical) and smooth melodic animations including fade-blur, wave-breathing, color-flow, and gentle drift effects perfect for melodic content',
   type: 'predefined',
   presetType: 'children',
   tags: [
     'subtitles',
     'vertical',
+    'horizontal',
     'float',
     'melodic',
     'smooth',
@@ -2002,10 +2473,17 @@ const presetMetadata: PresetMetadata = {
     'breathing',
     'color-flow',
     'drift',
+    'slide',
+    'typewriter',
+    'bounce',
+    'ripple',
+    'zoom',
+    'cascade',
   ],
   defaultInputParams: {
     subtitleSync: {
-      animationStyle: 'melodic-fade-blur-float',
+      animationStyle: 'horizontal-slide-reveal',
+      layout: 'horizontal',
       negativeOffset: 0.15,
       maxLines: 5,
       floatThreshold: 15,
@@ -2014,6 +2492,11 @@ const presetMetadata: PresetMetadata = {
         enabled: false,
         maxLength: 3,
       },
+      fontScaling: {
+        highlighted: 1.35,
+        normal: 0.85,
+      },
+      impact: 0.3,
     },
     position: {
       align: 'left',

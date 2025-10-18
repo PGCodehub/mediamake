@@ -338,7 +338,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Add cache headers
-    response.headers.set('Cache-Control', 'public, max-age=3600'); // 1 hour
+    response.headers.set('Cache-Control', 'public, max-age=86400'); // 24 hours
     response.headers.set('ETag', `"${Date.now()}-${audioSrc.length}"`);
     response.headers.set('Last-Modified', new Date().toUTCString());
 

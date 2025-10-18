@@ -102,6 +102,17 @@ function isLargeTextField(fieldKey: string, field: FormField): boolean {
     );
 }
 
+// Helper function to detect if a URL ends with image MIME types
+function isImageUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.svg', '.ico', '.tiff', '.tif'];
+    const urlLower = url.toLowerCase().trim();
+
+    // Check if URL ends with image extension
+    return imageExtensions.some(ext => urlLower.endsWith(ext));
+}
+
 // Helper function to map MediaFile to field value based on field type and structure
 function mapMediaFileToFieldValue(mediaFiles: MediaFile | MediaFile[], field: FormField, currentValue: any): any {
     const files = Array.isArray(mediaFiles) ? mediaFiles : [mediaFiles];
@@ -173,8 +184,50 @@ function getNestedProperty(obj: any, path: string): any {
     }, obj);
 }
 
+// ImagePreview component
+function ImagePreview({ src, alt = "Preview" }: { src: string; alt?: string }) {
+    const [imageError, setImageError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const handleImageLoad = () => {
+        setIsLoading(false);
+        setImageError(false);
+    };
+
+    const handleImageError = () => {
+        setIsLoading(false);
+        setImageError(true);
+    };
+
+    if (imageError) {
+        return (
+            <div className="w-12 h-12 border border-dashed border-muted-foreground rounded-md flex items-center justify-center">
+                <Image className="h-4 w-4 text-muted-foreground" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative w-12 h-12 border rounded-md overflow-hidden">
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                    <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                </div>
+            )}
+            <img
+                src={src}
+                alt={alt}
+                className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                crossOrigin="anonymous"
+            />
+        </div>
+    );
+}
+
 // MediaPickerButton component
-function MediaPickerButton({ onSelect, singular = true }: { onSelect: (files: MediaFile | MediaFile[]) => void; singular?: boolean }) {
+function MediaPickerButton({ onSelect, singular = true, currentValue }: { onSelect: (files: MediaFile | MediaFile[]) => void; singular?: boolean; currentValue?: string }) {
     const [showPicker, setShowPicker] = useState(false);
 
     const handleSelect = (files: MediaFile | MediaFile[]) => {
@@ -182,17 +235,24 @@ function MediaPickerButton({ onSelect, singular = true }: { onSelect: (files: Me
         setShowPicker(false);
     };
 
+    const showImagePreview = currentValue && isImageUrl(currentValue);
+
     return (
         <>
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPicker(true)}
-                className="px-3"
-            >
-                <Image className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+                {showImagePreview && (
+                    <ImagePreview src={currentValue} alt="Image preview" />
+                )}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPicker(true)}
+                    className="px-3"
+                >
+                    <Image className="h-4 w-4" />
+                </Button>
+            </div>
             {showPicker && (
                 <MediaPicker
                     pickerMode={true}
@@ -359,6 +419,7 @@ function renderField(
                                     handleChange(fieldKey, newValue);
                                 }}
                                 singular={true}
+                                currentValue={typeof fieldValue === 'string' ? fieldValue : ""}
                             />
                         </div>
                     );
@@ -443,6 +504,7 @@ function renderField(
                                             handleChange(fieldKey, newValue);
                                         }}
                                         singular={true}
+                                        currentValue={typeof fieldValue === 'string' ? fieldValue : ""}
                                     />
                                 </div>
                             </div>
@@ -497,6 +559,7 @@ function renderField(
                                             handleChange(fieldKey, newValue);
                                         }}
                                         singular={false}
+                                        currentValue={typeof fieldValue === 'string' ? fieldValue : ""}
                                     />
                                 </div>
                             </div>

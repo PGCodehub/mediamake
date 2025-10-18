@@ -14,6 +14,8 @@ import { musicCardPreset } from './music-card';
 import { textOverlayPreset } from './text-overlay';
 import { beatstitchPreset } from './beatstitch';
 import { subMediaStitchPreset } from './sub-media-stitch';
+import { subScrollingVerticalPreset } from './sub-scrolling-vertical';
+import { subKineticMotionPreset } from './sub-kinetic-motion';
 import { customThemeBackgroundPreset } from './custom-theme-background';
 import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 
@@ -34,6 +36,8 @@ export const predefinedPresets: Preset[] = [
   beatstitchPreset,
   subFastRapStaticPreset,
   subMediaStitchPreset,
+  subScrollingVerticalPreset,
+  subKineticMotionPreset,
   advancedSubtitlesAnimsPreset,
   // Add more predefined presets here
 ];

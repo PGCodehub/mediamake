@@ -3,7 +3,8 @@ import { AI_ANALYSIS_CONFIG } from './sparkbaord/config';
 
 // Request body schema for AI analysis
 const RequestBodySchema = z.object({
-  imageUrl: z.string().url('Must be a valid URL'),
+  src: z.string().url('Must be a valid URL'),
+  srcType: z.enum(['image', 'video', 'audio']),
   platform: z.string().optional(),
   platformId: z.string().optional(),
   platformUrl: z.string().optional(),
@@ -78,7 +79,8 @@ export async function analyzeImage(
     }
 
     const requestBody: AnalysisRequestBody = {
-      imageUrl,
+      src: imageUrl,
+      srcType: 'image',
       indexingId: clientId,
       ...additionalData,
     };

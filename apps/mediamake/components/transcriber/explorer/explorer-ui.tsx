@@ -166,7 +166,7 @@ export function ExplorerUI() {
             </div>
 
             {/* Transcriptions Grid */}
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto">
                 <div className="p-4">
                     {filteredTranscriptions.length === 0 ? (
                         <div className="text-center py-12">
@@ -268,7 +268,7 @@ export function ExplorerUI() {
                         </div>
                     )}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 }
