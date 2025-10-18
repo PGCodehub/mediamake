@@ -36,7 +36,7 @@ interface ElevenLabsAlignment {
  * Convert ElevenLabs character-level timing to word-level timing
  */
 function extractWordsFromCharacterTimings(
-  alignment: ElevenLabsAlignment
+  alignment: ElevenLabsAlignment,
 ): Array<{ text: string; start: number; end: number }> {
   const { characters, character_start_times, character_end_times } = alignment;
 
@@ -93,7 +93,7 @@ function extractWordsFromCharacterTimings(
 function groupWordsIntoSentences(
   words: Array<{ text: string; start: number; end: number }>,
   maxCharsPerSentence: number = 50,
-  maxWordsPerSentence: number = 7
+  maxWordsPerSentence: number = 7,
 ): Caption[] {
   if (words.length === 0) return [];
 
@@ -136,7 +136,7 @@ function groupWordsIntoSentences(
  */
 function createSentenceFromWords(
   words: Array<{ text: string; start: number; end: number }>,
-  sentenceIndex: number
+  sentenceIndex: number,
 ): Caption {
   const sentenceStart = words[0].start;
   const sentenceEnd = words[words.length - 1].end;
@@ -173,7 +173,7 @@ async function generateSpeechWithTiming(
   text: string,
   voiceId: string,
   modelId: string,
-  outputFormat: string
+  outputFormat: string,
 ): Promise<{
   audioBase64: string;
   captions: Caption[];
@@ -184,9 +184,9 @@ async function generateSpeechWithTiming(
     throw new Error('ElevenLabs API key is required.');
   }
 
-  const client = new ElevenLabsClient({ 
+  const client = new ElevenLabsClient({
     apiKey,
-    timeoutInSeconds: 180, // Increase timeout to 180 seconds for v3 and longer texts
+    // timeoutInSeconds: 180, // Increase timeout to 180 seconds for v3 and longer texts
   });
 
   try {
@@ -227,8 +227,11 @@ async function generateSpeechWithTiming(
     };
   } catch (error) {
     console.error('An error occurred during ElevenLabs TTS:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`Failed to generate speech with ElevenLabs: ${errorMessage}`);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(
+      `Failed to generate speech with ElevenLabs: ${errorMessage}`,
+    );
   }
 }
 
@@ -248,7 +251,7 @@ export const POST = async (req: NextRequest) => {
       text,
       voiceId,
       modelId,
-      outputFormat
+      outputFormat,
     );
 
     console.log('Preparing to save transcription to database');
@@ -268,7 +271,7 @@ export const POST = async (req: NextRequest) => {
           success: true,
           transcription: existing,
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -323,7 +326,7 @@ export const POST = async (req: NextRequest) => {
           success: false,
           error: `Validation error: ${error.issues.map(e => e.message).join(', ')}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -336,8 +339,7 @@ export const POST = async (req: NextRequest) => {
         success: false,
         error: errorMessage,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
-
