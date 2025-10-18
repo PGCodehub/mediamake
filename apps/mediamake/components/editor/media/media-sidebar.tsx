@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Tag as TagIcon, Folder, ChevronRight, ChevronDown, Hash } from "lucide-react";
 import { Tag } from "@/app/types/media";
+import { getClientId } from "@/lib/auth-utils";
 
 interface MediaSidebarProps {
     selectedTag: string | null;
@@ -53,9 +54,6 @@ export function MediaSidebar({ selectedTag, onSelectTag, hashtagFilters, onHasht
         try {
             const response = await fetch('/api/tags', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     id: newTagId.trim().toLowerCase(),
                     displayName: newTagName.trim(),

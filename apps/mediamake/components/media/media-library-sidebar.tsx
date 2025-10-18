@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Tag } from "@/app/types/media";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Tag as TagIcon, Folder, ChevronRight, ChevronDown, Hash, FileText, Video } from "lucide-react";
-import { Tag } from "@/app/types/media";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown, ChevronRight, FileText, Folder, Hash, Plus, Search, Tag as TagIcon, Video } from "lucide-react";
+import { useEffect, useState } from "react";
 
 
 interface MediaLibrarySidebarProps {
@@ -55,9 +54,6 @@ export function MediaLibrarySidebar({ selectedTag, onSelectTag, hashtagFilters, 
         try {
             const response = await fetch('/api/tags', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     id: newTagId.trim().toLowerCase(),
                     displayName: newTagName.trim(),

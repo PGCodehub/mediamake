@@ -4,6 +4,7 @@ export interface Tag {
   _id?: ObjectId;
   id: string; // shortformcapless like hashtag
   displayName: string;
+  clientId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
