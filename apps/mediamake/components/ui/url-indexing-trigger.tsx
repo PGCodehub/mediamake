@@ -61,7 +61,7 @@ export function UrlIndexingTrigger({
 
         const checkProgress = async () => {
             try {
-                const response = await fetch(`/api/ai-analysis/check?indexingId=${id}&topK=${limit}`);
+                const response = await fetch(`/api/sparkboard/check?indexingId=${id}&topK=${limit}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to check indexing progress');

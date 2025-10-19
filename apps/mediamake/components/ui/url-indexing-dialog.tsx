@@ -68,7 +68,7 @@ export function UrlIndexingDialog({
             setIsIndexing(true);
             console.log('Starting indexing with tags:', selectedTags);
 
-            const response = await fetch('/api/ai-analysis', {
+            const response = await fetch('/api/sparkboard', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
