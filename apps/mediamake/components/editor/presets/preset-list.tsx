@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Trash2, Play, Loader2, RefreshCw, GripVertical, Copy, Save, Upload, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset } from "./types";
+import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset, DefaultPresetData } from "./types";
 import { SchemaForm } from "./schema-form";
 import { usePresetContext } from "./preset-provider";
 import { OutputCard } from "./output-card";
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { getPresetById } from "./registry/presets-registry";
 import { SavePresetDialog } from "./save-preset-dialog";
 import { LoadPresetDialog } from "./load-preset-dialog";
+import { DefaultCard } from "./default-card";
+import { createBaseDataFromReferences } from "./preset-data-mutation";
 import {
     DndContext,
     closestCenter,
@@ -43,6 +45,8 @@ interface SortablePresetItemProps {
     onRefresh: (id: string) => void;
     onRemove: (id: string) => void;
     onToggleDisabled: (id: string) => void;
+    availableReferences?: string[];
+    defaultData?: any;
 }
 
 function SortablePresetItem({
@@ -51,7 +55,9 @@ function SortablePresetItem({
     onUpdateInputData,
     onRefresh,
     onRemove,
-    onToggleDisabled
+    onToggleDisabled,
+    availableReferences = [],
+    defaultData
 }: SortablePresetItemProps) {
     const {
         attributes,
@@ -163,6 +169,8 @@ function SortablePresetItem({
                             value={appliedPreset.inputData}
                             onChange={(inputData) => onUpdateInputData(appliedPreset.id, inputData)}
                             className=""
+                            availableReferences={availableReferences}
+                            baseData={createBaseDataFromReferences(defaultData.references)}
                         />
                     </CardContent>
                 )}
@@ -186,6 +194,7 @@ interface SavedPresetData {
             presetInputData: any;
             disabled?: boolean;
         }>;
+        defaultData?: DefaultPresetData; // Include baseData (references)
     };
 }
 
@@ -226,6 +235,8 @@ export function PresetList({
         removePreset,
         refreshPreset,
         reorderPresets,
+        defaultData,
+        setDefaultData,
         isGenerating,
         currentLoadedPreset,
         setCurrentLoadedPreset
@@ -299,7 +310,8 @@ export function PresetList({
                     presetType: appliedPreset.preset.metadata.presetType,
                     presetInputData: appliedPreset.inputData,
                     disabled: appliedPreset.disabled || false
-                }))
+                })),
+                defaultData: defaultData // Include baseData (references)
             };
 
             console.log(`💾 SAVING PRESET DATA:`, {
@@ -426,13 +438,23 @@ export function PresetList({
                 activePresetId: newAppliedPresets[0]?.id || null
             });
 
+            // Restore defaultData (references) if it exists
+            if (savedPreset.presetData.defaultData) {
+                setDefaultData(savedPreset.presetData.defaultData);
+                console.log(`✅ RESTORED DEFAULT DATA:`, {
+                    referencesCount: savedPreset.presetData.defaultData.references?.length || 0,
+                    references: savedPreset.presetData.defaultData.references?.map((r: any) => r.key) || []
+                });
+            }
+
             if (newAppliedPresets.length > 0) {
                 // Track the loaded preset
                 setCurrentLoadedPreset(savedPreset.id);
                 console.log(`✅ SUCCESSFULLY LOADED PRESET DATA:`, {
                     presetDataId: savedPreset.id,
                     presetDataName: savedPreset.name,
-                    loadedPresetsCount: newAppliedPresets.length
+                    loadedPresetsCount: newAppliedPresets.length,
+                    hasDefaultData: !!savedPreset.presetData.defaultData
                 });
                 toast.success(`Loaded preset: ${savedPreset.name} (${newAppliedPresets.length} presets)`);
             } else {
@@ -569,6 +591,12 @@ export function PresetList({
 
             <div className="flex-1 overflow-y-auto">
                 <div className="p-3 space-y-2">
+                    {/* Default Card - appears at the top */}
+                    <DefaultCard
+                        defaultData={defaultData}
+                        onDefaultDataChange={setDefaultData}
+                    />
+
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -587,6 +615,8 @@ export function PresetList({
                                     onRefresh={refreshPreset}
                                     onRemove={removePreset}
                                     onToggleDisabled={togglePresetDisabled}
+                                    availableReferences={defaultData.references.map(ref => ref.key)}
+                                    defaultData={defaultData}
                                 />
                             ))}
                         </SortableContext>

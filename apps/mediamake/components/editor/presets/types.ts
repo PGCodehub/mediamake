@@ -36,6 +36,7 @@ export interface PresetPassedProps {
     duration?: number;
   };
   fetcher?: (url: string, data?: any) => Promise<any>;
+  baseData?: Record<string, any>; // Base data containing references for data:[key] replacement
 }
 
 export interface PresetOutput {
@@ -153,3 +154,23 @@ export const TranscriptionSentenceSchema = z.object({
 });
 
 export type TranscriptionSentence = z.infer<typeof TranscriptionSentenceSchema>;
+
+// --- Reference Types for Data Mutation ---
+
+export interface ReferenceItem {
+  key: string;
+  type:
+    | 'media'
+    | 'medias'
+    | 'captions'
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'object'
+    | 'objects';
+  value: any;
+}
+
+export interface DefaultPresetData {
+  references: ReferenceItem[];
+}

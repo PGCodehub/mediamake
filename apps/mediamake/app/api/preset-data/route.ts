@@ -13,6 +13,13 @@ interface PresetDataDocument {
       presetInputData: any;
       disabled?: boolean;
     }>;
+    defaultData?: {
+      references: Array<{
+        key: string;
+        type: string;
+        value: any;
+      }>;
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -58,6 +65,8 @@ export async function POST(request: NextRequest) {
       name: name,
       overwriteId: overwriteId,
       numberOfPresets: presetData?.presets?.length || 0,
+      hasDefaultData: !!presetData?.defaultData,
+      referencesCount: presetData?.defaultData?.references?.length || 0,
       clientId: clientId,
     });
 
@@ -97,6 +106,8 @@ export async function POST(request: NextRequest) {
           presetDataId: overwriteId,
           name: name,
           numberOfPresets: presetData?.presets?.length || 0,
+          hasDefaultData: !!presetData?.defaultData,
+          referencesCount: presetData?.defaultData?.references?.length || 0,
         });
 
         return NextResponse.json({
@@ -126,6 +137,8 @@ export async function POST(request: NextRequest) {
       presetDataId: result.insertedId.toString(),
       name: name,
       numberOfPresets: presetData?.presets?.length || 0,
+      hasDefaultData: !!presetData?.defaultData,
+      referencesCount: presetData?.defaultData?.references?.length || 0,
       clientId: clientId,
     });
 

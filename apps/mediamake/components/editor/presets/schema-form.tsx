@@ -22,6 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TranscriptionPicker } from "../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
+import { FlexibleObjectField } from "./flexible-object-field";
 
 const availableFonts = getAvailableFonts();
 
@@ -38,6 +39,8 @@ interface SchemaFormProps {
     customActions?: React.ReactNode;
     title?: string;
     description?: string;
+    availableReferences?: string[]; // Available reference keys for data-referrable fields
+    baseData?: Record<string, any>; // Base data for flexible object fields
 }
 
 interface FormField {
@@ -58,6 +61,8 @@ interface NestedFormProps {
     onChange: (value: any) => void;
     fieldKey: string;
     depth?: number;
+    availableReferences?: string[];
+    baseData?: Record<string, any>;
 }
 
 // Helper function to detect if a field is URL/src related
@@ -100,6 +105,18 @@ function isLargeTextField(fieldKey: string, field: FormField): boolean {
         titleLower.includes(keyword) ||
         descLower.includes(keyword)
     );
+}
+
+// Helper function to detect if a field is data-referrable
+function isDataReferrableField(field: FormField): boolean {
+    return field.description?.includes('data-referrable') || false;
+}
+
+// Helper function to detect if an object field should use flexible object field
+function isFlexibleObjectField(field: FormField, availableReferences: string[]): boolean {
+    return field.type === 'object' &&
+        (field.description?.includes('data-referrable') || false) &&
+        availableReferences.length > 0;
 }
 
 // Helper function to detect if a URL ends with image MIME types
@@ -220,7 +237,6 @@ function ImagePreview({ src, alt = "Preview" }: { src: string; alt?: string }) {
                 className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-                crossOrigin="anonymous"
             />
         </div>
     );
@@ -293,6 +309,74 @@ function TranscriptionPickerButton({ onSelect }: { onSelect: (transcription: Tra
                 />
             )}
         </>
+    );
+}
+
+// DataReferrableDropdown component for data-referrable fields
+function DataReferrableDropdown({
+    value,
+    onChange,
+    availableReferences,
+    fieldKey
+}: {
+    value: string;
+    onChange: (value: string) => void;
+    availableReferences: string[];
+    fieldKey?: string;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleSelect = (selectedValue: string) => {
+        onChange(`data:[${selectedValue}]`);
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="space-y-2">
+            {fieldKey && (
+                <Label className="text-sm font-medium text-muted-foreground">
+                    Reference for: {fieldKey}
+                </Label>
+            )}
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                    <Input
+                        value={value.startsWith('data:[') ? value.slice(6, -1) : value}
+                        onChange={(e) => {
+                            const inputValue = e.target.value;
+                            if (inputValue.startsWith('data:[')) {
+                                onChange(inputValue);
+                            } else {
+                                onChange(`data:[${inputValue}]`);
+                            }
+                        }}
+                        placeholder="Select or type reference key"
+                        className="w-full"
+                        onFocus={() => setIsOpen(true)}
+                    />
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                        <CommandInput placeholder="Search references..." />
+                        <CommandList>
+                            <CommandEmpty>No references found.</CommandEmpty>
+                            <CommandGroup>
+                                {availableReferences.map((ref) => (
+                                    <CommandItem
+                                        key={ref}
+                                        value={ref}
+                                        onSelect={() => handleSelect(ref)}
+                                        className="cursor-pointer"
+                                    >
+                                        <span className="font-medium">{ref}</span>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+        </div>
     );
 }
 
@@ -375,7 +459,9 @@ function renderField(
     currentValue?: any,
     onChangeHandler?: (key: string, value: any) => void,
     depth: number = 0,
-    parentSchema?: any
+    parentSchema?: any,
+    availableReferences?: string[],
+    baseData?: Record<string, any>
 ) {
     const fieldValue = currentValue;
     const handleChange = onChangeHandler || (() => { });
@@ -403,6 +489,18 @@ function renderField(
                 const isUrl = isUrlField(fieldKey, field);
                 const isFont = isFontField(fieldKey, field);
                 const isLargeText = isLargeTextField(fieldKey, field);
+                const isDataReferrable = isDataReferrableField(field);
+
+                if (isDataReferrable) {
+                    return (
+                        <DataReferrableDropdown
+                            value={typeof fieldValue === 'string' ? fieldValue : ""}
+                            onChange={(val) => handleChange(fieldKey, val)}
+                            availableReferences={availableReferences || []}
+                            fieldKey={fieldKey}
+                        />
+                    );
+                }
 
                 if (isUrl) {
                     return (
@@ -480,6 +578,20 @@ function renderField(
 
             case "object":
                 if (field.properties) {
+                    // Check if this should use flexible object field
+                    if (isFlexibleObjectField(field, availableReferences || [])) {
+                        return (
+                            <FlexibleObjectField
+                                value={fieldValue || {}}
+                                onChange={(val) => handleChange(fieldKey, val)}
+                                availableReferences={availableReferences || []}
+                                baseData={baseData || {}}
+                                fieldKey={fieldKey}
+                                field={field}
+                            />
+                        );
+                    }
+
                     const hasUrlProperties = Object.keys(field.properties || {}).some(propKey =>
                         isUrlField(propKey, { ...(field.properties?.[propKey] || {}), title: field.properties?.[propKey]?.title || '' })
                     );
@@ -496,6 +608,8 @@ function renderField(
                                             fieldKey={fieldKey}
                                             depth={depth}
                                             parentSchema={parentSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     </div>
                                     <MediaPickerButton
@@ -519,6 +633,8 @@ function renderField(
                             fieldKey={fieldKey}
                             depth={depth}
                             parentSchema={parentSchema}
+                            availableReferences={availableReferences}
+                            baseData={baseData}
                         />
                     );
                 }
@@ -535,10 +651,31 @@ function renderField(
 
             case "array":
                 if (field.items) {
+                    const isDataReferrable = isDataReferrableField(field);
                     const isUrlArray = isUrlField(fieldKey, field) ||
                         (field.items.type === 'string' && isUrlField('item', { ...field.items, title: field.items.title || '' }));
 
                     const isCaptionsArray = fieldKey.toLowerCase().includes('captions') || fieldKey.toLowerCase().includes('inputcaptions');
+
+                    if (isDataReferrable) {
+                        return (
+                            <DataReferrableDropdown
+                                value={Array.isArray(fieldValue) ? fieldValue.join(', ') : (typeof fieldValue === 'string' ? fieldValue : "")}
+                                onChange={(val) => {
+                                    // Handle both string and array values
+                                    if (val.startsWith('data:[')) {
+                                        handleChange(fieldKey, val);
+                                    } else {
+                                        // Convert comma-separated string to array
+                                        const arrayValue = val.split(',').map(item => item.trim()).filter(Boolean);
+                                        handleChange(fieldKey, arrayValue);
+                                    }
+                                }}
+                                availableReferences={availableReferences || []}
+                                fieldKey={fieldKey}
+                            />
+                        );
+                    }
 
                     if (isUrlArray) {
                         return (
@@ -551,6 +688,8 @@ function renderField(
                                             onChange={(val) => handleChange(fieldKey, val)}
                                             fieldKey={fieldKey}
                                             parentSchema={parentSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     </div>
                                     <MediaPickerButton
@@ -577,6 +716,8 @@ function renderField(
                                             onChange={(val) => handleChange(fieldKey, val)}
                                             fieldKey={fieldKey}
                                             parentSchema={parentSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     </div>
                                     <TranscriptionPickerButton
@@ -598,6 +739,8 @@ function renderField(
                             onChange={(val) => handleChange(fieldKey, val)}
                             fieldKey={fieldKey}
                             parentSchema={parentSchema}
+                            availableReferences={availableReferences}
+                            baseData={baseData}
                         />
                     );
                 }
@@ -669,7 +812,7 @@ function renderField(
 }
 
 // Nested form component for objects
-function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema }: NestedFormProps & { parentSchema?: any }) {
+function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema, availableReferences = [], baseData = {} }: NestedFormProps & { parentSchema?: any }) {
     const [isOpen, setIsOpen] = useState(false); // Collapse all objects by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
@@ -742,7 +885,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
                                             </Tooltip>
                                         )}
                                     </div>
-                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema)}
+                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema, availableReferences, baseData)}
                                 </div>
                             );
                         })
@@ -756,7 +899,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
 }
 
 // Array management component
-function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any }) {
+function ArrayManager({ schema, value, onChange, fieldKey, parentSchema, availableReferences = [], baseData = {} }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any; availableReferences?: string[]; baseData?: Record<string, any> }) {
     const [isOpen, setIsOpen] = useState(false); // Collapse all arrays by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
@@ -879,6 +1022,8 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { sch
                                             fieldKey={`item-${index}`}
                                             depth={1}
                                             parentSchema={itemSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     ) : (
                                         <div className="space-y-2">
@@ -888,7 +1033,9 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { sch
                                                 item,
                                                 (key: string, newValue: any) => updateItem(index, newValue),
                                                 1,
-                                                itemSchema
+                                                itemSchema,
+                                                availableReferences,
+                                                baseData
                                             )}
                                         </div>
                                     )}
@@ -956,7 +1103,9 @@ export function SchemaForm({
     onReset,
     customActions,
     title = "Input Parameters",
-    description
+    description,
+    availableReferences = [],
+    baseData = {}
 }: SchemaFormProps) {
     const [formData, setFormData] = useState(value || {});
     const [activeTab, setActiveTab] = useState<"form" | "json">("form");
@@ -1088,7 +1237,7 @@ export function SchemaForm({
                                 <div className="space-y-4">
                                     {fields.map((field) => {
                                         const fieldValue = formData[field.key];
-                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema);
+                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData);
                                     })}
                                 </div>
                             ) : (
@@ -1113,7 +1262,7 @@ export function SchemaForm({
                             <div className="space-y-4">
                                 {fields.map((field) => {
                                     const fieldValue = formData[field.key];
-                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema)}</div>;
+                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData)}</div>;
                                 })}
                             </div>
                         ) : (

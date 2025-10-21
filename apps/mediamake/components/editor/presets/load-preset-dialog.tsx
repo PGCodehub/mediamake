@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Upload, Search, Calendar, Layers } from "lucide-react";
 import { toast } from "sonner";
+import { DefaultPresetData } from "./types";
 
 interface SavedPresetData {
     id: string;
@@ -26,6 +27,7 @@ interface SavedPresetData {
             presetType: string;
             presetInputData: any;
         }>;
+        defaultData?: DefaultPresetData; // Include baseData (references)
     };
 }
 

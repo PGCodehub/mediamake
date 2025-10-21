@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, ZoomIn, ZoomOut, Scissors, Wand2 } from "lucide-react";
+import { Play, Pause, ZoomIn, ZoomOut, Scissors, Wand2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Caption, CaptionWord } from '@/app/types/transcription';
 import { useGesture, FullGestureState } from '@use-gesture/react';
@@ -26,6 +26,7 @@ interface WordLevelTimelineProps {
     onCaptionsChange: (newCaptions: Caption[]) => void;
     formatTime: (time: number) => string;
     className?: string;
+    onClose?: () => void;
 }
 
 const TimelineRuler = React.memo(({ pixelsPerSecond, duration, timelineWidth }: { pixelsPerSecond: number, duration: number, timelineWidth: number }) => {
@@ -178,7 +179,8 @@ export function SentenceTimeline({
     onTogglePlayPause,
     onCaptionsChange,
     formatTime,
-    className
+    className,
+    onClose
 }: WordLevelTimelineProps) {
     const [pixelsPerSecond, setPixelsPerSecond] = useState(100);
     const [sentenceGapLimit, setSentenceGapLimit] = useState(5);
@@ -489,6 +491,11 @@ export function SentenceTimeline({
         <div className={cn("h-full flex flex-col bg-background border-l", className)}>
             <div className="p-2 border-b flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
+                    {onClose && (
+                        <Button variant="ghost" size="sm" onClick={onClose}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={onTogglePlayPause}>
                         {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>

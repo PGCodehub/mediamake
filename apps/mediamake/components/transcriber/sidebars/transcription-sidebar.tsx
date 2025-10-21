@@ -6,12 +6,16 @@ import {
     Edit3,
     Settings,
     ArrowLeft,
-    Info
+    Info,
+    BrainIcon,
+    Bot
 } from "lucide-react";
 import { useTranscriber } from "../contexts/transcriber-context";
 
 const navigationItems = [
     { id: 'editor', label: 'Editor', icon: Edit3 },
+    { id: 'autofix', label: 'AI AutoFix', icon: Bot },
+    { id: 'metadata', label: 'Metadata', icon: BrainIcon },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'info', label: 'Info', icon: Info },
 ] as const;
