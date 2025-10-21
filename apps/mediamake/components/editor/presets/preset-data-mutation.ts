@@ -46,18 +46,45 @@ function processDataReferencesRecursive(
   baseData: Record<string, any>,
 ): any {
   if (typeof data === 'string') {
-    // Check if this is a data:[key] reference
-    if (data.startsWith('data:[') && data.endsWith(']')) {
-      const key = data.slice(6, -1).trim();
-      if (baseData[key] !== undefined) {
-        return baseData[key];
-      } else {
-        toast.error(`Reference '${key}' not found in base data`);
-        console.warn(
-          `Data reference '${key}' not found in base data:`,
-          baseData,
-        );
-        return data;
+    // Check if this is a data:[key] or data:[key][range] reference
+    if (data.startsWith('data:[')) {
+      const match = data.match(/^data:\[([^\]]+)\](?:\[([^\]]+)\])?$/);
+      if (match) {
+        const key = match[1].trim();
+        const range = match[2];
+
+        if (baseData[key] !== undefined) {
+          const referenceValue = baseData[key];
+
+          // If it's an array and has a range, process the range
+          if (Array.isArray(referenceValue) && range) {
+            return processArrayRange(referenceValue, range, 'array');
+          }
+
+          // If it's a captions array and has a time range, process the time range
+          if (
+            referenceValue &&
+            typeof referenceValue === 'object' &&
+            referenceValue.captions &&
+            Array.isArray(referenceValue.captions) &&
+            range
+          ) {
+            return processArrayRange(
+              referenceValue.captions,
+              range,
+              'captions',
+            );
+          }
+
+          return referenceValue;
+        } else {
+          toast.error(`Reference '${key}' not found in base data`);
+          console.warn(
+            `Data reference '${key}' not found in base data:`,
+            baseData,
+          );
+          return data;
+        }
       }
     }
     return processStringReference(data, baseData);
@@ -80,7 +107,7 @@ function processDataReferencesRecursive(
 }
 
 /**
- * Processes a string value to replace data:[key] references
+ * Processes a string value to replace data:[key] references with range support
  */
 function processStringReference(
   value: string,
@@ -90,10 +117,10 @@ function processStringReference(
     return value;
   }
 
-  // Match data:[key] pattern
-  const dataReferencePattern = /data:\[([^\]]+)\]/g;
+  // Match data:[key] or data:[key][range] pattern
+  const dataReferencePattern = /data:\[([^\]]+)\](?:\[([^\]]+)\])?/g;
 
-  return value.replace(dataReferencePattern, (match, key) => {
+  return value.replace(dataReferencePattern, (match, key, range) => {
     const trimmedKey = key.trim();
 
     if (baseData[trimmedKey] !== undefined) {
@@ -123,13 +150,13 @@ function processStringReference(
         }
         // Check for captions array property
         if (referenceValue.captions && Array.isArray(referenceValue.captions)) {
-          return referenceValue.captions;
+          return processArrayRange(referenceValue.captions, range, 'captions');
         }
       }
 
-      // If referenceValue is already an array (captions), return it directly
+      // If referenceValue is already an array, apply range if specified
       if (Array.isArray(referenceValue)) {
-        return referenceValue;
+        return processArrayRange(referenceValue, range, 'array');
       }
 
       return referenceValue;
@@ -142,6 +169,98 @@ function processStringReference(
       );
       return match; // Return original string if reference not found
     }
+  });
+}
+
+/**
+ * Processes array range selection
+ * @param array - The array to process
+ * @param range - The range specification (e.g., "2-33", "1:04-2:03")
+ * @param type - The type of array ("array" for index ranges, "captions" for time ranges)
+ */
+function processArrayRange(
+  array: any[],
+  range: string | undefined,
+  type: 'array' | 'captions',
+): any[] {
+  if (!range || !Array.isArray(array)) {
+    return array;
+  }
+
+  // Auto-detect time range format (MM:SS-MM:SS) vs index range format (N-N)
+  const isTimeRange = /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(range);
+  const isIndexRange = /^\d+-\d+$/.test(range);
+
+  if (isTimeRange) {
+    return processTimeRange(array, range);
+  } else if (isIndexRange) {
+    return processIndexRange(array, range);
+  } else {
+    console.warn(`Unknown range format: ${range}`);
+    return array;
+  }
+}
+
+/**
+ * Processes index-based range selection (e.g., "2-33")
+ */
+function processIndexRange(array: any[], range: string): any[] {
+  const rangeMatch = range.match(/^(\d+)-(\d+)$/);
+  if (!rangeMatch) {
+    console.warn(`Invalid index range format: ${range}`);
+    return array;
+  }
+
+  const startIndex = parseInt(rangeMatch[1], 10);
+  const endIndex = parseInt(rangeMatch[2], 10);
+
+  if (startIndex < 0 || endIndex >= array.length || startIndex > endIndex) {
+    console.warn(
+      `Invalid range ${startIndex}-${endIndex} for array of length ${array.length}`,
+    );
+    return array;
+  }
+
+  return array.slice(startIndex, endIndex + 1);
+}
+
+/**
+ * Processes time-based range selection for captions (e.g., "1:04-2:03")
+ */
+function processTimeRange(captions: any[], range: string): any[] {
+  // More flexible regex to handle different time formats
+  const timeRangeMatch = range.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+  if (!timeRangeMatch) {
+    console.warn(
+      `Invalid time range format: ${range}. Expected format: MM:SS-MM:SS`,
+    );
+    return captions;
+  }
+
+  const startMinutes = parseInt(timeRangeMatch[1], 10);
+  const startSeconds = parseInt(timeRangeMatch[2], 10);
+  const endMinutes = parseInt(timeRangeMatch[3], 10);
+  const endSeconds = parseInt(timeRangeMatch[4], 10);
+
+  const startTime = startMinutes * 60 + startSeconds;
+  const endTime = endMinutes * 60 + endSeconds;
+
+  return captions.filter((caption: any) => {
+    // Check if caption has absoluteStart and absoluteEnd properties
+    if (
+      typeof caption.absoluteStart === 'number' &&
+      typeof caption.absoluteEnd === 'number'
+    ) {
+      // Check if caption overlaps with the time range
+      return caption.absoluteStart < endTime && caption.absoluteEnd > startTime;
+    }
+
+    // Fallback to start/end if absoluteStart/absoluteEnd not available
+    if (typeof caption.start === 'number' && typeof caption.end === 'number') {
+      return caption.start < endTime && caption.end > startTime;
+    }
+
+    return false;
   });
 }
 

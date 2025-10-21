@@ -312,7 +312,7 @@ function TranscriptionPickerButton({ onSelect }: { onSelect: (transcription: Tra
     );
 }
 
-// DataReferrableDropdown component for data-referrable fields
+// DataReferrableDropdown component for data-referrable fields with range support
 function DataReferrableDropdown({
     value,
     onChange,
@@ -325,10 +325,32 @@ function DataReferrableDropdown({
     fieldKey?: string;
 }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [rangeInput, setRangeInput] = useState('');
+
+    // Parse the current value to extract key and range
+    const parseValue = (val: string) => {
+        const match = val.match(/^data:\[([^\]]+)\](?:\[([^\]]+)\])?$/);
+        if (match) {
+            return { key: match[1], range: match[2] || '' };
+        }
+        return { key: val.replace(/^data:\[|\]$/g, ''), range: '' };
+    };
+
+    const { key: currentKey, range: currentRange } = parseValue(value);
 
     const handleSelect = (selectedValue: string) => {
-        onChange(`data:[${selectedValue}]`);
+        const finalValue = rangeInput ? `data:[${selectedValue}][${rangeInput}]` : `data:[${selectedValue}]`;
+        onChange(finalValue);
+        setRangeInput('');
         setIsOpen(false);
+    };
+
+    const handleRangeChange = (newRange: string) => {
+        setRangeInput(newRange);
+        if (currentKey) {
+            const finalValue = newRange ? `data:[${currentKey}][${newRange}]` : `data:[${currentKey}]`;
+            onChange(finalValue);
+        }
     };
 
     return (
@@ -338,44 +360,58 @@ function DataReferrableDropdown({
                     Reference for: {fieldKey}
                 </Label>
             )}
-            <Popover open={isOpen} onOpenChange={setIsOpen}>
-                <PopoverTrigger asChild>
+            <div className="space-y-2">
+                <Popover open={isOpen} onOpenChange={setIsOpen}>
+                    <PopoverTrigger asChild>
+                        <Input
+                            value={currentKey}
+                            onChange={(e) => {
+                                const inputValue = e.target.value;
+                                const finalValue = currentRange ? `data:[${inputValue}][${currentRange}]` : `data:[${inputValue}]`;
+                                onChange(finalValue);
+                            }}
+                            placeholder="Select or type reference key"
+                            className="w-full"
+                            onFocus={() => setIsOpen(true)}
+                        />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                            <CommandInput placeholder="Search references..." />
+                            <CommandList>
+                                <CommandEmpty>No references found.</CommandEmpty>
+                                <CommandGroup>
+                                    {availableReferences.map((ref) => (
+                                        <CommandItem
+                                            key={ref}
+                                            value={ref}
+                                            onSelect={() => handleSelect(ref)}
+                                            className="cursor-pointer"
+                                        >
+                                            <span className="font-medium">{ref}</span>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+
+                {/* Range input */}
+                <div className="flex gap-2">
                     <Input
-                        value={value.startsWith('data:[') ? value.slice(6, -1) : value}
-                        onChange={(e) => {
-                            const inputValue = e.target.value;
-                            if (inputValue.startsWith('data:[')) {
-                                onChange(inputValue);
-                            } else {
-                                onChange(`data:[${inputValue}]`);
-                            }
-                        }}
-                        placeholder="Select or type reference key"
-                        className="w-full"
-                        onFocus={() => setIsOpen(true)}
+                        value={currentRange}
+                        onChange={(e) => handleRangeChange(e.target.value)}
+                        placeholder="Range (e.g., 2-33 or 1:04-2:03)"
+                        className="flex-1 text-sm"
                     />
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                        <CommandInput placeholder="Search references..." />
-                        <CommandList>
-                            <CommandEmpty>No references found.</CommandEmpty>
-                            <CommandGroup>
-                                {availableReferences.map((ref) => (
-                                    <CommandItem
-                                        key={ref}
-                                        value={ref}
-                                        onSelect={() => handleSelect(ref)}
-                                        className="cursor-pointer"
-                                    >
-                                        <span className="font-medium">{ref}</span>
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </Command>
-                </PopoverContent>
-            </Popover>
+                    <div className="text-xs text-muted-foreground flex items-center">
+                        <span>Index: 2-33</span>
+                        <span className="mx-1">|</span>
+                        <span>Time: 1:04-2:03</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

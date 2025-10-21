@@ -267,6 +267,7 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
           updatedComponent.componentId === 'AudioAtom'
         ) {
           const duration = await calculateComponentDuration(updatedComponent);
+          console.log('duration', duration);
           if (!updatedComponent.context?.timing?.fitDurationTo) {
             updatedComponent.context = {
               ...(updatedComponent.context || {}),

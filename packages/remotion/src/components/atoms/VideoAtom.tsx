@@ -105,7 +105,7 @@ export const Atom: React.FC<VideoAtomProps> = ({ data, id, context }) => {
 
     if (data.loop) {
         return (
-            <Loop times={Infinity} durationInFrames={data.srcDuration * fps} layout="none">
+            <Loop times={Infinity} durationInFrames={(data.srcDuration ? (data.srcDuration * fps) : context.timing?.durationInFrames)} layout="none">
                 {data.containerClassName ? (
                     <div className={data.containerClassName} style={overrideStyles}>
                         {videoComponent}

@@ -43,6 +43,7 @@ interface SortablePresetItemProps {
     onToggleExpansion: (id: string) => void;
     onUpdateInputData: (id: string, inputData: PresetInputData) => void;
     onRefresh: (id: string) => void;
+    onCopy: (id: string) => void;
     onRemove: (id: string) => void;
     onToggleDisabled: (id: string) => void;
     availableReferences?: string[];
@@ -54,6 +55,7 @@ function SortablePresetItem({
     onToggleExpansion,
     onUpdateInputData,
     onRefresh,
+    onCopy,
     onRemove,
     onToggleDisabled,
     availableReferences = [],
@@ -131,6 +133,15 @@ function SortablePresetItem({
                                 title="Refresh preset (reloads function and schema)"
                             >
                                 <RefreshCw className="h-3 w-3" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onCopy(appliedPreset.id)}
+                                className="text-purple-500 hover:text-purple-700 p-1 h-6 w-6"
+                                title="Duplicate preset"
+                            >
+                                <Copy className="h-3 w-3" />
                             </Button>
                             {appliedPreset.preset.metadata.presetType === 'children' && (
                                 <Button
@@ -268,6 +279,60 @@ export function PresetList({
         }
     };
 
+    // Helper function to generate random 6-character string
+    const generateRandomString = (length: number = 6): string => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    };
+
+    // Duplicate a preset
+    const copyPreset = (id: string) => {
+        const presetToCopy = appliedPresets.presets.find(p => p.id === id);
+        if (!presetToCopy) return;
+
+        // Deep clone the input data
+        let newInputData = JSON.parse(JSON.stringify(presetToCopy.inputData));
+
+        // Check if there's a trackName field and update it with a random string
+        if (newInputData && typeof newInputData === 'object') {
+            const processObject = (obj: any) => {
+                for (const key in obj) {
+                    if (key === 'trackName' && typeof obj[key] === 'string') {
+                        obj[key] = generateRandomString(6);
+                    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        processObject(obj[key]);
+                    }
+                }
+            };
+            processObject(newInputData);
+        }
+
+        // Create the duplicated preset
+        const duplicatedPreset: AppliedPreset = {
+            id: `preset-${Date.now()}-${Math.random()}`,
+            preset: presetToCopy.preset,
+            inputData: newInputData,
+            isExpanded: true,
+            disabled: presetToCopy.disabled
+        };
+
+        // Find the index of the original preset and insert the duplicate right after it
+        const originalIndex = appliedPresets.presets.findIndex(p => p.id === id);
+        const newPresets = [...appliedPresets.presets];
+        newPresets.splice(originalIndex + 1, 0, duplicatedPreset);
+
+        setAppliedPresets({
+            ...appliedPresets,
+            presets: newPresets
+        });
+
+        toast.success('Preset duplicated successfully');
+    };
+
     const copyPresetData = async () => {
         try {
             const presetData = {
@@ -313,13 +378,6 @@ export function PresetList({
                 })),
                 defaultData: defaultData // Include baseData (references)
             };
-
-            console.log(`💾 SAVING PRESET DATA:`, {
-                name: name,
-                overwriteId: overwriteId,
-                numberOfPresets: presetData.presets.length,
-                presetIds: presetData.presets.map(p => p.presetId)
-            });
 
             const response = await fetch('/api/preset-data', {
                 method: 'POST',
@@ -613,6 +671,7 @@ export function PresetList({
                                     onToggleExpansion={togglePresetExpansion}
                                     onUpdateInputData={updatePresetInputData}
                                     onRefresh={refreshPreset}
+                                    onCopy={copyPreset}
                                     onRemove={removePreset}
                                     onToggleDisabled={togglePresetDisabled}
                                     availableReferences={defaultData.references.map(ref => ref.key)}
