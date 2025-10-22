@@ -2,37 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AI_ANALYSIS_CONFIG } from '@/lib/sparkbaord/config';
 import { encrypt } from '@/lib/jwt';
-
-// Request body schema for URL indexing
-const IndexingRequestSchema = z.object({
-  siteLinks: z.array(z.string().url('Must be a valid URL')),
-  indexingLimit: z.number().min(1).max(100).default(10),
-  tags: z.array(z.string()).optional().default([]),
-  crawlVideos: z.boolean().default(true),
-  dbFolder: z.string().default('mediamake/scraped/default'),
-});
-
-// Response schema for indexing trigger
-const IndexingResponseSchema = z.object({
-  indexingId: z.string(),
-  message: z.string().optional(),
-  processedCount: z.number().optional(),
-});
-
-// Response schema for indexing status check
-const IndexingStatusSchema = z.object({
-  success: z.boolean(),
-  data: z
-    .object({
-      indexing: z.object({
-        progress: z.number(),
-        isFullyIndexed: z.boolean(),
-      }),
-      results: z.array(z.any()).optional(),
-    })
-    .optional(),
-  error: z.string().optional(),
-});
+import {
+  IndexingRequestSchema,
+  IndexingResponseSchema,
+  IndexingStatusSchema,
+} from '@/lib/sparkbaord/types';
 
 export async function POST(req: NextRequest) {
   try {

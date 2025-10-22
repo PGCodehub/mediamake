@@ -639,6 +639,9 @@ const presetExecution = async (
             ...(firstClip.opacity !== undefined
               ? { opacity: firstClip.opacity }
               : {}),
+            ...(firstClip.objectPosition !== undefined
+              ? { objectPosition: firstClip.objectPosition }
+              : {}),
           },
         },
         context: { timing: { start: 0, duration: firstClipDuration } },
@@ -694,6 +697,9 @@ const presetExecution = async (
               : {}),
             style: {
               ...(clip.opacity !== undefined ? { opacity: clip.opacity } : {}),
+              ...(clip.objectPosition !== undefined
+                ? { objectPosition: clip.objectPosition }
+                : {}),
             },
           },
           context: { timing: { start: startTime, duration: duration } },

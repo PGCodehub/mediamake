@@ -415,6 +415,9 @@ const presetExecution = (
           componentId: 'VideoAtom',
           type: 'atom' as const,
           data: {
+            ...(mediaItem.duration && !mediaItem.fitDurationTo && mediaItem.loop
+              ? { srcDuration: mediaItem.duration }
+              : {}),
             src: mediaItem.src,
             className:
               mediaItem.fit === 'cover'

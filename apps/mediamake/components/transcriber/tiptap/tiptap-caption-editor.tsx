@@ -26,7 +26,9 @@ import {
     Loader2,
     ArrowLeft,
     Check,
-    Save
+    Save,
+    AlignVerticalJustifyStartIcon,
+    AlignHorizontalJustifyStartIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -57,6 +59,8 @@ import { WordMark } from './word-mark-extension';
 import { CaptionSyncExtension } from './caption-sync-extension';
 import { generateId } from "@microfox/datamotion";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Maximize2 } from "lucide-react";
+import { IconTimeline } from "@tabler/icons-react";
 
 const CustomParagraph = Paragraph.extend({
     addAttributes() {
@@ -78,9 +82,10 @@ interface TiptapCaptionEditorProps {
     onStepChange: (step: 1 | 2 | 3) => void;
     onTranscriptionDataUpdate?: (updatedData: any) => Promise<void>;
     onRefreshTranscription?: () => Promise<void>;
+    defaultTimelineVisibility: boolean;
 }
 
-export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange, onRefreshTranscription }: TiptapCaptionEditorProps) {
+export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpdate, onStepChange, onRefreshTranscription, defaultTimelineVisibility }: TiptapCaptionEditorProps) {
     const { audioRef, isPlaying, currentTime, duration, seekTo, togglePlayPause, setVolume: setVolumeContext, formatTime, volume } = useAudioPlayer();
     const [showBubbleMenu, setShowBubbleMenu] = useState(false);
     const [bubbleMenuPosition, setBubbleMenuPosition] = useState({ x: 0, y: 0 });
@@ -90,6 +95,7 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
     const [isSaving, setIsSaving] = useState(false);
     const bubbleMenuRef = useRef<HTMLDivElement>(null);
     const [localCaptions, setLocalCaptions] = useState<Caption[]>([]);
+    const [isTimelineVisible, setIsTimelineVisible] = useState(defaultTimelineVisibility);
     const captionsRef = useRef(localCaptions);
 
     useEffect(() => {
@@ -435,10 +441,10 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
     };
 
     return (
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col relative">
             {/* Main Content with Resizable Panels */}
             <div className="flex-1 overflow-hidden">
-                <ResizablePanelGroup direction="horizontal" className="h-full">
+                <ResizablePanelGroup direction="horizontal" className="h-full relative">
                     {/* Editor Panel */}
                     <ResizablePanel defaultSize={50} minSize={30} maxSize={70} className="flex flex-col">
                         <div className="flex-1 overflow-auto">
@@ -510,24 +516,33 @@ export function TiptapCaptionEditor({ transcriptionData, onTranscriptionDataUpda
                     <ResizableHandle withHandle />
 
                     {/* Timeline Panel */}
-                    <ResizablePanel defaultSize={50} minSize={30} maxSize={70}>
-                        <SentenceTimeline
-                            captions={localCaptions}
-                            currentTime={currentTime}
-                            duration={duration}
-                            isPlaying={isPlaying}
-                            onSeek={seekTo}
-                            onTogglePlayPause={togglePlayPause}
-                            onCaptionsChange={handleCaptionsChange}
-                            formatTime={formatTime}
-                            className="h-full"
-                        />
-                    </ResizablePanel>
+                    {isTimelineVisible ? (
+                        <ResizablePanel defaultSize={50} minSize={30} maxSize={70}>
+                            <SentenceTimeline
+                                captions={localCaptions}
+                                currentTime={currentTime}
+                                duration={duration}
+                                isPlaying={isPlaying}
+                                onSeek={seekTo}
+                                onTogglePlayPause={togglePlayPause}
+                                onCaptionsChange={handleCaptionsChange}
+                                formatTime={formatTime}
+                                className="h-full"
+                                onClose={() => setIsTimelineVisible(false)}
+                            />
+                        </ResizablePanel>
+                    ) : (
+                        <div className="absolute top-2 right-2 z-10">
+                            <Button variant="outline" size="icon" onClick={() => setIsTimelineVisible(true)}>
+                                <AlignHorizontalJustifyStartIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
                 </ResizablePanelGroup>
             </div>
 
             {hasChanges && (
-                <div className="fixed bottom-6 right-6 z-50">
+                <div className="absolute bottom-6 right-6 z-50">
                     <Button
                         onClick={handleSaveChanges}
                         disabled={isSaving}

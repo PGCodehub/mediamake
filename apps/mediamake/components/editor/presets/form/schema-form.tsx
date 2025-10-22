@@ -9,19 +9,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JsonEditor } from "../player/json-editor";
-import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image, FileAudio } from "lucide-react";
+import { JsonEditor } from "../../player/json-editor";
+import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image, FileAudio, FormInputIcon, ImageIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PresetMetadata } from "./types";
+import { PresetMetadata } from "../types";
 import { toJSONSchema } from "zod";
-import { MediaPicker } from "../media/media-picker";
+import { MediaPicker } from "../../media/media-picker";
 import { MediaFile } from "@/app/types/media";
 import { getAvailableFonts } from "@remotion/google-fonts";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TranscriptionPicker } from "../../transcriber/picker/transcription-picker";
+import { TranscriptionPicker } from "../../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
+import { FlexibleObjectField } from "../flexible-object-field";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const availableFonts = getAvailableFonts();
 
@@ -38,6 +58,8 @@ interface SchemaFormProps {
     customActions?: React.ReactNode;
     title?: string;
     description?: string;
+    availableReferences?: string[]; // Available reference keys for data-referrable fields
+    baseData?: Record<string, any>; // Base data for flexible object fields
 }
 
 interface FormField {
@@ -58,6 +80,8 @@ interface NestedFormProps {
     onChange: (value: any) => void;
     fieldKey: string;
     depth?: number;
+    availableReferences?: string[];
+    baseData?: Record<string, any>;
 }
 
 // Helper function to detect if a field is URL/src related
@@ -102,6 +126,18 @@ function isLargeTextField(fieldKey: string, field: FormField): boolean {
     );
 }
 
+// Helper function to detect if a field is data-referrable
+function isDataReferrableField(field: FormField): boolean {
+    return field.description?.includes('data-referrable') || false;
+}
+
+// Helper function to detect if an object field should use flexible object field
+function isFlexibleObjectField(field: FormField, availableReferences: string[]): boolean {
+    return field.type === 'object' &&
+        (field.description?.includes('data-referrable') || false) &&
+        availableReferences.length > 0;
+}
+
 // Helper function to detect if a URL ends with image MIME types
 function isImageUrl(url: string): boolean {
     if (!url || typeof url !== 'string') return false;
@@ -111,6 +147,56 @@ function isImageUrl(url: string): boolean {
 
     // Check if URL ends with image extension
     return imageExtensions.some(ext => urlLower.endsWith(ext));
+}
+
+// Helper function to detect if a URL is a video
+function isVideoUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.3gp', '.flv', '.wmv'];
+    const urlLower = url.toLowerCase().trim();
+
+    return videoExtensions.some(ext => urlLower.endsWith(ext));
+}
+
+// Helper function to detect if a URL is an audio file
+function isAudioUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+
+    const audioExtensions = ['.mp3', '.wav', '.aac', '.ogg', '.m4a', '.flac', '.wma'];
+    const urlLower = url.toLowerCase().trim();
+
+    return audioExtensions.some(ext => urlLower.endsWith(ext));
+}
+
+// Helper function to detect media arrays in data
+function detectMediaArrays(data: any): Array<{ key: string, items: any[], title: string }> {
+    const mediaArrays: Array<{ key: string, items: any[], title: string }> = [];
+
+    if (!data || typeof data !== 'object') return mediaArrays;
+
+    Object.entries(data).forEach(([key, value]) => {
+        if (Array.isArray(value) && value.length > 0) {
+            // Check if this array contains objects with 'src' field
+            const hasSrcField = value.some(item =>
+                typeof item === 'object' &&
+                item !== null &&
+                'src' in item &&
+                typeof item.src === 'string' &&
+                item.src.trim() !== ''
+            );
+
+            if (hasSrcField) {
+                mediaArrays.push({
+                    key,
+                    items: value,
+                    title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
+                });
+            }
+        }
+    });
+
+    return mediaArrays;
 }
 
 // Helper function to map MediaFile to field value based on field type and structure
@@ -220,8 +306,130 @@ function ImagePreview({ src, alt = "Preview" }: { src: string; alt?: string }) {
                 className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-                crossOrigin="anonymous"
             />
+        </div>
+    );
+}
+
+// MediaPreview component for different media types
+function MediaPreview({
+    item,
+    onClick,
+    onDelete
+}: {
+    item: any;
+    onClick?: () => void;
+    onDelete?: () => void;
+}) {
+    const src = item.src || '';
+    const [imageError, setImageError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const handleImageLoad = () => {
+        setIsLoading(false);
+        setImageError(false);
+    };
+
+    const handleImageError = () => {
+        setIsLoading(false);
+        setImageError(true);
+    };
+
+    const getMediaType = () => {
+        if (isImageUrl(src)) return 'image';
+        if (isVideoUrl(src)) return 'video';
+        if (isAudioUrl(src)) return 'audio';
+        return 'unknown';
+    };
+
+    const mediaType = getMediaType();
+
+    const renderPreview = () => {
+        if (imageError) {
+            return (
+                <div className="w-full h-24 border border-dashed border-muted-foreground rounded-md flex items-center justify-center">
+                    <Image className="h-6 w-6 text-muted-foreground" />
+                </div>
+            );
+        }
+
+        switch (mediaType) {
+            case 'image':
+                return (
+                    <div className="relative w-full h-24 border rounded-md overflow-hidden">
+                        {isLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                                <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        )}
+                        <img
+                            src={src}
+                            alt={item.alt || 'Media preview'}
+                            className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+                            onLoad={handleImageLoad}
+                            onError={handleImageError}
+                        />
+                    </div>
+                );
+            case 'video':
+                return (
+                    <div className="w-full h-24 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="w-8 h-8 mx-auto mb-2 bg-primary/20 rounded-full flex items-center justify-center">
+                                <span className="text-xs">▶</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Video</p>
+                        </div>
+                    </div>
+                );
+            case 'audio':
+                return (
+                    <div className="w-full h-24 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                            <FileAudio className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Audio</p>
+                        </div>
+                    </div>
+                );
+            default:
+                return (
+                    <div className="w-full h-24 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                            <Image className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Media</p>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="relative group">
+            <div
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={onClick}
+            >
+                {renderPreview()}
+                <div className="mt-2">
+                    <p className="text-xs font-medium truncate">{item.title || item.alt || 'Untitled'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{src.split('/').pop()}</p>
+                </div>
+            </div>
+
+            {/* Delete button - appears on hover */}
+            {onDelete && (
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
+                >
+                    <Trash2 className="h-3 w-3" />
+                </Button>
+            )}
         </div>
     );
 }
@@ -293,6 +501,281 @@ function TranscriptionPickerButton({ onSelect }: { onSelect: (transcription: Tra
                 />
             )}
         </>
+    );
+}
+
+// SortableMediaItem component for individual media items
+function SortableMediaItem({
+    item,
+    index,
+    arrayKey,
+    onMediaClick,
+    onDelete
+}: {
+    item: any;
+    index: number;
+    arrayKey: string;
+    onMediaClick?: (mediaItem: any, arrayKey: string, index: number) => void;
+    onDelete?: (arrayKey: string, index: number) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: `${arrayKey}-${index}` });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="w-full">
+            <div className="relative">
+                {/* Drag handle - only this area should be draggable */}
+                <div
+                    {...attributes}
+                    {...listeners}
+                    className="absolute top-1 left-1 z-10 cursor-grab active:cursor-grabbing p-1 bg-background/80 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                    <GripVertical className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <MediaPreview
+                    item={item}
+                    onClick={() => onMediaClick?.(item, arrayKey, index)}
+                    onDelete={() => onDelete?.(arrayKey, index)}
+                />
+            </div>
+        </div>
+    );
+}
+
+// MediaTab component for displaying and managing media arrays
+function MediaTab({
+    data,
+    onChange,
+    onMediaClick
+}: {
+    data: any;
+    onChange: (data: any) => void;
+    onMediaClick?: (mediaItem: any, arrayKey: string, index: number) => void;
+}) {
+    const mediaArrays = detectMediaArrays(data);
+    const [activeArrayKey, setActiveArrayKey] = useState<string | null>(
+        mediaArrays.length > 0 ? mediaArrays[0].key : null
+    );
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (!activeArrayKey || !over || active.id === over.id) return;
+
+        const activeId = active.id as string;
+        const overId = over.id as string;
+
+        const activeIndex = parseInt(activeId.split('-').pop() || '0');
+        const overIndex = parseInt(overId.split('-').pop() || '0');
+
+        if (activeIndex === overIndex) return;
+
+        const newData = { ...data };
+        const array = [...newData[activeArrayKey]];
+        const newArray = arrayMove(array, activeIndex, overIndex);
+        newData[activeArrayKey] = newArray;
+        onChange(newData);
+    };
+
+    const handleDeleteItem = (arrayKey: string, index: number) => {
+        const newData = { ...data };
+        const array = [...newData[arrayKey]];
+        array.splice(index, 1);
+        newData[arrayKey] = array;
+        onChange(newData);
+    };
+
+    if (mediaArrays.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <div className="text-center">
+                    <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No Media Found</p>
+                    <p className="text-sm">No arrays with media items detected in the current data.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const currentArray = mediaArrays.find(arr => arr.key === activeArrayKey);
+
+    return (
+        <div className="space-y-4">
+            {mediaArrays.length > 1 && (
+                <div className="flex gap-2">
+                    {mediaArrays.map((array) => (
+                        <Button
+                            key={array.key}
+                            variant={activeArrayKey === array.key ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setActiveArrayKey(array.key)}
+                        >
+                            {array.title} ({array.items.length})
+                        </Button>
+                    ))}
+                </div>
+            )}
+
+            {currentArray && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">
+                            {currentArray.title} ({currentArray.items.length} items)
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                            Drag and drop to reorder • Click to expand
+                        </p>
+                    </div>
+
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={currentArray.items.map((_, index) => `${activeArrayKey!}-${index}`)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {currentArray.items.map((item, index) => (
+                                    <SortableMediaItem
+                                        key={`${activeArrayKey}-${index}`}
+                                        item={item}
+                                        index={index}
+                                        arrayKey={activeArrayKey!}
+                                        onMediaClick={onMediaClick}
+                                        onDelete={handleDeleteItem}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// DataReferrableDropdown component for data-referrable fields with range support
+function DataReferrableDropdown({
+    value,
+    onChange,
+    availableReferences,
+    fieldKey
+}: {
+    value: string;
+    onChange: (value: string) => void;
+    availableReferences: string[];
+    fieldKey?: string;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [rangeInput, setRangeInput] = useState('');
+
+    // Parse the current value to extract key and range
+    const parseValue = (val: string) => {
+        const match = val.match(/^data:\[([^\]]+)\](?:\[([^\]]+)\])?$/);
+        if (match) {
+            return { key: match[1], range: match[2] || '' };
+        }
+        return { key: val.replace(/^data:\[|\]$/g, ''), range: '' };
+    };
+
+    const { key: currentKey, range: currentRange } = parseValue(value);
+
+    const handleSelect = (selectedValue: string) => {
+        const finalValue = rangeInput ? `data:[${selectedValue}][${rangeInput}]` : `data:[${selectedValue}]`;
+        onChange(finalValue);
+        setRangeInput('');
+        setIsOpen(false);
+    };
+
+    const handleRangeChange = (newRange: string) => {
+        setRangeInput(newRange);
+        if (currentKey) {
+            const finalValue = newRange ? `data:[${currentKey}][${newRange}]` : `data:[${currentKey}]`;
+            onChange(finalValue);
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            {fieldKey && (
+                <Label className="text-sm font-medium text-muted-foreground">
+                    Reference for: {fieldKey}
+                </Label>
+            )}
+            <div className="space-y-2">
+                <Popover open={isOpen} onOpenChange={setIsOpen}>
+                    <PopoverTrigger asChild>
+                        <Input
+                            value={currentKey}
+                            onChange={(e) => {
+                                const inputValue = e.target.value;
+                                const finalValue = currentRange ? `data:[${inputValue}][${currentRange}]` : `data:[${inputValue}]`;
+                                onChange(finalValue);
+                            }}
+                            placeholder="Select or type reference key"
+                            className="w-full"
+                            onFocus={() => setIsOpen(true)}
+                        />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                            <CommandInput placeholder="Search references..." />
+                            <CommandList>
+                                <CommandEmpty>No references found.</CommandEmpty>
+                                <CommandGroup>
+                                    {availableReferences.map((ref) => (
+                                        <CommandItem
+                                            key={ref}
+                                            value={ref}
+                                            onSelect={() => handleSelect(ref)}
+                                            className="cursor-pointer"
+                                        >
+                                            <span className="font-medium">{ref}</span>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+
+                {/* Range input */}
+                <div className="flex gap-2">
+                    <Input
+                        value={currentRange}
+                        onChange={(e) => handleRangeChange(e.target.value)}
+                        placeholder="Range (e.g., 2-33 or 1:04-2:03)"
+                        className="flex-1 text-sm"
+                    />
+                    <div className="text-xs text-muted-foreground flex items-center">
+                        <span>Index: 2-33</span>
+                        <span className="mx-1">|</span>
+                        <span>Time: 1:04-2:03</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -375,7 +858,9 @@ function renderField(
     currentValue?: any,
     onChangeHandler?: (key: string, value: any) => void,
     depth: number = 0,
-    parentSchema?: any
+    parentSchema?: any,
+    availableReferences?: string[],
+    baseData?: Record<string, any>
 ) {
     const fieldValue = currentValue;
     const handleChange = onChangeHandler || (() => { });
@@ -403,6 +888,18 @@ function renderField(
                 const isUrl = isUrlField(fieldKey, field);
                 const isFont = isFontField(fieldKey, field);
                 const isLargeText = isLargeTextField(fieldKey, field);
+                const isDataReferrable = isDataReferrableField(field);
+
+                if (isDataReferrable) {
+                    return (
+                        <DataReferrableDropdown
+                            value={typeof fieldValue === 'string' ? fieldValue : ""}
+                            onChange={(val) => handleChange(fieldKey, val)}
+                            availableReferences={availableReferences || []}
+                            fieldKey={fieldKey}
+                        />
+                    );
+                }
 
                 if (isUrl) {
                     return (
@@ -480,6 +977,20 @@ function renderField(
 
             case "object":
                 if (field.properties) {
+                    // Check if this should use flexible object field
+                    if (isFlexibleObjectField(field, availableReferences || [])) {
+                        return (
+                            <FlexibleObjectField
+                                value={fieldValue || {}}
+                                onChange={(val) => handleChange(fieldKey, val)}
+                                availableReferences={availableReferences || []}
+                                baseData={baseData || {}}
+                                fieldKey={fieldKey}
+                                field={field}
+                            />
+                        );
+                    }
+
                     const hasUrlProperties = Object.keys(field.properties || {}).some(propKey =>
                         isUrlField(propKey, { ...(field.properties?.[propKey] || {}), title: field.properties?.[propKey]?.title || '' })
                     );
@@ -496,6 +1007,8 @@ function renderField(
                                             fieldKey={fieldKey}
                                             depth={depth}
                                             parentSchema={parentSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     </div>
                                     <MediaPickerButton
@@ -519,6 +1032,8 @@ function renderField(
                             fieldKey={fieldKey}
                             depth={depth}
                             parentSchema={parentSchema}
+                            availableReferences={availableReferences}
+                            baseData={baseData}
                         />
                     );
                 }
@@ -535,10 +1050,31 @@ function renderField(
 
             case "array":
                 if (field.items) {
+                    const isDataReferrable = isDataReferrableField(field);
                     const isUrlArray = isUrlField(fieldKey, field) ||
                         (field.items.type === 'string' && isUrlField('item', { ...field.items, title: field.items.title || '' }));
 
                     const isCaptionsArray = fieldKey.toLowerCase().includes('captions') || fieldKey.toLowerCase().includes('inputcaptions');
+
+                    if (isDataReferrable) {
+                        return (
+                            <DataReferrableDropdown
+                                value={Array.isArray(fieldValue) ? fieldValue.join(', ') : (typeof fieldValue === 'string' ? fieldValue : "")}
+                                onChange={(val) => {
+                                    // Handle both string and array values
+                                    if (val.startsWith('data:[')) {
+                                        handleChange(fieldKey, val);
+                                    } else {
+                                        // Convert comma-separated string to array
+                                        const arrayValue = val.split(',').map(item => item.trim()).filter(Boolean);
+                                        handleChange(fieldKey, arrayValue);
+                                    }
+                                }}
+                                availableReferences={availableReferences || []}
+                                fieldKey={fieldKey}
+                            />
+                        );
+                    }
 
                     if (isUrlArray) {
                         return (
@@ -551,6 +1087,8 @@ function renderField(
                                             onChange={(val) => handleChange(fieldKey, val)}
                                             fieldKey={fieldKey}
                                             parentSchema={parentSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     </div>
                                     <MediaPickerButton
@@ -577,6 +1115,8 @@ function renderField(
                                             onChange={(val) => handleChange(fieldKey, val)}
                                             fieldKey={fieldKey}
                                             parentSchema={parentSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     </div>
                                     <TranscriptionPickerButton
@@ -598,6 +1138,8 @@ function renderField(
                             onChange={(val) => handleChange(fieldKey, val)}
                             fieldKey={fieldKey}
                             parentSchema={parentSchema}
+                            availableReferences={availableReferences}
+                            baseData={baseData}
                         />
                     );
                 }
@@ -669,7 +1211,7 @@ function renderField(
 }
 
 // Nested form component for objects
-function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema }: NestedFormProps & { parentSchema?: any }) {
+function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema, availableReferences = [], baseData = {} }: NestedFormProps & { parentSchema?: any }) {
     const [isOpen, setIsOpen] = useState(false); // Collapse all objects by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
@@ -742,7 +1284,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
                                             </Tooltip>
                                         )}
                                     </div>
-                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema)}
+                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema, availableReferences, baseData)}
                                 </div>
                             );
                         })
@@ -756,7 +1298,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
 }
 
 // Array management component
-function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any }) {
+function ArrayManager({ schema, value, onChange, fieldKey, parentSchema, availableReferences = [], baseData = {} }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any; availableReferences?: string[]; baseData?: Record<string, any> }) {
     const [isOpen, setIsOpen] = useState(false); // Collapse all arrays by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
@@ -879,6 +1421,8 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { sch
                                             fieldKey={`item-${index}`}
                                             depth={1}
                                             parentSchema={itemSchema}
+                                            availableReferences={availableReferences}
+                                            baseData={baseData}
                                         />
                                     ) : (
                                         <div className="space-y-2">
@@ -888,7 +1432,9 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema }: { sch
                                                 item,
                                                 (key: string, newValue: any) => updateItem(index, newValue),
                                                 1,
-                                                itemSchema
+                                                itemSchema,
+                                                availableReferences,
+                                                baseData
                                             )}
                                         </div>
                                     )}
@@ -956,10 +1502,17 @@ export function SchemaForm({
     onReset,
     customActions,
     title = "Input Parameters",
-    description
+    description,
+    availableReferences = [],
+    baseData = {}
 }: SchemaFormProps) {
     const [formData, setFormData] = useState(value || {});
-    const [activeTab, setActiveTab] = useState<"form" | "json">("form");
+    const [activeTab, setActiveTab] = useState<"form" | "json" | "media">("form");
+    const [expandedMedia, setExpandedMedia] = useState<{
+        item: any;
+        arrayKey: string;
+        index: number;
+    } | null>(null);
 
     // Convert zod schema to JSON schema
     const jsonSchema = schema && typeof schema === 'object' && schema._def ? toJSONSchema(schema) : schema;
@@ -1003,6 +1556,16 @@ export function SchemaForm({
         }
     };
 
+    const handleMediaClick = (mediaItem: any, arrayKey: string, index: number) => {
+        setExpandedMedia({ item: mediaItem, arrayKey, index });
+        setActiveTab("form");
+    };
+
+    const handleMediaDataChange = (newData: any) => {
+        setFormData(newData);
+        onChange(newData);
+    };
+
 
     const getFieldsFromSchema = (schema: any): FormField[] => {
         if (!schema.properties) return [];
@@ -1041,7 +1604,7 @@ export function SchemaForm({
         <div className={className}>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h3 className="text-lg font-semibold">{title}</h3>
+                    <h3 className="text-md font-semibold">{title}</h3>
                     {description && (
                         <p className="text-sm text-muted-foreground mt-1">{description}</p>
                     )}
@@ -1065,15 +1628,19 @@ export function SchemaForm({
                         </Tooltip>
                     )}
                     {showTabs && (
-                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
+                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json" | "media")}>
                             <TabsList>
                                 <TabsTrigger value="form" className="flex items-center gap-2">
-                                    <Eye className="h-4 w-4" />
+                                    <FormInputIcon className="h-4 w-4" />
                                     Form
                                 </TabsTrigger>
                                 <TabsTrigger value="json" className="flex items-center gap-2">
                                     <Code className="h-4 w-4" />
-                                    JSON
+                                    Json
+                                </TabsTrigger>
+                                <TabsTrigger value="media" className="flex items-center gap-2">
+                                    <ImageIcon className="h-4 w-4" />
+                                    Media
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
@@ -1082,13 +1649,56 @@ export function SchemaForm({
             </div>
             <div>
                 {showTabs ? (
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json" | "media")}>
                         <TabsContent value="form" className="space-y-4">
+                            {expandedMedia && (
+                                <Card className="mb-4 border-primary/20">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-sm">
+                                                Expanded Media Item
+                                            </CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setExpandedMedia(null)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-xs font-medium">Array:</Label>
+                                                <Badge variant="outline">{expandedMedia.arrayKey}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-xs font-medium">Index:</Label>
+                                                <Badge variant="outline">{expandedMedia.index}</Badge>
+                                            </div>
+                                            <div className="mt-3">
+                                                <JsonEditor
+                                                    value={expandedMedia.item}
+                                                    onChange={(newItem) => {
+                                                        const newData = { ...formData };
+                                                        newData[expandedMedia.arrayKey][expandedMedia.index] = newItem;
+                                                        handleMediaDataChange(newData);
+                                                        setExpandedMedia({ ...expandedMedia, item: newItem });
+                                                    }}
+                                                    height="200px"
+                                                    className="border rounded-md"
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
                             {fields.length > 0 ? (
                                 <div className="space-y-4">
                                     {fields.map((field) => {
                                         const fieldValue = formData[field.key];
-                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema);
+                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData);
                                     })}
                                 </div>
                             ) : (
@@ -1106,6 +1716,14 @@ export function SchemaForm({
                                 className="border rounded-md"
                             />
                         </TabsContent>
+
+                        <TabsContent value="media">
+                            <MediaTab
+                                data={formData}
+                                onChange={handleMediaDataChange}
+                                onMediaClick={handleMediaClick}
+                            />
+                        </TabsContent>
                     </Tabs>
                 ) : (
                     <div className="space-y-4">
@@ -1113,7 +1731,7 @@ export function SchemaForm({
                             <div className="space-y-4">
                                 {fields.map((field) => {
                                     const fieldValue = formData[field.key];
-                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema)}</div>;
+                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData)}</div>;
                                 })}
                             </div>
                         ) : (

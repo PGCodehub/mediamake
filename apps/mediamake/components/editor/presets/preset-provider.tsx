@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, Dispatch, SetStateAction } from 'react';
 import { InputCompositionProps } from '@microfox/remotion';
-import { AppliedPresetsState, AppliedPreset, PresetInputData, PresetConfiguration } from './types';
+import { AppliedPresetsState, AppliedPreset, PresetInputData, PresetConfiguration, DefaultPresetData } from './types';
 import { useRender } from '../player/render-provider';
 import useLocalState from '../../studio/context/hooks/useLocalState';
 import useIndexedDbState from '@/components/studio/context/hooks/useIndexedDbState';
@@ -24,6 +24,10 @@ interface PresetContextType {
     // Configuration state
     configuration: PresetConfiguration;
     setConfiguration: (configuration: PresetConfiguration) => void;
+
+    // Default data state (references)
+    defaultData: DefaultPresetData;
+    setDefaultData: (defaultData: DefaultPresetData) => void;
 
     // Generated output state
     generatedOutput: InputCompositionProps | null;
@@ -57,6 +61,9 @@ export function PresetProvider({ children }: PresetProviderProps) {
         activePresetId: null
     });
     const [configuration, setConfiguration] = useLocalState<PresetConfiguration>('preset-configuration', {});
+    const [defaultData, setDefaultData] = useLocalState<DefaultPresetData>('preset-default-data', {
+        references: []
+    });
     const [generatedOutput, setGeneratedOutput] = useIndexedDbState<InputCompositionProps | null>('preset-generated-output', null);
     const [editableOutput, setEditableOutput] = useIndexedDbState<InputCompositionProps | null>('preset-editable-output', null);
 
@@ -186,6 +193,8 @@ export function PresetProvider({ children }: PresetProviderProps) {
         reorderPresets,
         configuration,
         setConfiguration,
+        defaultData,
+        setDefaultData,
         generatedOutput,
         setGeneratedOutput,
         editableOutput,

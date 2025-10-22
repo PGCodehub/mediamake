@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { SchemaForm } from "../editor/presets/schema-form";
+import { SchemaForm } from "../editor/presets/form/schema-form";
 import { toJSONSchema } from "zod";
 import {
     RotateCcw, Loader2, Play, History, Clock, CheckCircle,

@@ -1,12 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Transcription } from "@/app/types/transcription";
 
+type CurrentView = 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video' | 'metadata' | 'autofix';
 interface TranscriberContextType {
     // Navigation state
-    currentView: 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video';
-    setCurrentView: (view: 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video') => void;
+    currentView: CurrentView;
+    setCurrentView: (view: CurrentView) => void;
 
     // Selected transcription
     selectedTranscription: string | null;
@@ -28,19 +29,39 @@ interface TranscriberContextType {
 
     // Refresh function
     refreshTranscription: () => Promise<void>;
-    setRefreshTranscription: (fn: () => Promise<void>) => void;
 }
 
 const TranscriberContext = createContext<TranscriberContextType | undefined>(undefined);
 
 export function TranscriberProvider({ children }: { children: ReactNode }) {
-    const [currentView, setCurrentView] = useState<'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video'>('explorer');
+    const [currentView, setCurrentView] = useState<CurrentView>('explorer');
     const [selectedTranscription, setSelectedTranscription] = useState<string | null>(null);
     const [transcriptionData, setTranscriptionData] = useState<Transcription | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [refreshTranscription, setRefreshTranscription] = useState<() => Promise<void>>(() => async () => { });
+
+    // Direct refresh function
+    const refreshTranscription = useCallback(async () => {
+        if (selectedTranscription) {
+            try {
+                setIsRefreshing(true);
+                const response = await fetch(`/api/transcriptions/${selectedTranscription}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setTranscriptionData(data.transcription);
+                    setError(null);
+                } else {
+                    setError('Transcription not found');
+                }
+            } catch (error) {
+                console.error('Error refreshing transcription:', error);
+                setError('Failed to refresh transcription');
+            } finally {
+                setIsRefreshing(false);
+            }
+        }
+    }, []);
 
     // Auto-switch to editor view when transcription is selected (only from explorer)
     useEffect(() => {
@@ -65,8 +86,7 @@ export function TranscriberProvider({ children }: { children: ReactNode }) {
             setIsRefreshing,
             error,
             setError,
-            refreshTranscription,
-            setRefreshTranscription
+            refreshTranscription
         }}>
             {children}
         </TranscriberContext.Provider>

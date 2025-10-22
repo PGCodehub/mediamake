@@ -27,7 +27,8 @@ import {
     List,
     Check,
     X as XIcon,
-    Loader2
+    Loader2,
+    GlobeIcon
 } from "lucide-react";
 import { MediaFile, Tag } from "@/app/types/media";
 import { UploadTrigger } from "@/components/ui/upload-trigger";
@@ -212,6 +213,11 @@ export function MediaPicker({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(30);
 
+    // Search state
+    const [isClientSearch, setIsClientSearch] = useState(true); // true = clientFiles, false = mediaFiles
+    const [searchResults, setSearchResults] = useState<MediaFile[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
     // Edit functionality state
     const [editMode, setEditMode] = useState(false);
     const [bulkSelectedFiles, setBulkSelectedFiles] = useState<Set<string>>(new Set());
@@ -223,6 +229,58 @@ export function MediaPicker({
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, contentTypeFilter, sortOrder, hashtagFilters, contentSourceFilter, selectedTag]);
+
+    // Global search function
+    const performGlobalSearch = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const searchType = isClientSearch ? 'clientFiles' : 'mediaFiles';
+            const params = new URLSearchParams({
+                q: query,
+                searchType,
+                topK: '50',
+            });
+
+            // Add selected tags as keywords if any
+            if (hashtagFilters.length > 0) {
+                params.append('tags', hashtagFilters.join(','));
+            }
+
+            const response = await fetch(`/api/sparkboard/search?${params}`);
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+
+            const data = await response.json();
+            setSearchResults(data.data?.results || []);
+        } catch (error) {
+            console.error('Search error:', error);
+            toast.error('Search failed');
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Handle search on Enter key press
+    const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performGlobalSearch(searchQuery);
+        }
+    };
+
+    // Clear search results and query
+    const clearSearch = () => {
+        setSearchResults([]);
+        setSearchQuery("");
+        setIsSearching(false);
+    };
 
     // Focus management for picker mode
     useEffect(() => {
@@ -252,14 +310,18 @@ export function MediaPicker({
     };
 
     // Use SWR for data fetching
-    const { data: filesData, error: filesError, mutate: mutateFiles } = useSWR(buildApiUrl(), fetcher);
+    const { data: filesData, error: filesError, mutate: mutateFiles } = useSWR(
+        searchResults.length > 0 ? null : buildApiUrl(),
+        fetcher
+    );
     const { data: tagsData, error: tagsError } = useSWR('/api/tags', fetcher);
 
-    const files = filesData?.files || [];
-    const totalCount = filesData?.total || 0;
-    const hasMore = filesData?.hasMore || false;
+    // Use search results when available, otherwise use regular files
+    const files = searchResults.length > 0 ? searchResults : (filesData?.files || []);
+    const totalCount = searchResults.length > 0 ? searchResults.length : (filesData?.total || 0);
+    const hasMore = searchResults.length > 0 ? false : (filesData?.hasMore || false);
     const tags = tagsData || [];
-    const isLoading = !filesData && !filesError;
+    const isLoading = searchResults.length > 0 ? isSearching : (!filesData && !filesError);
 
 
     const getTagDisplayName = (tagId: string) => {
@@ -507,18 +569,11 @@ export function MediaPicker({
         setContextSelectedFiles(new Set());
     };
 
-    const filteredFiles = useMemo(() =>
-        files.filter((file: MediaFile) =>
-            file.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            file.contentSourceUrl?.toLowerCase().includes(searchQuery.toLowerCase())
-        ), [files, searchQuery]);
-
-
     const visibleFileIds = useMemo(() =>
-        filteredFiles
+        files
             .map((file: MediaFile) => file._id?.toString())
             .filter((id: string | undefined): id is string => !!id),
-        [filteredFiles]
+        [files]
     );
 
     const allVisibleSelected = useMemo(() =>
@@ -638,14 +693,52 @@ export function MediaPicker({
                             {/* Right Side - Other Filters */}
                             <div className="flex items-center gap-3">
                                 {/* Search */}
-                                <div className="relative">
+                                <div className="relative flex items-center">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
-                                        placeholder="Search files..."
+                                        placeholder="Search files... (Press Enter)"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10 w-48"
+                                        onKeyPress={handleSearchKeyPress}
+                                        className="pl-10 pr-16 w-48"
                                     />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (searchResults.length > 0) {
+                                                clearSearch();
+                                            } else {
+                                                performGlobalSearch(searchQuery);
+                                            }
+                                        }}
+                                        disabled={isSearching || (!searchQuery.trim() && searchResults.length === 0)}
+                                        className="absolute right-8 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                        title={searchResults.length > 0 ? "Clear search" : "Search"}
+                                    >
+                                        {isSearching ? (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : searchResults.length > 0 ? (
+                                            <X className="h-3 w-3" />
+                                        ) : (
+                                            <Search className="h-3 w-3" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setIsClientSearch(!isClientSearch);
+                                            clearSearch();
+                                        }}
+                                        className={`absolute right-1 h-6 w-6 p-0 ${!isClientSearch
+                                            ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        title={!isClientSearch ? "Switch to client search" : "Switch to global search"}
+                                    >
+                                        <GlobeIcon className="h-3 w-3" />
+                                    </Button>
                                 </div>
 
                                 {/* Content Type Filter */}
@@ -794,6 +887,30 @@ export function MediaPicker({
                                         />
                                     </div>
                                 </div>
+                                {/* Search Indicator */}
+                                {searchResults.length > 0 && (
+                                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-center justify-between text-sm text-blue-700">
+                                            <div className="flex items-center gap-2">
+                                                <ExternalLink className="h-4 w-4" />
+                                                <span>
+                                                    {isClientSearch ? 'Client' : 'Global'} search results - showing {searchResults.length} results
+                                                    {hashtagFilters.length > 0 && ` (filtered by: ${hashtagFilters.join(', ')})`}
+                                                </span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={clearSearch}
+                                                className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                                                title="Clear search results"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Bulk Edit Toolbar */}
                                 {editMode && (
                                     <BulkEditToolbar
@@ -808,14 +925,31 @@ export function MediaPicker({
                                     <div className="text-center text-muted-foreground py-8">
                                         Loading files...
                                     </div>
-                                ) : filteredFiles.length === 0 ? (
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                ) : files.length === 0 ? (
+                                    <div className="text-center text-muted-foreground py-8">
+                                        {searchQuery ? (
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="text-lg">No search results found</div>
+                                                <div className="text-sm">Try different keywords or clear the search</div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={clearSearch}
+                                                    className="mt-2"
+                                                >
+                                                    Clear Search
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div>
                                         {viewMode === "grid" ? (
                                             <MediaGrid
-                                                mediaFiles={filteredFiles}
+                                                mediaFiles={files}
                                                 onEditDetails={handleEditDetails}
                                                 onCopyUrl={handleCopyUrl}
                                                 onCopyId={handleCopyId}
@@ -832,7 +966,7 @@ export function MediaPicker({
                                             />
                                         ) : (
                                             <div className="space-y-2">
-                                                {filteredFiles.map((file: MediaFile) => {
+                                                {files.map((file: MediaFile) => {
                                                     const fileId = file._id?.toString();
                                                     const isSelected = pickerMode ? selectedFiles.has(fileId || '') : selectedFile?._id === file._id;
                                                     const isPickerSelected = pickerMode && selectedFiles.has(fileId || '');

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { SimplePresetPlayer } from "./preset-player-simple";
 import { runPreset, insertPresetToComposition } from "../editor/presets/preset-helpers";
+import { processPresetInputData, createBaseDataFromReferences } from "../editor/presets/preset-data-mutation";
 import { createCachedFetcher } from "@/lib/audio-cache";
 import { SimplePresetProvider } from "./preset-provider-simple";
 import { getPresetById, predefinedPresets } from "../editor/presets/registry/presets-registry";
@@ -45,6 +46,7 @@ interface PresetSetWrapper {
 interface PresetUIProps {
     presetSets: PresetSetWrapper[]; // Array of preset set wrappers
     isLoading?: boolean;
+    baseData?: Record<string, any>; // Base data for data references
 }
 
 interface PresetCardState {
@@ -53,7 +55,7 @@ interface PresetCardState {
     isPlaying: boolean;
 }
 
-export function PresetUI({ presetSets = [], isLoading = false }: PresetUIProps) {
+export function PresetUI({ presetSets = [], isLoading = false, baseData = {} }: PresetUIProps) {
     const [cardStates, setCardStates] = useState<Record<number, PresetCardState>>({});
     const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
     const [showRenderDialog, setShowRenderDialog] = useState(false);
@@ -126,13 +128,17 @@ export function PresetUI({ presetSets = [], isLoading = false }: PresetUIProps) 
                         continue;
                     }
 
+                    // Process input data with base data references
+                    const processedInputData = processPresetInputData(presetItem.presetInputData, baseData);
+
                     const presetOutput = await runPreset(
-                        presetItem.presetInputData,
+                        processedInputData,
                         preset.presetFunction,
                         {
                             config: baseComposition.config,
                             style: baseComposition.style,
                             clip: clip,
+                            baseData: baseData,
                             fetcher: createCachedFetcher((url: string, data: any) =>
                                 fetch(url, {
                                     method: 'POST',

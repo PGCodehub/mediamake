@@ -10,6 +10,8 @@ import { ElevenLabsUI } from "../elevenlabs/elevenlabs-ui";
 import { SettingsUI } from "../settings/settings-ui";
 import { InfoUI } from "../info/info-ui";
 import { VideoUI } from "../video/video-ui";
+import { MetadataUI } from "../metadata/metadata-ui";
+import { AutofixUI } from "../autofix/autofix-ui";
 import { Transcription } from "@/app/types/transcription";
 
 export function TranscriberContent() {
@@ -18,9 +20,7 @@ export function TranscriberContent() {
         selectedTranscription,
         setTranscriptionData,
         setError,
-        setIsLoading,
-        setIsRefreshing,
-        setRefreshTranscription
+        setIsLoading
     } = useTranscriber();
 
     // Load selected transcription from MongoDB
@@ -51,31 +51,6 @@ export function TranscriberContent() {
         }
     }, [selectedTranscription, setTranscriptionData, setError, setIsLoading]);
 
-    // Set up refresh function
-    useEffect(() => {
-        const refreshFunction = async () => {
-            if (selectedTranscription) {
-                try {
-                    setIsRefreshing(true);
-                    const response = await fetch(`/api/transcriptions/${selectedTranscription}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setTranscriptionData(data.transcription);
-                        setError(null);
-                    } else {
-                        setError('Transcription not found');
-                    }
-                } catch (error) {
-                    console.error('Error refreshing transcription:', error);
-                    setError('Failed to refresh transcription');
-                } finally {
-                    setIsRefreshing(false);
-                }
-            }
-        };
-
-        setRefreshTranscription(refreshFunction);
-    }, [selectedTranscription, setTranscriptionData, setError, setIsLoading, setRefreshTranscription]);
 
     const renderContent = () => {
         switch (currentView) {
@@ -95,6 +70,10 @@ export function TranscriberContent() {
                 return <InfoUI />;
             case 'video':
                 return <VideoUI />;
+            case 'metadata':
+                return <MetadataUI />;
+            case 'autofix':
+                return <AutofixUI />;
             default:
                 return <ExplorerUI />;
         }
