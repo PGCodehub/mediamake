@@ -35,6 +35,29 @@ export interface RagImageMetadata {
   mimeType: string | null; // image/jpeg, image/png, video/mp4, etc.
   promptUsed?: string | null; // prompt used to generate the image
   userTags?: string[] | null; // tags used to generate the image
+  segmentation?: {
+    foreground: {
+      url: string;
+      width: number;
+      height: number;
+      content_type: string;
+      file_name: string;
+    };
+    background: {
+      url: string;
+      width: number;
+      height: number;
+      content_type: string;
+      file_name: string;
+    };
+    mask: {
+      url: string;
+      width: number;
+      height: number;
+      content_type: string;
+      file_name: string;
+    };
+  };
 }
 
 export interface MediaFile {

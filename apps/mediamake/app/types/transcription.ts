@@ -33,6 +33,22 @@ export interface Sequence {
   metadata: Record<string, any>;
 }
 
+export interface VideoGeneration {
+  id: string;
+  provider: 'heygen' | 'd-id' | 'synthesia';
+  status: 'processing' | 'completed' | 'failed';
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  config: {
+    avatarId?: string;
+    avatarStyle?: string;
+    resolution?: string;
+    background?: { type: 'color' | 'image'; value: string };
+  };
+  createdAt: Date;
+  error?: string;
+}
+
 export interface ProcessingData {
   step1?: {
     humanCorrectedText?: string;
@@ -73,6 +89,7 @@ export interface Transcription {
   keywords?: string[];
   captions: Caption[];
   processingData: ProcessingData;
+  videos?: VideoGeneration[];
   createdAt: Date;
   updatedAt: Date;
   error?: string;
@@ -107,6 +124,7 @@ export interface UpdateTranscriptionRequest {
   keywords?: string[];
   captions?: Caption[];
   processingData?: ProcessingData;
+  videos?: VideoGeneration[];
   error?: string;
   audioUrl?: string;
 }

@@ -1,0 +1,44 @@
+{
+  "url": "https://example.com",
+  "actions": [
+    {
+      "type": "goto",
+      "url": "https://example.com",
+      "waitUntil": "load"
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "type": "scroll",
+      "y": 300
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    }
+  ],
+  "highlights": [
+    {
+      "type": "text",
+      "value": "Example Domain",
+      "color": "#FFFF00",
+      "scrollIntoView": true
+    },
+    {
+      "type": "text",
+      "value": "More information",
+      "color": "#FF6B6B",
+      "scrollIntoView": false
+    }
+  ],
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "output": {
+    "format": "mp4",
+    "storage": "s3"
+  }
+}

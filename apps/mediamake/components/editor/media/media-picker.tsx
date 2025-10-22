@@ -32,6 +32,7 @@ import {
 import { MediaFile, Tag } from "@/app/types/media";
 import { UploadTrigger } from "@/components/ui/upload-trigger";
 import { UrlIndexingTrigger } from "@/components/ui/url-indexing-trigger";
+import { WebRecorderTrigger } from "@/components/ui/web-recorder-trigger";
 import { MediaGrid, MediaOptionsDropdown } from "./media-ui";
 import useSWR from "swr";
 import { MediaSidebar } from "./media-sidebar";
@@ -160,7 +161,8 @@ const CONTENT_SOURCES = {
     upload: "Upload",
     web: "Web",
     instagram: "Instagram",
-    tiktok: "TikTok"
+    tiktok: "TikTok",
+    webrecorder: "Web Recorder"
 } as const;
 
 // Fetcher function for SWR
@@ -758,7 +760,7 @@ export function MediaPicker({
                         <div className="flex-1 overflow-hidden">
                             <div className="p-4 h-full overflow-auto">
 
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-3 gap-4 mb-4">
                                     <div className="col-span-1">
                                         <UrlIndexingTrigger
                                             uiType="dropzone"
@@ -779,6 +781,16 @@ export function MediaPicker({
                                             dropzoneClassName="min-h-[200px]"
                                             preselectedTags={hashtagFilters}
                                             pickerMode={pickerMode}
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <WebRecorderTrigger
+                                            uiType="dropzone"
+                                            onRecordingComplete={() => {
+                                                mutateFiles();
+                                            }}
+                                            dropzoneClassName="min-h-[200px]"
+                                            preselectedTags={hashtagFilters}
                                         />
                                     </div>
                                 </div>

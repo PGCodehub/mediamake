@@ -72,6 +72,7 @@ export async function PATCH(
     if (body.keywords !== undefined) updateData.keywords = body.keywords;
     if (body.captions !== undefined) updateData.captions = body.captions;
     if (body.processingData !== undefined) updateData.processingData = body.processingData;
+    if (body.videos !== undefined) updateData.videos = body.videos;
     if (body.error !== undefined) updateData.error = body.error;
     if (body.audioUrl !== undefined) updateData.audioUrl = body.audioUrl;
 

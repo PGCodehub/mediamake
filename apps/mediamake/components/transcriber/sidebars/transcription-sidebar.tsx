@@ -6,7 +6,8 @@ import {
     Edit3,
     Settings,
     ArrowLeft,
-    Info
+    Info,
+    Video
 } from "lucide-react";
 import { useTranscriber } from "../contexts/transcriber-context";
 
@@ -14,6 +15,7 @@ const navigationItems = [
     { id: 'editor', label: 'Editor', icon: Edit3 },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'info', label: 'Info', icon: Info },
+    { id: 'video', label: 'Video', icon: Video },
 ] as const;
 
 export function TranscriptionNavigationSidebar() {

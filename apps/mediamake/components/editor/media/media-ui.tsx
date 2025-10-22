@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
-import { Expand, ExternalLink, Film, User, View, XIcon, ClipboardIcon, Copy, Search, Palette, Play, Pause, Volume2, FileText, Download, MoreVertical, Edit, Trash2, Link, Check } from "lucide-react";
+import { Expand, ExternalLink, Film, User, View, XIcon, ClipboardIcon, Copy, Search, Palette, Play, Pause, Volume2, FileText, Download, MoreVertical, Edit, Trash2, Link, Check, Scissors, Loader2 } from "lucide-react";
 import { UiCommonTypes } from "@microfox/types";
 import {
     Tooltip,
@@ -262,6 +262,110 @@ export const MediaDialog = ({
     ) : null;
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [showFullKeywords, setShowFullKeywords] = useState(false);
+    const [isGeneratingSegmentation, setIsGeneratingSegmentation] = useState(false);
+    const [segmentationError, setSegmentationError] = useState<string | null>(null);
+    const [localSegmentation, setLocalSegmentation] = useState<any>(null);
+
+    // Initialize segmentation from metadata when dialog opens
+    useEffect(() => {
+        if (media?.type === 'image' && media.image?.metadata) {
+            const metadata = media.image.metadata as any;
+            if (metadata.segmentation) {
+                setLocalSegmentation(metadata.segmentation);
+            } else {
+                setLocalSegmentation(null);
+            }
+        } else {
+            setLocalSegmentation(null);
+        }
+        setSegmentationError(null);
+    }, [media]);
+
+    const handleGenerateSegmentation = async () => {
+        if (!media || media.type !== 'image') return;
+        
+        // We need to get the media file ID from somewhere
+        // For now, we'll need to pass it through the metadata or find another way
+        const mediaFileId = (media.image.metadata as any)?._id || (media.image.metadata as any)?.id;
+        
+        if (!mediaFileId) {
+            setSegmentationError('Cannot generate segmentation: Media file ID not found');
+            console.error('Media file ID not found in metadata:', media.image.metadata);
+            return;
+        }
+
+        console.log('Generating segmentation for media file:', mediaFileId);
+        setIsGeneratingSegmentation(true);
+        setSegmentationError(null);
+
+        try {
+            // Initiate segmentation (async with webhook)
+            const response = await fetch(`/api/media-files/${mediaFileId}/segmentation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            console.log('Segmentation API response status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Segmentation API error:', errorData);
+                const errorMessage = errorData.details || errorData.error || errorData.message || 'Failed to generate segmentation';
+                throw new Error(errorMessage);
+            }
+
+            const result = await response.json();
+            console.log('Segmentation API result:', result);
+            
+            if (result.success && result.status === 'processing') {
+                console.log('Segmentation request accepted, polling for completion...');
+                
+                // Poll for completion
+                const pollInterval = 2000; // 2 seconds
+                const maxAttempts = 60; // 2 minutes total
+                let attempts = 0;
+
+                const poll = async (): Promise<void> => {
+                    attempts++;
+                    
+                    if (attempts > maxAttempts) {
+                        throw new Error('Segmentation timed out. Please try again.');
+                    }
+
+                    const statusResponse = await fetch(`/api/media-files/${mediaFileId}/segmentation`, {
+                        method: 'GET',
+                    });
+
+                    if (!statusResponse.ok) {
+                        throw new Error('Failed to check segmentation status');
+                    }
+
+                    const statusData = await statusResponse.json();
+                    console.log('Segmentation status:', statusData);
+
+                    if (statusData.hasSegmentation && statusData.segmentation) {
+                        setLocalSegmentation(statusData.segmentation);
+                        console.log('Segmentation completed successfully');
+                        setIsGeneratingSegmentation(false);
+                    } else {
+                        // Continue polling
+                        setTimeout(poll, pollInterval);
+                    }
+                };
+
+                // Start polling
+                setTimeout(poll, pollInterval);
+            } else {
+                throw new Error('Invalid response from segmentation API');
+            }
+        } catch (error) {
+            console.error('Error generating segmentation:', error);
+            setSegmentationError(error instanceof Error ? error.message : 'Failed to generate segmentation');
+            setIsGeneratingSegmentation(false);
+        }
+    };
 
     return (
         <Dialog open={!!media} onOpenChange={(open) => !open && setMedia(null)}>
@@ -603,6 +707,152 @@ export const MediaDialog = ({
                             </div>
                         }
 
+                        {/* Segmentation Section */}
+                        {media?.type === 'image' && (
+                            <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-neutral-900 rounded-xl p-4 text-white shadow-lg max-w-md">
+                                <h3 className="text-md text-neutral-300 mb-3 font-bold flex items-center gap-2">
+                                    <Scissors className="w-4 h-4 text-neutral-400" />
+                                    Segmentation
+                                </h3>
+
+                                {segmentationError && (
+                                    <div className="mb-3 p-2 bg-red-900/20 border border-red-500/50 rounded text-red-400 text-sm">
+                                        {segmentationError}
+                                    </div>
+                                )}
+
+                                {!localSegmentation && !isGeneratingSegmentation && (
+                                    <div className="flex flex-col items-center gap-3 py-4">
+                                        <p className="text-sm text-neutral-400 text-center">
+                                            Generate AI-powered background removal to extract foreground, background, and mask images.
+                                        </p>
+                                        <Button
+                                            onClick={handleGenerateSegmentation}
+                                            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                                            variant="outline"
+                                        >
+                                            <Scissors className="w-4 h-4 mr-2" />
+                                            Generate Segmentation
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {isGeneratingSegmentation && (
+                                    <div className="flex flex-col items-center gap-3 py-8">
+                                        <Loader2 className="w-8 h-8 text-neutral-400 animate-spin" />
+                                        <p className="text-sm text-neutral-400">
+                                            Processing segmentation...
+                                        </p>
+                                    </div>
+                                )}
+
+                                {localSegmentation && !isGeneratingSegmentation && (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {/* Foreground */}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs text-neutral-400 uppercase tracking-wider">Foreground</span>
+                                                <div className="relative aspect-square rounded-lg overflow-hidden bg-neutral-800 group">
+                                                    <img
+                                                        src={localSegmentation.foreground?.url}
+                                                        alt="Foreground"
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <a
+                                                                    href={localSegmentation.foreground?.url}
+                                                                    download={localSegmentation.foreground?.file_name || 'foreground.png'}
+                                                                    className="absolute bottom-2 right-2 bg-white/90 hover:bg-white p-1.5 rounded-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <Download className="w-3 h-3 text-neutral-800" />
+                                                                </a>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="z-[200]">
+                                                                <p>Download foreground</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                            </div>
+
+                                            {/* Background */}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs text-neutral-400 uppercase tracking-wider">Background</span>
+                                                <div className="relative aspect-square rounded-lg overflow-hidden bg-neutral-800 group">
+                                                    <img
+                                                        src={localSegmentation.background?.url}
+                                                        alt="Background"
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <a
+                                                                    href={localSegmentation.background?.url}
+                                                                    download={localSegmentation.background?.file_name || 'background.png'}
+                                                                    className="absolute bottom-2 right-2 bg-white/90 hover:bg-white p-1.5 rounded-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <Download className="w-3 h-3 text-neutral-800" />
+                                                                </a>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="z-[200]">
+                                                                <p>Download background</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                            </div>
+
+                                            {/* Mask */}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs text-neutral-400 uppercase tracking-wider">Mask</span>
+                                                <div className="relative aspect-square rounded-lg overflow-hidden bg-neutral-800 group">
+                                                    <img
+                                                        src={localSegmentation.mask?.url}
+                                                        alt="Mask"
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <a
+                                                                    href={localSegmentation.mask?.url}
+                                                                    download={localSegmentation.mask?.file_name || 'mask.png'}
+                                                                    className="absolute bottom-2 right-2 bg-white/90 hover:bg-white p-1.5 rounded-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <Download className="w-3 h-3 text-neutral-800" />
+                                                                </a>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="z-[200]">
+                                                                <p>Download mask</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Regenerate button */}
+                                        <Button
+                                            onClick={handleGenerateSegmentation}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full text-xs text-neutral-400 hover:text-white bg-transparent hover:bg-white/10"
+                                        >
+                                            Regenerate
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                     </div>
                 </DialogContent>
             </DialogPortal>
@@ -624,7 +874,7 @@ export const mapMediaFileToDialogItem = (mediaFile: MediaFile): MediaDialogItem 
                     src: filePath,
                     originalSrc: filePath,
                     type: contentMimeType,
-                    metadata: { ...metadata, tags: tags, mediaType: metadata?.mediaType || contentSubType },
+                    metadata: { ...metadata, tags: tags, mediaType: metadata?.mediaType || contentSubType, _id: mediaFile._id?.toString() },
                     size: metadata?.size,
                     srcWidth: metadata?.width,
                     srcHeight: metadata?.height,

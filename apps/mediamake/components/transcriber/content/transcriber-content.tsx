@@ -9,6 +9,7 @@ import { AssemblyUI } from "../assembly/assembly-ui";
 import { ElevenLabsUI } from "../elevenlabs/elevenlabs-ui";
 import { SettingsUI } from "../settings/settings-ui";
 import { InfoUI } from "../info/info-ui";
+import { VideoUI } from "../video/video-ui";
 import { Transcription } from "@/app/types/transcription";
 
 export function TranscriberContent() {
@@ -92,6 +93,8 @@ export function TranscriberContent() {
                 return <EditorUI />;
             case 'info':
                 return <InfoUI />;
+            case 'video':
+                return <VideoUI />;
             default:
                 return <ExplorerUI />;
         }

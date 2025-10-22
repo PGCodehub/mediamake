@@ -5,8 +5,8 @@ import { Transcription } from "@/app/types/transcription";
 
 interface TranscriberContextType {
     // Navigation state
-    currentView: 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info';
-    setCurrentView: (view: 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info') => void;
+    currentView: 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video';
+    setCurrentView: (view: 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video') => void;
 
     // Selected transcription
     selectedTranscription: string | null;
@@ -34,7 +34,7 @@ interface TranscriberContextType {
 const TranscriberContext = createContext<TranscriberContextType | undefined>(undefined);
 
 export function TranscriberProvider({ children }: { children: ReactNode }) {
-    const [currentView, setCurrentView] = useState<'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info'>('explorer');
+    const [currentView, setCurrentView] = useState<'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video'>('explorer');
     const [selectedTranscription, setSelectedTranscription] = useState<string | null>(null);
     const [transcriptionData, setTranscriptionData] = useState<Transcription | null>(null);
     const [isLoading, setIsLoading] = useState(false);
