@@ -5,4 +5,3 @@ export { OutputCard } from './output-card';
 export { DefaultCard } from './default-card';
 export { PresetEditorWithProvider } from './preset-editor-with-provider';
 export * from './types';
-export * from './preset-data-mutation';

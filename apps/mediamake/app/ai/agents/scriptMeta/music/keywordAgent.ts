@@ -70,7 +70,6 @@ const KeywordTranscriptionSchema = ScriptMetaOutputSchema.extend({
 const musicKeywordAgent = aiRouter
   .agent('/', async ctx => {
     try {
-      console.log('ctx', ctx);
       ctx.response.writeMessageMetadata({
         loader: 'Analyzing transcription metadata...',
       });

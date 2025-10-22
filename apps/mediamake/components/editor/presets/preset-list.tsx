@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Trash2, Play, Loader2, RefreshCw, GripVertical, Copy, Save, Upload, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset, DefaultPresetData } from "./types";
-import { SchemaForm } from "./schema-form";
+import { SchemaForm } from "./form/schema-form";
 import { usePresetContext } from "./preset-provider";
 import { OutputCard } from "./output-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";

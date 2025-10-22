@@ -69,8 +69,10 @@ const effectSchema = z.object({
     .enum(['pan', 'zoom', 'generic', 'shake'])
     .describe('Type of effect to apply'),
   id: z.string().optional().describe('Custom effect ID'),
-  start: z.number().optional().describe('Effect start offset time in seconds'),
-  duration: z.number().optional().describe('Effect duration in seconds'),
+  range: z
+    .string()
+    .optional()
+    .describe('Range of the effect in MM:SS-MM:SS format like 01:00-02:00'),
   // Pan effect options
   pan: z
     .object({
@@ -176,6 +178,26 @@ const presetExecution = (
   const { images, effects } = params;
   const { config } = props;
 
+  // Helper function to parse time range (MM:SS-MM:SS format)
+  const parseTimeRange = (
+    range: string,
+  ): { start: number; end: number } | null => {
+    if (!range) return null;
+
+    const match = range.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+
+    const startMinutes = parseInt(match[1], 10);
+    const startSeconds = parseInt(match[2], 10);
+    const endMinutes = parseInt(match[3], 10);
+    const endSeconds = parseInt(match[4], 10);
+
+    return {
+      start: startMinutes * 60 + startSeconds,
+      end: endMinutes * 60 + endSeconds,
+    };
+  };
+
   // Helper function to generate CSS filter styles
   const generateFilterStyle = (filter: string): string => {
     switch (filter) {
@@ -222,6 +244,12 @@ const presetExecution = (
         effect.id ||
         `${params.trackName ?? 'imageloop'}-${effect.type}-${imageIndex}-${effectIndex}`;
 
+      // Parse the range if provided
+      const timeRange = parseTimeRange(effect.range || '');
+
+      // Calculate duration based on range
+      const effectDuration = timeRange ? timeRange.end - timeRange.start : 2; // Default duration if no range
+
       switch (effect.type) {
         case 'pan':
           return {
@@ -231,6 +259,9 @@ const presetExecution = (
               panDirection: effect.pan?.direction || 'up',
               panDistance: effect.pan?.distance || 200,
               loopTimes: effect.pan?.loopTimes || 1,
+              duration: effectDuration,
+              start: timeRange?.start || 0,
+              end: timeRange?.end || undefined,
             } as PanEffectData,
           };
 
@@ -242,6 +273,9 @@ const presetExecution = (
               zoomDirection: effect.zoom?.direction || 'in',
               zoomDepth: effect.zoom?.depth || 1.2,
               loopTimes: effect.zoom?.loopTimes || 1,
+              duration: effectDuration,
+              start: timeRange?.start || 0,
+              end: timeRange?.end || undefined,
             } as ZoomEffectData,
           };
 
@@ -259,8 +293,9 @@ const presetExecution = (
                   val: isNaN(Number(range.val)) ? range.val : Number(range.val),
                   prog: range.prog,
                 })) || [],
-              duration: effect.duration || 2,
-              start: effect.start || 0,
+              duration: effectDuration,
+              start: timeRange?.start || 0,
+              end: timeRange?.end || undefined,
             } as GenericEffectData,
           };
 
@@ -273,8 +308,9 @@ const presetExecution = (
               frequency: effect.shake?.frequency || 0.1,
               decay: effect.shake?.decay ?? true,
               axis: effect.shake?.axis || 'both',
-              duration: effect.duration || 2,
-              start: effect.start || 0,
+              duration: effectDuration,
+              start: timeRange?.start || 0,
+              end: timeRange?.end || undefined,
             },
           };
 
@@ -286,6 +322,9 @@ const presetExecution = (
               panDirection: 'up',
               panDistance: 200,
               loopTimes: 1,
+              duration: effectDuration,
+              start: timeRange?.start || 0,
+              end: timeRange?.end || undefined,
             } as PanEffectData,
           };
       }

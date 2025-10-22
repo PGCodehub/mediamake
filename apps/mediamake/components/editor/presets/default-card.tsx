@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Plus, Trash2, Settings, Image, Code } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Settings, Image, Code, Save, Loader2 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { toast } from "sonner";
 import { ReferenceItem, DefaultPresetData } from "./types";
 import { createBaseDataFromReferences } from "./preset-data-mutation";
 import { MediaPicker } from "../media/media-picker";
@@ -16,6 +17,8 @@ import { MediaFile } from "@/app/types/media";
 import { TranscriptionPicker } from "../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
 import { JsonEditor } from "../player/json-editor";
+import { SchemaForm } from "./form/schema-form";
+import { z } from "zod";
 
 interface DefaultCardProps {
     defaultData: DefaultPresetData;
@@ -31,6 +34,7 @@ export function DefaultCard({
     onToggleExpansion
 }: DefaultCardProps) {
     const [localExpanded, setLocalExpanded] = useState(isExpanded);
+    const [savingStates, setSavingStates] = useState<Record<number, boolean>>({});
 
     const handleToggleExpansion = () => {
         if (onToggleExpansion) {
@@ -72,6 +76,42 @@ export function DefaultCard({
             ...defaultData,
             references: updatedReferences
         });
+    };
+
+    const saveCaptionsToDatabase = async (index: number, reference: ReferenceItem) => {
+        if (reference.type !== 'captions' || !reference.value || !reference.value._id) {
+            toast.error('Invalid caption data for saving');
+            return;
+        }
+
+        setSavingStates(prev => ({ ...prev, [index]: true }));
+
+        try {
+            const response = await fetch(`/api/transcriptions/${reference.value._id}/metadata`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: reference.value._id,
+                    captions: reference.value.captions
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save captions');
+            }
+
+            const result = await response.json();
+            toast.success('Captions saved successfully!');
+            console.log('Captions saved:', result);
+        } catch (error) {
+            console.error('Error saving captions:', error);
+            toast.error(`Failed to save captions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setSavingStates(prev => ({ ...prev, [index]: false }));
+        }
     };
 
     const referenceTypes = [
@@ -124,11 +164,11 @@ export function DefaultCard({
     };
 
     // Transcription picker component for caption type references
-    const TranscriptionPickerButton = ({ onSelect }: { onSelect: (captions: any[]) => void }) => {
+    const TranscriptionPickerButton = ({ onSelect }: { onSelect: (transcription: Transcription) => void }) => {
         const [showPicker, setShowPicker] = useState(false);
 
         const handleSelect = (transcription: Transcription) => {
-            onSelect(transcription.captions);
+            onSelect(transcription);
             setShowPicker(false);
         };
 
@@ -182,7 +222,6 @@ export function DefaultCard({
                 );
             case 'media':
             case 'medias':
-            case 'captions':
             case 'object':
             case 'objects':
                 return (
@@ -196,18 +235,77 @@ export function DefaultCard({
                                 >
                                     <div className="flex items-center gap-2">
                                         <Code className="h-4 w-4" />
-                                        <span>JSON Editor</span>
+                                        <span>Schema Form</span>
                                     </div>
                                     <ChevronRight className="h-4 w-4 data-[state=open]:rotate-90 transition-transform" />
                                 </Button>
                             </CollapsibleTrigger>
                             <CollapsibleContent className="mt-2">
-                                <JsonEditor
+                                <SchemaForm
+                                    schema={z.toJSONSchema(z.object({}))}
                                     value={reference.value || (reference.type === 'object' ? {} : [])}
                                     onChange={(val) => updateReference(index, 'value', val)}
-                                    height="200px"
-                                    className="border rounded-md w-full"
+                                    showTabs={false}
+                                    showResetButton={false}
+                                    title=""
+                                    className="border rounded-md p-3"
                                 />
+                            </CollapsibleContent>
+                        </Collapsible>
+                    </div>
+                );
+            case 'captions':
+                return (
+                    <div className="space-y-2">
+                        <Collapsible defaultOpen={false}>
+                            <CollapsibleTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-between"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Code className="h-4 w-4" />
+                                        <span>Schema Form</span>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 data-[state=open]:rotate-90 transition-transform" />
+                                </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                                <SchemaForm
+                                    schema={z.toJSONSchema(z.object({
+                                        _id: z.string().describe('Transcription ID'),
+                                        captions: z.array(z.any()).describe('Captions')
+                                    }))}
+                                    value={reference.value || []}
+                                    onChange={(val) => updateReference(index, 'value', val)}
+                                    showTabs={true}
+                                    showResetButton={false}
+                                    title="Captions"
+                                    className="border rounded-md p-3"
+                                />
+                                {reference.value && reference.value._id && (
+                                    <div className="mt-2">
+                                        <Button
+                                            onClick={() => saveCaptionsToDatabase(index, reference)}
+                                            disabled={savingStates[index]}
+                                            size="sm"
+                                            className="w-full"
+                                        >
+                                            {savingStates[index] ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="h-4 w-4 mr-2" />
+                                                    Sync Metadata to Database
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
                             </CollapsibleContent>
                         </Collapsible>
                     </div>
@@ -227,7 +325,7 @@ export function DefaultCard({
 
     return (
         <Card className="p-0 w-full border-2 border-dashed border-primary/20 bg-primary/5">
-            <CardHeader className="pb-2 px-3 py-2">
+            <CardHeader className="pb-2 px-0 py-2">
                 <Collapsible open={expanded} onOpenChange={handleToggleExpansion}>
                     <CollapsibleTrigger asChild>
                         <Button
@@ -246,8 +344,8 @@ export function DefaultCard({
                             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                         </Button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-2">
-                        <div className="border-l-2 border-primary/20 ml-4 pl-4 space-y-4">
+                    <CollapsibleContent className="space-y-2 px-0">
+                        <div className="border-l-2 border-primary/20 ml-4 px-2 space-y-4">
                             {defaultData.references.length === 0 ? (
                                 <div className="text-center py-4">
                                     <p className="text-sm text-muted-foreground mb-2">
@@ -266,13 +364,10 @@ export function DefaultCard({
                             ) : (
                                 <div className="space-y-3">
                                     {defaultData.references.map((reference, index) => (
-                                        <div key={index} className="p-3 border rounded-md bg-background">
+                                        <div key={index} className="p-1 border rounded-md bg-background">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <div className="flex-1 grid grid-cols-3 items-end gap-2">
+                                                <div className="flex-1 grid grid-cols-2 items-end gap-2">
                                                     <div>
-                                                        <Label htmlFor={`key-${index}`} className="text-xs">
-                                                            Key
-                                                        </Label>
                                                         <Input
                                                             id={`key-${index}`}
                                                             value={reference.key}
@@ -282,9 +377,6 @@ export function DefaultCard({
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor={`type-${index}`} className="text-xs">
-                                                            Type
-                                                        </Label>
                                                         <Select
                                                             value={reference.type}
                                                             onValueChange={(val) => updateReference(index, 'type', val as ReferenceItem['type'])}
@@ -301,28 +393,28 @@ export function DefaultCard({
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                    <div className="flex gap-2 mb-2">
-                                                        {(reference.type === 'media' || reference.type === 'medias') && (
-                                                            <MediaPickerButton
-                                                                onSelect={(media) => {
-                                                                    if (reference.type === 'media') {
-                                                                        updateReference(index, 'value', media);
-                                                                    } else {
-                                                                        const currentValue = Array.isArray(reference.value) ? reference.value : [];
-                                                                        updateReference(index, 'value', [...currentValue, ...(Array.isArray(media) ? media : [media])]);
-                                                                    }
-                                                                }}
-                                                                singular={reference.type === 'media'}
-                                                            />
-                                                        )}
-                                                        {reference.type === 'captions' && (
-                                                            <TranscriptionPickerButton
-                                                                onSelect={(captions) => {
-                                                                    updateReference(index, 'value', captions);
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 pl-3">
+                                                    {(reference.type === 'media' || reference.type === 'medias') && (
+                                                        <MediaPickerButton
+                                                            onSelect={(media) => {
+                                                                if (reference.type === 'media') {
+                                                                    updateReference(index, 'value', media);
+                                                                } else {
+                                                                    const currentValue = Array.isArray(reference.value) ? reference.value : [];
+                                                                    updateReference(index, 'value', [...currentValue, ...(Array.isArray(media) ? media : [media])]);
+                                                                }
+                                                            }}
+                                                            singular={reference.type === 'media'}
+                                                        />
+                                                    )}
+                                                    {reference.type === 'captions' && (
+                                                        <TranscriptionPickerButton
+                                                            onSelect={({ captions, _id }) => {
+                                                                updateReference(index, 'value', { captions, _id: _id?.toString() ?? "" });
+                                                            }}
+                                                        />
+                                                    )}
                                                 </div>
                                                 <Button
                                                     variant="ghost"

@@ -123,6 +123,13 @@ export const POST = async (req: NextRequest) => {
         videoBitrate: '1k', // Very low bitrate for audio-only
         audioBitrate: '128k',
         logLevel: 'error',
+        onProgress: progress => {
+          console.log('Audio render progress:', progress.progress);
+          console.log(
+            'Audio render estimated time to finish:',
+            progress.renderEstimatedTime,
+          );
+        },
       });
 
       result = {
@@ -143,6 +150,17 @@ export const POST = async (req: NextRequest) => {
         outputLocation: videoOutputPath,
         inputProps,
         logLevel: 'error',
+        onProgress: progress => {
+          // Clear previous logs and show persistent progress
+          console.clear();
+          const progressPercent = (progress.progress * 100).toFixed(1);
+          const estimatedMinutes = (
+            progress.renderEstimatedTime / 60000
+          ).toFixed(2);
+          console.log(
+            `🎬 Video Render Progress: ${progressPercent}% | ETA: ${estimatedMinutes} minutes`,
+          );
+        },
       });
 
       result = {

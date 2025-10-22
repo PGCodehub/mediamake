@@ -9,20 +9,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JsonEditor } from "../player/json-editor";
-import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image, FileAudio } from "lucide-react";
+import { JsonEditor } from "../../player/json-editor";
+import { Eye, Code, HelpCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, RotateCcw, Image, FileAudio, FormInputIcon, ImageIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PresetMetadata } from "./types";
+import { PresetMetadata } from "../types";
 import { toJSONSchema } from "zod";
-import { MediaPicker } from "../media/media-picker";
+import { MediaPicker } from "../../media/media-picker";
 import { MediaFile } from "@/app/types/media";
 import { getAvailableFonts } from "@remotion/google-fonts";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TranscriptionPicker } from "../../transcriber/picker/transcription-picker";
+import { TranscriptionPicker } from "../../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
-import { FlexibleObjectField } from "./flexible-object-field";
+import { FlexibleObjectField } from "../flexible-object-field";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const availableFonts = getAvailableFonts();
 
@@ -128,6 +147,56 @@ function isImageUrl(url: string): boolean {
 
     // Check if URL ends with image extension
     return imageExtensions.some(ext => urlLower.endsWith(ext));
+}
+
+// Helper function to detect if a URL is a video
+function isVideoUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.3gp', '.flv', '.wmv'];
+    const urlLower = url.toLowerCase().trim();
+
+    return videoExtensions.some(ext => urlLower.endsWith(ext));
+}
+
+// Helper function to detect if a URL is an audio file
+function isAudioUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+
+    const audioExtensions = ['.mp3', '.wav', '.aac', '.ogg', '.m4a', '.flac', '.wma'];
+    const urlLower = url.toLowerCase().trim();
+
+    return audioExtensions.some(ext => urlLower.endsWith(ext));
+}
+
+// Helper function to detect media arrays in data
+function detectMediaArrays(data: any): Array<{ key: string, items: any[], title: string }> {
+    const mediaArrays: Array<{ key: string, items: any[], title: string }> = [];
+
+    if (!data || typeof data !== 'object') return mediaArrays;
+
+    Object.entries(data).forEach(([key, value]) => {
+        if (Array.isArray(value) && value.length > 0) {
+            // Check if this array contains objects with 'src' field
+            const hasSrcField = value.some(item =>
+                typeof item === 'object' &&
+                item !== null &&
+                'src' in item &&
+                typeof item.src === 'string' &&
+                item.src.trim() !== ''
+            );
+
+            if (hasSrcField) {
+                mediaArrays.push({
+                    key,
+                    items: value,
+                    title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
+                });
+            }
+        }
+    });
+
+    return mediaArrays;
 }
 
 // Helper function to map MediaFile to field value based on field type and structure
@@ -242,6 +311,129 @@ function ImagePreview({ src, alt = "Preview" }: { src: string; alt?: string }) {
     );
 }
 
+// MediaPreview component for different media types
+function MediaPreview({
+    item,
+    onClick,
+    onDelete
+}: {
+    item: any;
+    onClick?: () => void;
+    onDelete?: () => void;
+}) {
+    const src = item.src || '';
+    const [imageError, setImageError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const handleImageLoad = () => {
+        setIsLoading(false);
+        setImageError(false);
+    };
+
+    const handleImageError = () => {
+        setIsLoading(false);
+        setImageError(true);
+    };
+
+    const getMediaType = () => {
+        if (isImageUrl(src)) return 'image';
+        if (isVideoUrl(src)) return 'video';
+        if (isAudioUrl(src)) return 'audio';
+        return 'unknown';
+    };
+
+    const mediaType = getMediaType();
+
+    const renderPreview = () => {
+        if (imageError) {
+            return (
+                <div className="w-full h-24 border border-dashed border-muted-foreground rounded-md flex items-center justify-center">
+                    <Image className="h-6 w-6 text-muted-foreground" />
+                </div>
+            );
+        }
+
+        switch (mediaType) {
+            case 'image':
+                return (
+                    <div className="relative w-full h-24 border rounded-md overflow-hidden">
+                        {isLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                                <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        )}
+                        <img
+                            src={src}
+                            alt={item.alt || 'Media preview'}
+                            className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+                            onLoad={handleImageLoad}
+                            onError={handleImageError}
+                        />
+                    </div>
+                );
+            case 'video':
+                return (
+                    <div className="w-full h-24 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="w-8 h-8 mx-auto mb-2 bg-primary/20 rounded-full flex items-center justify-center">
+                                <span className="text-xs">▶</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Video</p>
+                        </div>
+                    </div>
+                );
+            case 'audio':
+                return (
+                    <div className="w-full h-24 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                            <FileAudio className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Audio</p>
+                        </div>
+                    </div>
+                );
+            default:
+                return (
+                    <div className="w-full h-24 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="text-center">
+                            <Image className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Media</p>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="relative group">
+            <div
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={onClick}
+            >
+                {renderPreview()}
+                <div className="mt-2">
+                    <p className="text-xs font-medium truncate">{item.title || item.alt || 'Untitled'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{src.split('/').pop()}</p>
+                </div>
+            </div>
+
+            {/* Delete button - appears on hover */}
+            {onDelete && (
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
+                >
+                    <Trash2 className="h-3 w-3" />
+                </Button>
+            )}
+        </div>
+    );
+}
+
 // MediaPickerButton component
 function MediaPickerButton({ onSelect, singular = true, currentValue }: { onSelect: (files: MediaFile | MediaFile[]) => void; singular?: boolean; currentValue?: string }) {
     const [showPicker, setShowPicker] = useState(false);
@@ -309,6 +501,177 @@ function TranscriptionPickerButton({ onSelect }: { onSelect: (transcription: Tra
                 />
             )}
         </>
+    );
+}
+
+// SortableMediaItem component for individual media items
+function SortableMediaItem({
+    item,
+    index,
+    arrayKey,
+    onMediaClick,
+    onDelete
+}: {
+    item: any;
+    index: number;
+    arrayKey: string;
+    onMediaClick?: (mediaItem: any, arrayKey: string, index: number) => void;
+    onDelete?: (arrayKey: string, index: number) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: `${arrayKey}-${index}` });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="w-full">
+            <div className="relative">
+                {/* Drag handle - only this area should be draggable */}
+                <div
+                    {...attributes}
+                    {...listeners}
+                    className="absolute top-1 left-1 z-10 cursor-grab active:cursor-grabbing p-1 bg-background/80 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                    <GripVertical className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <MediaPreview
+                    item={item}
+                    onClick={() => onMediaClick?.(item, arrayKey, index)}
+                    onDelete={() => onDelete?.(arrayKey, index)}
+                />
+            </div>
+        </div>
+    );
+}
+
+// MediaTab component for displaying and managing media arrays
+function MediaTab({
+    data,
+    onChange,
+    onMediaClick
+}: {
+    data: any;
+    onChange: (data: any) => void;
+    onMediaClick?: (mediaItem: any, arrayKey: string, index: number) => void;
+}) {
+    const mediaArrays = detectMediaArrays(data);
+    const [activeArrayKey, setActiveArrayKey] = useState<string | null>(
+        mediaArrays.length > 0 ? mediaArrays[0].key : null
+    );
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (!activeArrayKey || !over || active.id === over.id) return;
+
+        const activeId = active.id as string;
+        const overId = over.id as string;
+
+        const activeIndex = parseInt(activeId.split('-').pop() || '0');
+        const overIndex = parseInt(overId.split('-').pop() || '0');
+
+        if (activeIndex === overIndex) return;
+
+        const newData = { ...data };
+        const array = [...newData[activeArrayKey]];
+        const newArray = arrayMove(array, activeIndex, overIndex);
+        newData[activeArrayKey] = newArray;
+        onChange(newData);
+    };
+
+    const handleDeleteItem = (arrayKey: string, index: number) => {
+        const newData = { ...data };
+        const array = [...newData[arrayKey]];
+        array.splice(index, 1);
+        newData[arrayKey] = array;
+        onChange(newData);
+    };
+
+    if (mediaArrays.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <div className="text-center">
+                    <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No Media Found</p>
+                    <p className="text-sm">No arrays with media items detected in the current data.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const currentArray = mediaArrays.find(arr => arr.key === activeArrayKey);
+
+    return (
+        <div className="space-y-4">
+            {mediaArrays.length > 1 && (
+                <div className="flex gap-2">
+                    {mediaArrays.map((array) => (
+                        <Button
+                            key={array.key}
+                            variant={activeArrayKey === array.key ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setActiveArrayKey(array.key)}
+                        >
+                            {array.title} ({array.items.length})
+                        </Button>
+                    ))}
+                </div>
+            )}
+
+            {currentArray && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">
+                            {currentArray.title} ({currentArray.items.length} items)
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                            Drag and drop to reorder • Click to expand
+                        </p>
+                    </div>
+
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={currentArray.items.map((_, index) => `${activeArrayKey!}-${index}`)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {currentArray.items.map((item, index) => (
+                                    <SortableMediaItem
+                                        key={`${activeArrayKey}-${index}`}
+                                        item={item}
+                                        index={index}
+                                        arrayKey={activeArrayKey!}
+                                        onMediaClick={onMediaClick}
+                                        onDelete={handleDeleteItem}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -1144,7 +1507,12 @@ export function SchemaForm({
     baseData = {}
 }: SchemaFormProps) {
     const [formData, setFormData] = useState(value || {});
-    const [activeTab, setActiveTab] = useState<"form" | "json">("form");
+    const [activeTab, setActiveTab] = useState<"form" | "json" | "media">("form");
+    const [expandedMedia, setExpandedMedia] = useState<{
+        item: any;
+        arrayKey: string;
+        index: number;
+    } | null>(null);
 
     // Convert zod schema to JSON schema
     const jsonSchema = schema && typeof schema === 'object' && schema._def ? toJSONSchema(schema) : schema;
@@ -1188,6 +1556,16 @@ export function SchemaForm({
         }
     };
 
+    const handleMediaClick = (mediaItem: any, arrayKey: string, index: number) => {
+        setExpandedMedia({ item: mediaItem, arrayKey, index });
+        setActiveTab("form");
+    };
+
+    const handleMediaDataChange = (newData: any) => {
+        setFormData(newData);
+        onChange(newData);
+    };
+
 
     const getFieldsFromSchema = (schema: any): FormField[] => {
         if (!schema.properties) return [];
@@ -1226,7 +1604,7 @@ export function SchemaForm({
         <div className={className}>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h3 className="text-lg font-semibold">{title}</h3>
+                    <h3 className="text-md font-semibold">{title}</h3>
                     {description && (
                         <p className="text-sm text-muted-foreground mt-1">{description}</p>
                     )}
@@ -1250,15 +1628,19 @@ export function SchemaForm({
                         </Tooltip>
                     )}
                     {showTabs && (
-                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
+                        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json" | "media")}>
                             <TabsList>
                                 <TabsTrigger value="form" className="flex items-center gap-2">
-                                    <Eye className="h-4 w-4" />
+                                    <FormInputIcon className="h-4 w-4" />
                                     Form
                                 </TabsTrigger>
                                 <TabsTrigger value="json" className="flex items-center gap-2">
                                     <Code className="h-4 w-4" />
-                                    JSON
+                                    Json
+                                </TabsTrigger>
+                                <TabsTrigger value="media" className="flex items-center gap-2">
+                                    <ImageIcon className="h-4 w-4" />
+                                    Media
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
@@ -1267,8 +1649,51 @@ export function SchemaForm({
             </div>
             <div>
                 {showTabs ? (
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json")}>
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "form" | "json" | "media")}>
                         <TabsContent value="form" className="space-y-4">
+                            {expandedMedia && (
+                                <Card className="mb-4 border-primary/20">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-sm">
+                                                Expanded Media Item
+                                            </CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setExpandedMedia(null)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-xs font-medium">Array:</Label>
+                                                <Badge variant="outline">{expandedMedia.arrayKey}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-xs font-medium">Index:</Label>
+                                                <Badge variant="outline">{expandedMedia.index}</Badge>
+                                            </div>
+                                            <div className="mt-3">
+                                                <JsonEditor
+                                                    value={expandedMedia.item}
+                                                    onChange={(newItem) => {
+                                                        const newData = { ...formData };
+                                                        newData[expandedMedia.arrayKey][expandedMedia.index] = newItem;
+                                                        handleMediaDataChange(newData);
+                                                        setExpandedMedia({ ...expandedMedia, item: newItem });
+                                                    }}
+                                                    height="200px"
+                                                    className="border rounded-md"
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
                             {fields.length > 0 ? (
                                 <div className="space-y-4">
                                     {fields.map((field) => {
@@ -1289,6 +1714,14 @@ export function SchemaForm({
                                 onChange={handleJsonChange}
                                 height="400px"
                                 className="border rounded-md"
+                            />
+                        </TabsContent>
+
+                        <TabsContent value="media">
+                            <MediaTab
+                                data={formData}
+                                onChange={handleMediaDataChange}
+                                onMediaClick={handleMediaClick}
                             />
                         </TabsContent>
                     </Tabs>

@@ -116,7 +116,7 @@ export const Atom: React.FC<ImageAtomProps> = ({ data, id }) => {
             className={data.className}
             src={source}
             style={enhancedStyle}
-            crossOrigin={data.src.startsWith('http') ? undefined : undefined}
+            crossOrigin={data.src.startsWith('http') ? "anonymous" : undefined}
             maxRetries={4}
             onError={() => {
                 console.warn(`Failed to load image: ${data.src}`);

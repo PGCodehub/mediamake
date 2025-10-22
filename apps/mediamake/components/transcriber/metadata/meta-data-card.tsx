@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { SchemaForm } from "@/components/editor/presets/schema-form";
+import { SchemaForm } from "@/components/editor/presets/form/schema-form";
 import { Input } from "@/components/ui/input";
 import { JsonEditor } from "@/components/editor/player/json-editor";
 import { ChevronDown, ChevronRight } from "lucide-react";

@@ -61,7 +61,7 @@ function processDataReferencesRecursive(
             return processArrayRange(referenceValue, range, 'array');
           }
 
-          // If it's a captions array and has a time range, process the time range
+          // If it's a transcription object with captions array and has a time range, process the time range
           if (
             referenceValue &&
             typeof referenceValue === 'object' &&
@@ -74,6 +74,17 @@ function processDataReferencesRecursive(
               range,
               'captions',
             );
+          }
+
+          // If it's a transcription object with captions array (no range), return the captions
+          if (
+            referenceValue &&
+            typeof referenceValue === 'object' &&
+            referenceValue.captions &&
+            Array.isArray(referenceValue.captions) &&
+            !range
+          ) {
+            return referenceValue.captions;
           }
 
           return referenceValue;
@@ -150,7 +161,15 @@ function processStringReference(
         }
         // Check for captions array property
         if (referenceValue.captions && Array.isArray(referenceValue.captions)) {
-          return processArrayRange(referenceValue.captions, range, 'captions');
+          if (range) {
+            return processArrayRange(
+              referenceValue.captions,
+              range,
+              'captions',
+            );
+          } else {
+            return referenceValue.captions;
+          }
         }
       }
 
@@ -412,10 +431,29 @@ function processFlexibleObjectReferencesRecursive(
             typeof referenceValue === 'object' &&
             !Array.isArray(referenceValue)
           ) {
-            processed[key] = {
-              ...referenceValue,
-              ...(typeof data[key] === 'object' ? data[key] : {}),
-            };
+            // Special handling for transcription objects with captions
+            if (
+              referenceValue.captions &&
+              Array.isArray(referenceValue.captions)
+            ) {
+              // If the input data expects just captions, extract them
+              if (
+                typeof data[key] === 'string' &&
+                data[key].includes('captions')
+              ) {
+                processed[key] = referenceValue.captions;
+              } else {
+                processed[key] = {
+                  ...referenceValue,
+                  ...(typeof data[key] === 'object' ? data[key] : {}),
+                };
+              }
+            } else {
+              processed[key] = {
+                ...referenceValue,
+                ...(typeof data[key] === 'object' ? data[key] : {}),
+              };
+            }
           } else {
             processed[key] = referenceValue;
           }

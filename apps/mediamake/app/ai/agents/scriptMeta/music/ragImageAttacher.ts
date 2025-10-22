@@ -137,7 +137,6 @@ async function performRagSearch(
 const ragImageAttacherAgent = aiRouter
   .agent('/', async ctx => {
     try {
-      console.log('ctx', ctx);
       ctx.response.writeMessageMetadata({
         loader:
           'Generating image search queries and finding suitable images...',

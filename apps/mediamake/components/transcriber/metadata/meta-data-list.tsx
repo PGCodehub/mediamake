@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RefreshCw, Play, Brain, Settings, ChevronDown, ChevronUp } from "lucide-react";
-import { SchemaForm } from "@/components/editor/presets/schema-form";
+import { SchemaForm } from "@/components/editor/presets/form/schema-form";
 import { toJSONSchema } from "zod";
 import { useState, useMemo } from "react";
 import { aiRouterRegistry } from "@/app/ai";
