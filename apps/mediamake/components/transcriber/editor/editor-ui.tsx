@@ -23,8 +23,6 @@ import { useTranscriber } from "../contexts/transcriber-context";
 import { AudioPlayerProvider, useAudioPlayer } from "../audio-player-context";
 import { AudioPlayer } from "../audio-player";
 import { TiptapCaptionEditor } from "../tiptap/tiptap-caption-editor";
-import { MetadataDialog } from "../dialogs/metadata-dialog";
-import { AutofixDialog } from "../dialogs/autofix-dialog";
 import { Transcription } from "@/app/types/transcription";
 import { toast } from "sonner";
 
@@ -44,7 +42,6 @@ function EditorUIInner() {
     const { currentTime, isPlaying, seekTo, togglePlayPause, setAudioUrl } = useAudioPlayer();
 
     const [showMetadataDialog, setShowMetadataDialog] = useState(false);
-    const [showAutofixDialog, setShowAutofixDialog] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editedTitle, setEditedTitle] = useState("");
     const [isSavingTitle, setIsSavingTitle] = useState(false);
@@ -251,11 +248,10 @@ function EditorUIInner() {
 
     return (
         <div className="flex-1 flex flex-col h-full">
-            {/* Header */}
-            <div className="p-4 border-b border-border">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0 flex-1 max-w-[50%]">
-                        <FileAudio className="h-6 w-6 text-primary flex-shrink-0" />
+            {/* Audio Player */}
+            {transcriptionData?.audioUrl && (
+                <div className="p-4 border-b border-border">
+                    <div className="mb-2 text-sm text-muted-foreground flex flex-row justify-between">
                         <div className="min-w-0 flex-1">
                             {isEditingTitle ? (
                                 <div className="flex items-center gap-2">
@@ -308,74 +304,18 @@ function EditorUIInner() {
                                     </Button>
                                 </div>
                             )}
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                {transcriptionData.tags?.map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs flex-shrink-0">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                                {/* {transcriptionData.keywords?.slice(0, 5).map((keyword, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs flex-shrink-0">
-                                        {keyword}
-                                    </Badge>
-                                ))} */}
+                        </div>
+                        <div className="flex flex-row items-center gap-2">
+                            <span className="max-w-[30ch] truncate"> Audio (URL: {transcriptionData.audioUrl})</span>
+                            <div className="flex flex-row items-center gap-2 cursor-pointer hover:text-primary" onClick={copyAudioUrl}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                URL
+                            </div>
+                            <div className="flex flex-row items-center gap-2 cursor-pointer hover:text-primary" onClick={copyCaptionJson}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                JSON
                             </div>
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button
-                            onClick={() => setShowAutofixDialog(true)}
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-2"
-                        >
-                            <Sparkles className="h-4 w-4" />
-                            AI Autofix
-                        </Button>
-                        <Button
-                            onClick={() => setShowMetadataDialog(true)}
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-2"
-                        >
-                            <Brain className="h-4 w-4" />
-                            Metadata
-                        </Button>
-                        <Button
-                            onClick={copyAudioUrl}
-                            variant="outline"
-                            size="sm"
-                            disabled={!transcriptionData?.audioUrl}
-                        >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy Audio URL
-                        </Button>
-                        <Button
-                            onClick={copyCaptionJson}
-                            variant="outline"
-                            size="sm"
-                        >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy JSON
-                        </Button>
-                        <Button
-                            onClick={exportCaptionJson}
-                            variant="outline"
-                            size="sm"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Export JSON
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Audio Player */}
-            {transcriptionData?.audioUrl && (
-                <div className="p-4 border-b border-border">
-                    <div className="mb-2 text-sm text-muted-foreground">
-                        Audio Player (URL: {transcriptionData.audioUrl})
                     </div>
                     <AudioPlayer />
                 </div>
@@ -385,34 +325,19 @@ function EditorUIInner() {
             <div className="flex-1 flex min-h-0">
                 {/* Caption Editor with integrated timeline */}
                 <div className="flex-1 flex flex-col">
-                    <div className="flex-1 p-4">
+                    <div className="flex-1 px-2 py-0">
                         <TiptapCaptionEditor
                             key={transcriptionData?._id + '-' + (transcriptionData?.updatedAt || '')}
                             transcriptionData={transcriptionData}
                             onTranscriptionDataUpdate={handleTranscriptionDataUpdate}
                             onStepChange={() => { }}
                             onRefreshTranscription={refreshTranscription}
+                            defaultTimelineVisibility={true}
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Dialogs */}
-            <MetadataDialog
-                isOpen={showMetadataDialog}
-                onClose={() => setShowMetadataDialog(false)}
-                transcriptionData={transcriptionData}
-                onTranscriptionDataUpdate={handleTranscriptionDataUpdate}
-                onRefreshTranscription={refreshTranscription}
-            />
-
-            <AutofixDialog
-                isOpen={showAutofixDialog}
-                onClose={() => setShowAutofixDialog(false)}
-                transcriptionData={transcriptionData}
-                onTranscriptionDataUpdate={handleTranscriptionDataUpdate}
-                onRefreshTranscription={refreshTranscription}
-            />
         </div>
     );
 }

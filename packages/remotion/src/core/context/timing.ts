@@ -275,6 +275,12 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
                 duration: duration,
               },
             };
+            updatedComponent.data = {
+              ...updatedComponent.data,
+              ...(updatedComponent.data.loop && updatedComponent.data.duration
+                ? { srcDuration: updatedComponent.data.duration }
+                : {}),
+            };
           } else if (updatedComponent.context?.timing?.fitDurationTo) {
             updatedComponent.data = {
               ...updatedComponent.data,

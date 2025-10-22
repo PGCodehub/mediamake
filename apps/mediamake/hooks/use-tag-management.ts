@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Tag } from '@/app/types/media';
 import useSWR from 'swr';
+import { getClientId } from '@/lib/auth-utils';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -40,9 +41,6 @@ export function useTagManagement() {
         setIsCreatingTag(true);
         const response = await fetch('/api/tags', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(tagData),
         });
 

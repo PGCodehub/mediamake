@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Trash2, Play, Loader2, RefreshCw, GripVertical, Copy, Save, Upload, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset } from "./types";
-import { SchemaForm } from "./schema-form";
+import { Preset, DatabasePreset, PresetInputData, AppliedPresetsState, AppliedPreset, DefaultPresetData } from "./types";
+import { SchemaForm } from "./form/schema-form";
 import { usePresetContext } from "./preset-provider";
 import { OutputCard } from "./output-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { getPresetById } from "./registry/presets-registry";
 import { SavePresetDialog } from "./save-preset-dialog";
 import { LoadPresetDialog } from "./load-preset-dialog";
+import { DefaultCard } from "./default-card";
+import { createBaseDataFromReferences } from "./preset-data-mutation";
 import {
     DndContext,
     closestCenter,
@@ -41,8 +43,11 @@ interface SortablePresetItemProps {
     onToggleExpansion: (id: string) => void;
     onUpdateInputData: (id: string, inputData: PresetInputData) => void;
     onRefresh: (id: string) => void;
+    onCopy: (id: string) => void;
     onRemove: (id: string) => void;
     onToggleDisabled: (id: string) => void;
+    availableReferences?: string[];
+    defaultData?: any;
 }
 
 function SortablePresetItem({
@@ -50,8 +55,11 @@ function SortablePresetItem({
     onToggleExpansion,
     onUpdateInputData,
     onRefresh,
+    onCopy,
     onRemove,
-    onToggleDisabled
+    onToggleDisabled,
+    availableReferences = [],
+    defaultData
 }: SortablePresetItemProps) {
     const {
         attributes,
@@ -126,6 +134,15 @@ function SortablePresetItem({
                             >
                                 <RefreshCw className="h-3 w-3" />
                             </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onCopy(appliedPreset.id)}
+                                className="text-purple-500 hover:text-purple-700 p-1 h-6 w-6"
+                                title="Duplicate preset"
+                            >
+                                <Copy className="h-3 w-3" />
+                            </Button>
                             {appliedPreset.preset.metadata.presetType === 'children' && (
                                 <Button
                                     variant="ghost"
@@ -163,6 +180,8 @@ function SortablePresetItem({
                             value={appliedPreset.inputData}
                             onChange={(inputData) => onUpdateInputData(appliedPreset.id, inputData)}
                             className=""
+                            availableReferences={availableReferences}
+                            baseData={createBaseDataFromReferences(defaultData.references)}
                         />
                     </CardContent>
                 )}
@@ -186,6 +205,7 @@ interface SavedPresetData {
             presetInputData: any;
             disabled?: boolean;
         }>;
+        defaultData?: DefaultPresetData; // Include baseData (references)
     };
 }
 
@@ -226,6 +246,8 @@ export function PresetList({
         removePreset,
         refreshPreset,
         reorderPresets,
+        defaultData,
+        setDefaultData,
         isGenerating,
         currentLoadedPreset,
         setCurrentLoadedPreset
@@ -255,6 +277,60 @@ export function PresetList({
         } finally {
             setIsLoadingSaved(false);
         }
+    };
+
+    // Helper function to generate random 6-character string
+    const generateRandomString = (length: number = 6): string => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    };
+
+    // Duplicate a preset
+    const copyPreset = (id: string) => {
+        const presetToCopy = appliedPresets.presets.find(p => p.id === id);
+        if (!presetToCopy) return;
+
+        // Deep clone the input data
+        let newInputData = JSON.parse(JSON.stringify(presetToCopy.inputData));
+
+        // Check if there's a trackName field and update it with a random string
+        if (newInputData && typeof newInputData === 'object') {
+            const processObject = (obj: any) => {
+                for (const key in obj) {
+                    if (key === 'trackName' && typeof obj[key] === 'string') {
+                        obj[key] = generateRandomString(6);
+                    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        processObject(obj[key]);
+                    }
+                }
+            };
+            processObject(newInputData);
+        }
+
+        // Create the duplicated preset
+        const duplicatedPreset: AppliedPreset = {
+            id: `preset-${Date.now()}-${Math.random()}`,
+            preset: presetToCopy.preset,
+            inputData: newInputData,
+            isExpanded: true,
+            disabled: presetToCopy.disabled
+        };
+
+        // Find the index of the original preset and insert the duplicate right after it
+        const originalIndex = appliedPresets.presets.findIndex(p => p.id === id);
+        const newPresets = [...appliedPresets.presets];
+        newPresets.splice(originalIndex + 1, 0, duplicatedPreset);
+
+        setAppliedPresets({
+            ...appliedPresets,
+            presets: newPresets
+        });
+
+        toast.success('Preset duplicated successfully');
     };
 
     const copyPresetData = async () => {
@@ -299,15 +375,9 @@ export function PresetList({
                     presetType: appliedPreset.preset.metadata.presetType,
                     presetInputData: appliedPreset.inputData,
                     disabled: appliedPreset.disabled || false
-                }))
+                })),
+                defaultData: defaultData // Include baseData (references)
             };
-
-            console.log(`💾 SAVING PRESET DATA:`, {
-                name: name,
-                overwriteId: overwriteId,
-                numberOfPresets: presetData.presets.length,
-                presetIds: presetData.presets.map(p => p.presetId)
-            });
 
             const response = await fetch('/api/preset-data', {
                 method: 'POST',
@@ -426,13 +496,23 @@ export function PresetList({
                 activePresetId: newAppliedPresets[0]?.id || null
             });
 
+            // Restore defaultData (references) if it exists
+            if (savedPreset.presetData.defaultData) {
+                setDefaultData(savedPreset.presetData.defaultData);
+                console.log(`✅ RESTORED DEFAULT DATA:`, {
+                    referencesCount: savedPreset.presetData.defaultData.references?.length || 0,
+                    references: savedPreset.presetData.defaultData.references?.map((r: any) => r.key) || []
+                });
+            }
+
             if (newAppliedPresets.length > 0) {
                 // Track the loaded preset
                 setCurrentLoadedPreset(savedPreset.id);
                 console.log(`✅ SUCCESSFULLY LOADED PRESET DATA:`, {
                     presetDataId: savedPreset.id,
                     presetDataName: savedPreset.name,
-                    loadedPresetsCount: newAppliedPresets.length
+                    loadedPresetsCount: newAppliedPresets.length,
+                    hasDefaultData: !!savedPreset.presetData.defaultData
                 });
                 toast.success(`Loaded preset: ${savedPreset.name} (${newAppliedPresets.length} presets)`);
             } else {
@@ -569,6 +649,12 @@ export function PresetList({
 
             <div className="flex-1 overflow-y-auto">
                 <div className="p-3 space-y-2">
+                    {/* Default Card - appears at the top */}
+                    <DefaultCard
+                        defaultData={defaultData}
+                        onDefaultDataChange={setDefaultData}
+                    />
+
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -585,8 +671,11 @@ export function PresetList({
                                     onToggleExpansion={togglePresetExpansion}
                                     onUpdateInputData={updatePresetInputData}
                                     onRefresh={refreshPreset}
+                                    onCopy={copyPreset}
                                     onRemove={removePreset}
                                     onToggleDisabled={togglePresetDisabled}
+                                    availableReferences={defaultData.references.map(ref => ref.key)}
+                                    defaultData={defaultData}
                                 />
                             ))}
                         </SortableContext>

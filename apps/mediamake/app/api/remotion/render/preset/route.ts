@@ -18,6 +18,10 @@ import {
   runPreset,
   insertPresetToComposition,
 } from '@/components/editor/presets/preset-helpers';
+import {
+  processPresetInputData,
+  createBaseDataFromReferences,
+} from '@/components/editor/presets/preset-data-mutation';
 import { createCachedFetcher } from '@/lib/audio-cache';
 import {
   DatabasePreset,
@@ -41,6 +45,7 @@ interface PresetRenderRequest {
   codec?: string;
   audioCodec?: string;
   composition?: string; // Optional composition ID, defaults to 'DataMotion'
+  baseData?: Record<string, any>; // Base data for data references
 }
 
 export const POST = async (req: NextRequest) => {
@@ -52,6 +57,7 @@ export const POST = async (req: NextRequest) => {
       codec,
       audioCodec,
       composition,
+      baseData = {},
     }: PresetRenderRequest = await req.json();
     const clientId = req.headers.get('x-client-id') || undefined;
 
@@ -157,14 +163,21 @@ export const POST = async (req: NextRequest) => {
         );
       }
 
+      // Process input data with base data references
+      const processedInputData = processPresetInputData(
+        presetInputData,
+        baseData,
+      );
+
       // Execute the preset
       const presetOutput = await runPreset(
-        presetInputData,
+        processedInputData,
         preset.presetFunction,
         {
           config: finalComposition.config,
           style: finalComposition.style,
           clip,
+          baseData: baseData,
           fetcher: (url: string, data: any) =>
             fetch(url, {
               method: 'POST',

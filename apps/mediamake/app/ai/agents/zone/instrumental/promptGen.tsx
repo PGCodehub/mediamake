@@ -27,7 +27,6 @@ const aiRouter = new AiRouter();
 export const transcriptionMetaAgent = aiRouter
     .agent('/', async ctx => {
         try {
-            console.log('ctx', ctx);
             ctx.response.writeMessageMetadata({
                 loader: 'Generating instrumental music prompt...',
             });

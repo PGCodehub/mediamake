@@ -10,7 +10,7 @@ import { PresetMetadata, PresetOutput } from '../types';
 import { CSSProperties } from 'react';
 
 const presetParams = z.object({
-  inputCaptions: z.array(z.any()),
+  inputCaptions: z.array(z.any()).describe('input captions (data-referrable)'),
   position: z.object({
     align: z.enum(['left', 'center', 'right', 'circle', 'random', 'fixed']),
     top: z

@@ -18,6 +18,7 @@ import { subScrollingVerticalPreset } from './sub-scrolling-vertical';
 import { subKineticMotionPreset } from './sub-kinetic-motion';
 import { customThemeBackgroundPreset } from './custom-theme-background';
 import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
+import { lottieShowcasePreset } from './lottie-showcase';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -39,6 +40,7 @@ export const predefinedPresets: Preset[] = [
   subScrollingVerticalPreset,
   subKineticMotionPreset,
   advancedSubtitlesAnimsPreset,
+  lottieShowcasePreset,
   // Add more predefined presets here
 ];
 

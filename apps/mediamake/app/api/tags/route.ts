@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { CreateTagRequest, Tag } from '@/app/types/media';
+import { getClientId } from '@/lib/auth-utils';
 
 // GET /api/tags - Fetch all tags with file counts
 export async function GET(request: NextRequest) {
   try {
     const db = await getDatabase();
+    const clientId = getClientId(request);
     const tagsCollection = db.collection('tags');
     const mediaFilesCollection = db.collection('mediaFiles');
-
-    const { searchParams } = new URL(request.url);
-    const clientId = searchParams.get('clientId');
 
     const query = clientId ? { clientId } : {};
     const tags = await tagsCollection
       .find(query)
+      .sort({ displayName: 1 })
+      .toArray();
+
+    const globalTags = await tagsCollection
+      .find({ clientId: undefined })
       .sort({ displayName: 1 })
       .toArray();
 
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
     //   }),
     // );
 
-    return NextResponse.json(tags);
+    return NextResponse.json(tags.concat(globalTags));
   } catch (error) {
     console.error('Error fetching tags:', error);
     return NextResponse.json(
@@ -46,7 +50,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateTagRequest = await request.json();
-    const { id, displayName, clientId } = body;
+    const { id, displayName } = body;
+    const clientId = getClientId(request);
 
     if (!id || !displayName) {
       return NextResponse.json(
@@ -58,8 +63,11 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
     const collection = db.collection('tags');
 
-    // Check if tag with this id already exists
-    const existingTag = await collection.findOne({ id });
+    // Check if tag with this id already exists for this client
+    const existingTag = await collection.findOne({
+      id,
+      ...(clientId && { clientId }),
+    });
     if (existingTag) {
       return NextResponse.json(
         { error: 'Tag with this id already exists' },
@@ -70,6 +78,7 @@ export async function POST(request: NextRequest) {
     const tag: Tag = {
       id,
       displayName,
+      clientId: clientId || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

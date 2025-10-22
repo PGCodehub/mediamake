@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
-import { Transcription, UpdateTranscriptionRequest } from '@/app/types/transcription';
+import {
+  Transcription,
+  UpdateTranscriptionRequest,
+} from '@/app/types/transcription';
 
 // GET /api/transcriptions/[id] - Get a specific transcription
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -14,7 +17,7 @@ export async function GET(
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid transcription ID' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -26,7 +29,7 @@ export async function GET(
     if (!transcription) {
       return NextResponse.json(
         { error: 'Transcription not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -35,15 +38,15 @@ export async function GET(
     console.error('Error fetching transcription:', error);
     return NextResponse.json(
       { error: 'Failed to fetch transcription' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 // PATCH /api/transcriptions/[id] - Update a specific transcription
-export async function PATCH(
+export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -51,7 +54,7 @@ export async function PATCH(
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid transcription ID' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,35 +71,38 @@ export async function PATCH(
     if (body.status !== undefined) updateData.status = body.status;
     if (body.tags !== undefined) updateData.tags = body.tags;
     if (body.title !== undefined) updateData.title = body.title;
-    if (body.description !== undefined) updateData.description = body.description;
+    if (body.description !== undefined)
+      updateData.description = body.description;
     if (body.keywords !== undefined) updateData.keywords = body.keywords;
     if (body.captions !== undefined) updateData.captions = body.captions;
-    if (body.processingData !== undefined) updateData.processingData = body.processingData;
+    if (body.processingData !== undefined)
+      updateData.processingData = body.processingData;
+    if (body.videos !== undefined) updateData.videos = body.videos;
     if (body.error !== undefined) updateData.error = body.error;
     if (body.audioUrl !== undefined) updateData.audioUrl = body.audioUrl;
 
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: updateData },
-      { returnDocument: 'after' }
+      { returnDocument: 'after' },
     );
 
     if (!result) {
       return NextResponse.json(
         { error: 'Transcription not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, transcription: result },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error('Error updating transcription:', error);
     return NextResponse.json(
       { error: 'Failed to update transcription' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -104,7 +110,7 @@ export async function PATCH(
 // DELETE /api/transcriptions/[id] - Delete a specific transcription
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -112,7 +118,7 @@ export async function DELETE(
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid transcription ID' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -124,19 +130,19 @@ export async function DELETE(
     if (result.deletedCount === 0) {
       return NextResponse.json(
         { error: 'Transcription not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, message: 'Transcription deleted' },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error('Error deleting transcription:', error);
     return NextResponse.json(
       { error: 'Failed to delete transcription' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

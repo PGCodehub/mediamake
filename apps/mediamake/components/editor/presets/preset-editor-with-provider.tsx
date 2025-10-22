@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { Preset, DatabasePreset, AppliedPreset, AppliedPresetsState } from "./types";
 import { PresetProvider, PresetList, PresetPlayer, createAppliedPreset, usePresetContext } from "./index";
 import { runPreset, insertPresetToComposition } from "./preset-helpers";
+import { processPresetInputData, createBaseDataFromReferences } from "./preset-data-mutation";
 import AudioScene from "../../remotion/test.json";
 import { RenderProvider } from "../player";
 import { config } from "process";
@@ -25,6 +26,7 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
         addPreset,
         configuration,
         setConfiguration,
+        defaultData,
         setGeneratedOutput,
         setIsGenerating
     } = usePresetContext();
@@ -102,6 +104,10 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
             };
 
             let clip = {}
+
+            // Create base data from references
+            const baseData = createBaseDataFromReferences(defaultData.references);
+
             // Apply all presets in sequence (skip disabled presets)
             for (const appliedPreset of appliedPresets.presets) {
                 // Skip disabled presets
@@ -109,14 +115,18 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
                     continue;
                 }
 
-                // Run the preset function with input data
+                // Process input data with base data references
+                const processedInputData = processPresetInputData(appliedPreset.inputData, baseData);
+
+                // Run the preset function with processed input data
                 const presetOutput = await runPreset(
-                    appliedPreset.inputData,
+                    processedInputData,
                     appliedPreset.preset.presetFunction,
                     {
                         config: baseComposition.config,
                         style: baseComposition.style,
                         clip: clip,
+                        baseData: baseData,
                         fetcher: createCachedFetcher((url: string, data: any) =>
                             fetch(url, {
                                 method: 'POST',

@@ -50,7 +50,8 @@ const CONTENT_SOURCES = {
     upload: "Upload",
     web: "Web",
     instagram: "Instagram",
-    tiktok: "TikTok"
+    tiktok: "TikTok",
+    webrecorder: "Web Recorder"
 } as const;
 
 // Fetcher function for SWR

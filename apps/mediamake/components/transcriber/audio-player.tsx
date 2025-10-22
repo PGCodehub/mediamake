@@ -42,10 +42,6 @@ export function AudioPlayer({
         setVolume(value[0] / 100);
     };
 
-    if (!isAudioLoaded) {
-        return null;
-    }
-
     if (compact) {
         return (
             <div className={cn("flex items-center gap-2", className)}>
@@ -53,6 +49,7 @@ export function AudioPlayer({
                     variant="outline"
                     size="icon"
                     onClick={togglePlayPause}
+                    disabled={!isAudioLoaded}
                     className="h-8 w-8"
                 >
                     {isPlaying ? (
@@ -63,7 +60,7 @@ export function AudioPlayer({
                 </Button>
                 {showTimeDisplay && (
                     <span className="text-xs text-muted-foreground min-w-[60px]">
-                        {formatTime(currentTime)} / {formatTime(duration)}
+                        {formatTime(isAudioLoaded ? currentTime : 0)} / {formatTime(isAudioLoaded ? duration : 0)}
                     </span>
                 )}
             </div>
@@ -76,6 +73,7 @@ export function AudioPlayer({
                 variant="outline"
                 size="icon"
                 onClick={togglePlayPause}
+                disabled={!isAudioLoaded}
             >
                 {isPlaying ? (
                     <Pause className="h-4 w-4" />
@@ -88,19 +86,20 @@ export function AudioPlayer({
                 {showProgressBar && (
                     <div className="w-full">
                         <Slider
-                            value={[duration ? (currentTime / duration) * 100 : 0]}
+                            value={[isAudioLoaded && duration ? (currentTime / duration) * 100 : 0]}
                             onValueChange={handleSeek}
                             max={100}
                             step={0.1}
                             className="w-full"
+                            disabled={!isAudioLoaded}
                         />
                     </div>
                 )}
 
                 {showTimeDisplay && (
                     <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>{formatTime(currentTime)}</span>
-                        <span>{formatTime(duration)}</span>
+                        <span>{formatTime(isAudioLoaded ? currentTime : 0)}</span>
+                        <span>{formatTime(isAudioLoaded ? duration : 0)}</span>
                     </div>
                 )}
             </div>
@@ -118,6 +117,7 @@ export function AudioPlayer({
                         max={100}
                         step={1}
                         className="w-20"
+                        disabled={!isAudioLoaded}
                     />
                 </div>
             )}
