@@ -20,6 +20,7 @@ import { onlyTextParts } from './middlewares/onlyTextParts';
 import { chatRestoreLocal } from '../api/studio/chat/sessions/chatSessionLocal';
 import transcriptionFixerAgent from './agents/words/transcriptionFixer';
 import { scriptMetaOrchestor } from './agents/scriptMeta';
+import { midjourneyPromptingAgent } from './agents/midjourney';
 
 const aiRouter = new AiRouter();
 //aiRouter.setLogger(console);
@@ -32,6 +33,7 @@ const aiMainRouter = aiRouter
   .agent('/youtube-metadata', youtubeAgent)
   .agent('/concept-generation', conceptAgent)
   .agent('/video/shorts/music-stitch', musicStitchAgent)
+  .agent('/midjourney-prompting', midjourneyPromptingAgent)
   .agent('/script-meta', scriptMetaOrchestor)
   .use('/', contextLimiter(5))
   .use('/', onlyTextParts(100))

@@ -1,5 +1,10 @@
 "use client";
 
+// TODO: Fix media replacement logic - currently only replacing src field instead of entire object
+// Issue: The replaceAtPath function in handleReplaceItem (lines 855-914) is not properly replacing the entire media object
+// The logic needs to be updated to replace the complete object structure, not just the src field
+// Look at lines 855-914 in handleReplaceItem function for the fix
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +51,7 @@ import { CSS } from '@dnd-kit/utilities';
 const availableFonts = getAvailableFonts();
 
 interface SchemaFormProps {
+    showReferencesDropdown?: boolean;
     metadata?: PresetMetadata;
     schema: any;
     value: any;
@@ -169,34 +175,107 @@ function isAudioUrl(url: string): boolean {
     return audioExtensions.some(ext => urlLower.endsWith(ext));
 }
 
-// Helper function to detect media arrays in data
-function detectMediaArrays(data: any): Array<{ key: string, items: any[], title: string }> {
-    const mediaArrays: Array<{ key: string, items: any[], title: string }> = [];
+// Helper function to detect media arrays in data (supports nested structures)
+function detectMediaArrays(data: any, path: string = ''): Array<{ key: string, items: any[], title: string, path: string }> {
+    const mediaArrays: Array<{ key: string, items: any[], title: string, path: string }> = [];
 
     if (!data || typeof data !== 'object') return mediaArrays;
 
     Object.entries(data).forEach(([key, value]) => {
-        if (Array.isArray(value) && value.length > 0) {
-            // Check if this array contains objects with 'src' field
-            const hasSrcField = value.some(item =>
-                typeof item === 'object' &&
-                item !== null &&
-                'src' in item &&
-                typeof item.src === 'string' &&
-                item.src.trim() !== ''
-            );
+        const currentPath = path ? `${path}.${key}` : key;
 
-            if (hasSrcField) {
+        if (Array.isArray(value) && value.length > 0) {
+            // Check if this array contains objects with 'src' field (direct or nested)
+            const hasMediaItems = value.some(item => {
+                if (typeof item === 'object' && item !== null) {
+                    // Direct src field
+                    if ('src' in item && typeof item.src === 'string' && item.src.trim() !== '') {
+                        return true;
+                    }
+                    // Nested src fields (e.g., metadata.selectedImage.src)
+                    return hasNestedMediaFields(item);
+                }
+                return false;
+            });
+
+            if (hasMediaItems) {
                 mediaArrays.push({
                     key,
                     items: value,
-                    title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
+                    title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+                    path: currentPath
                 });
             }
+        } else if (typeof value === 'object' && value !== null) {
+            // Recursively check nested objects
+            const nestedArrays = detectMediaArrays(value, currentPath);
+            mediaArrays.push(...nestedArrays);
         }
     });
 
     return mediaArrays;
+}
+
+// Helper function to check if an object has nested media fields
+function hasNestedMediaFields(obj: any): boolean {
+    if (!obj || typeof obj !== 'object') return false;
+
+    // Check for direct src field
+    if ('src' in obj && typeof obj.src === 'string' && obj.src.trim() !== '') {
+        return true;
+    }
+
+    // Check nested objects for media fields
+    for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'object' && value !== null) {
+            if (hasNestedMediaFields(value)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// Helper function to extract media items from nested structures
+function extractMediaFromItem(item: any): Array<{ src: string, title: string, path: string, data: any }> {
+    const mediaItems: Array<{ src: string, title: string, path: string, data: any }> = [];
+
+    if (!item || typeof item !== 'object') return mediaItems;
+
+    // Check for direct src field
+    if ('src' in item && typeof item.src === 'string' && item.src.trim() !== '') {
+        mediaItems.push({
+            src: item.src,
+            title: item.title || item.alt || 'Media Item',
+            path: 'src',
+            data: item
+        });
+    }
+
+    // Check nested structures for media
+    const checkNested = (obj: any, currentPath: string) => {
+        if (!obj || typeof obj !== 'object') return;
+
+        Object.entries(obj).forEach(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+                if ('src' in value && typeof value.src === 'string' && value.src.trim() !== '') {
+                    const mediaValue = value as any;
+                    mediaItems.push({
+                        src: value.src,
+                        title: mediaValue.title || mediaValue.alt || `${key} Media`,
+                        path: currentPath ? `${currentPath}.${key}` : key,
+                        data: value
+                    });
+                } else {
+                    checkNested(value, currentPath ? `${currentPath}.${key}` : key);
+                }
+            }
+        });
+    };
+
+    checkNested(item, '');
+    return mediaItems;
 }
 
 // Helper function to map MediaFile to field value based on field type and structure
@@ -209,15 +288,20 @@ function mapMediaFileToFieldValue(mediaFiles: MediaFile | MediaFile[], field: Fo
     }
 
     if (field.type === 'array') {
+        const existingArray = Array.isArray(currentValue) ? currentValue : [];
+
         if (field.items?.type === 'string') {
-            // Array of strings - return filePaths
-            return files.map(file => file.filePath).filter(Boolean);
+            // Array of strings - append filePaths to existing array
+            const newFilePaths = files.map(file => file.filePath).filter(Boolean);
+            return [...existingArray, ...newFilePaths];
         } else if (field.items?.type === 'object') {
-            // Array of objects - map each file to object structure
-            return files.map(file => mapMediaFileToObject(file, field.items?.properties || {}));
+            // Array of objects - append mapped objects to existing array
+            const newObjects = files.map(file => mapMediaFileToObject(file, field.items?.properties || {}));
+            return [...existingArray, ...newObjects];
         }
-        // Default array handling
-        return files.map(file => file.filePath).filter(Boolean);
+        // Default array handling - append filePaths
+        const newFilePaths = files.map(file => file.filePath).filter(Boolean);
+        return [...existingArray, ...newFilePaths];
     }
 
     if (field.type === 'object') {
@@ -315,15 +399,18 @@ function ImagePreview({ src, alt = "Preview" }: { src: string; alt?: string }) {
 function MediaPreview({
     item,
     onClick,
-    onDelete
+    onDelete,
+    onReplace
 }: {
     item: any;
     onClick?: () => void;
     onDelete?: () => void;
+    onReplace?: (files: MediaFile | MediaFile[]) => void;
 }) {
     const src = item.src || '';
     const [imageError, setImageError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [showPicker, setShowPicker] = useState(false);
 
     const handleImageLoad = () => {
         setIsLoading(false);
@@ -343,6 +430,13 @@ function MediaPreview({
     };
 
     const mediaType = getMediaType();
+
+    const handleSelect = (files: MediaFile | MediaFile[]) => {
+        if (onReplace) {
+            onReplace(files);
+        }
+        setShowPicker(false);
+    };
 
     const renderPreview = () => {
         if (imageError) {
@@ -411,24 +505,48 @@ function MediaPreview({
             >
                 {renderPreview()}
                 <div className="mt-2">
-                    <p className="text-xs font-medium truncate">{item.title || item.alt || 'Untitled'}</p>
                     <p className="text-xs text-muted-foreground truncate">{src.split('/').pop()}</p>
                 </div>
             </div>
 
-            {/* Delete button - appears on hover */}
-            {onDelete && (
-                <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete();
-                    }}
-                >
-                    <Trash2 className="h-3 w-3" />
-                </Button>
+            {/* Action buttons - appear on hover */}
+            <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onReplace && (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-secondary hover:text-secondary-foreground"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPicker(true);
+                        }}
+                    >
+                        <Image className="h-3 w-3" />
+                    </Button>
+                )}
+                {onDelete && (
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete();
+                        }}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
+                )}
+            </div>
+
+            {/* Media Picker Modal */}
+            {showPicker && onReplace && (
+                <MediaPicker
+                    pickerMode={true}
+                    singular={true}
+                    onSelect={handleSelect}
+                    onClose={() => setShowPicker(false)}
+                />
             )}
         </div>
     );
@@ -510,13 +628,15 @@ function SortableMediaItem({
     index,
     arrayKey,
     onMediaClick,
-    onDelete
+    onDelete,
+    onReplace
 }: {
     item: any;
     index: number;
     arrayKey: string;
     onMediaClick?: (mediaItem: any, arrayKey: string, index: number) => void;
     onDelete?: (arrayKey: string, index: number) => void;
+    onReplace?: (arrayKey: string, index: number, files: MediaFile | MediaFile[], mediaPath?: string) => void;
 }) {
     const {
         attributes,
@@ -533,6 +653,9 @@ function SortableMediaItem({
         opacity: isDragging ? 0.5 : 1,
     };
 
+    // Extract media items from the item (handles nested structures)
+    const mediaItems = extractMediaFromItem(item);
+
     return (
         <div ref={setNodeRef} style={style} className="w-full">
             <div className="relative">
@@ -540,16 +663,116 @@ function SortableMediaItem({
                 <div
                     {...attributes}
                     {...listeners}
-                    className="absolute top-1 left-1 z-10 cursor-grab active:cursor-grabbing p-1 bg-background/80 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 left-1 z-50 cursor-grab active:cursor-grabbing p-1 bg-background/90 rounded opacity-80 hover:opacity-100 transition-opacity"
                 >
                     <GripVertical className="h-3 w-3 text-muted-foreground" />
                 </div>
-                <MediaPreview
-                    item={item}
-                    onClick={() => onMediaClick?.(item, arrayKey, index)}
-                    onDelete={() => onDelete?.(arrayKey, index)}
-                />
+
+                {/* Render multiple media items if found in nested structure */}
+                {mediaItems.length > 0 ? (
+                    <div className="space-y-2">
+                        {mediaItems.map((mediaItem, mediaIndex) => (
+                            <div key={mediaIndex} className="relative">
+                                <MediaPreview
+                                    item={mediaItem.data}
+                                    onClick={() => onMediaClick?.(mediaItem.data, arrayKey, index)}
+                                    onDelete={() => onDelete?.(arrayKey, index)}
+                                    onReplace={(files) => onReplace?.(arrayKey, index, files)}
+                                />
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    {mediaItem.path}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <MediaPreview
+                        item={item}
+                        onClick={() => onMediaClick?.(item, arrayKey, index)}
+                        onDelete={() => onDelete?.(arrayKey, index)}
+                        onReplace={(files) => onReplace?.(arrayKey, index, files)}
+                    />
+                )}
             </div>
+        </div>
+    );
+}
+
+// CaptionSection component for displaying individual captions with their media
+function CaptionSection({
+    caption,
+    index,
+    arrayKey,
+    onMediaClick,
+    onDelete,
+    onReplace
+}: {
+    caption: any;
+    index: number;
+    arrayKey: string;
+    onMediaClick?: (mediaItem: any, arrayKey: string, index: number) => void;
+    onDelete?: (arrayKey: string, index: number) => void;
+    onReplace?: (arrayKey: string, index: number, files: MediaFile | MediaFile[], mediaPath?: string) => void;
+}) {
+    const captionText = caption.text || caption.content || 'No text available';
+    const mediaItems = extractMediaFromItem(caption);
+
+    return (
+        <div className="border rounded-lg p-4 space-y-4">
+            {/* Caption Text */}
+            <div className="bg-muted/50 rounded-md p-3">
+                <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-sm font-medium text-muted-foreground">Caption {index + 1}</h5>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                            {caption.start !== undefined && caption.end !== undefined
+                                ? `${Math.round(caption.start)}s - ${Math.round(caption.end)}s`
+                                : ''
+                            }
+                        </span>
+                        {onDelete && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                onClick={() => onDelete(arrayKey, index)}
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+                <p className="text-sm leading-relaxed">{captionText}</p>
+            </div>
+
+            {/* Media Items */}
+            {mediaItems.length > 0 ? (
+                <div className="space-y-2">
+                    <h6 className="text-xs font-medium text-muted-foreground">
+                        Media Items ({mediaItems.length}
+                    </h6>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {mediaItems.map((mediaItem, mediaIndex) => (
+                            <div key={mediaIndex} className="relative">
+                                <MediaPreview
+                                    item={mediaItem.data}
+                                    onClick={() => onMediaClick?.(mediaItem.data, arrayKey, index)}
+                                    onDelete={() => onDelete?.(arrayKey, index)}
+                                    onReplace={(files) => onReplace?.(arrayKey, index, files, mediaItem.path)}
+                                />
+                                <div className="text-xs text-muted-foreground mt-1 truncate">
+                                    {mediaItem.path}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                    <Image className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">No media items found</p>
+                </div>
+            )}
         </div>
     );
 }
@@ -570,7 +793,11 @@ function MediaTab({
     );
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -578,6 +805,8 @@ function MediaTab({
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+
+        console.log('Drag end event:', { active: active.id, over: over?.id, activeArrayKey });
 
         if (!activeArrayKey || !over || active.id === over.id) return;
 
@@ -588,6 +817,8 @@ function MediaTab({
         const overIndex = parseInt(overId.split('-').pop() || '0');
 
         if (activeIndex === overIndex) return;
+
+        console.log('Moving item from index', activeIndex, 'to', overIndex);
 
         const newData = { ...data };
         const array = [...newData[activeArrayKey]];
@@ -604,6 +835,131 @@ function MediaTab({
         onChange(newData);
     };
 
+    const handleReplaceItem = (arrayKey: string, index: number, files: MediaFile | MediaFile[], mediaPath?: string) => {
+        const newData = { ...data };
+        const array = [...newData[arrayKey]];
+        const item = array[index];
+
+        // Map the selected files to the item structure
+        const file = Array.isArray(files) ? files[0] : files;
+        if (file) {
+            // Update the item with the new media file
+            const updatedItem = { ...item };
+
+            // Check if item has direct src field
+            if ('src' in item) {
+                updatedItem.src = file.filePath;
+                if (file.fileName) updatedItem.title = file.fileName;
+                if (file.contentType) updatedItem.contentType = file.contentType;
+            } else {
+                // Smart media replacement logic - only replace the specific media item that was clicked
+                if (mediaPath) {
+                    console.log('Replacing media at path:', mediaPath, 'with file:', file.filePath);
+
+                    // Use the specific media path to replace only the targeted media item
+                    const replaceAtPath = (obj: any, path: string): any => {
+                        if (!path) return obj;
+
+                        const pathParts = path.split('.');
+                        let current = obj;
+
+                        // Navigate to the parent of the target
+                        for (let i = 0; i < pathParts.length - 1; i++) {
+                            const part = pathParts[i];
+                            if (part.includes('[') && part.includes(']')) {
+                                // Handle array indices like "splitParts[0]"
+                                const [key, index] = part.split('[');
+                                const arrayIndex = parseInt(index.replace(']', ''));
+                                current = current[key][arrayIndex];
+                            } else {
+                                current = current[part];
+                            }
+                        }
+
+                        // Get the final key
+                        const finalKey = pathParts[pathParts.length - 1];
+                        if (finalKey.includes('[') && finalKey.includes(']')) {
+                            // Handle array index
+                            const [key, index] = finalKey.split('[');
+                            const arrayIndex = parseInt(index.replace(']', ''));
+
+                            if (typeof current[key][arrayIndex] === 'string') {
+                                // Replace string URL
+                                console.log('Replacing string at', path, 'from', current[key][arrayIndex], 'to', file.filePath);
+                                current[key][arrayIndex] = file.filePath;
+                            } else {
+                                // Replace object
+                                console.log('Replacing object at', path, 'from', current[key][arrayIndex].src, 'to', file.filePath);
+                                current[key][arrayIndex] = {
+                                    ...current[key][arrayIndex],
+                                    src: file.filePath,
+                                    title: file.fileName || current[key][arrayIndex].title,
+                                    contentType: file.contentType || current[key][arrayIndex].contentType
+                                };
+                            }
+                        } else {
+                            // Handle object property
+                            if (typeof current[finalKey] === 'string') {
+                                // Replace string URL
+                                console.log('Replacing string at', path, 'from', current[finalKey], 'to', file.filePath);
+                                current[finalKey] = file.filePath;
+                            } else {
+                                // Replace object
+                                console.log('Replacing object at', path, 'from', current[finalKey].src, 'to', file.filePath);
+                                current[finalKey] = {
+                                    ...current[finalKey],
+                                    src: file.filePath,
+                                    title: file.fileName || current[finalKey].title,
+                                    contentType: file.contentType || current[finalKey].contentType
+                                };
+                            }
+                        }
+
+                        return obj;
+                    };
+
+                    const updatedNestedItem = replaceAtPath(updatedItem, mediaPath);
+                    array[index] = updatedNestedItem;
+                } else {
+                    // Fallback to old logic if no media path provided
+                    const updateNestedSrc = (obj: any, skipWords = false): any => {
+                        if (!obj || typeof obj !== 'object') return obj;
+
+                        const result = { ...obj };
+                        for (const [key, value] of Object.entries(result)) {
+                            // Skip words array to prevent corruption
+                            if (skipWords && key === 'words') {
+                                continue;
+                            }
+
+                            if (typeof value === 'object' && value !== null) {
+                                if ('src' in value && typeof value.src === 'string') {
+                                    const mediaValue = value as any;
+                                    result[key] = {
+                                        ...value,
+                                        src: file.filePath,
+                                        title: file.fileName || mediaValue.title,
+                                        contentType: file.contentType || mediaValue.contentType
+                                    };
+                                    break; // Update only the first src field found
+                                } else {
+                                    result[key] = updateNestedSrc(value, skipWords);
+                                }
+                            }
+                        }
+                        return result;
+                    };
+
+                    const updatedNestedItem = updateNestedSrc(updatedItem, true); // Skip words array
+                    array[index] = updatedNestedItem;
+                }
+            }
+
+            newData[arrayKey] = array;
+            onChange(newData);
+        }
+    };
+
     if (mediaArrays.length === 0) {
         return (
             <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -617,11 +973,12 @@ function MediaTab({
     }
 
     const currentArray = mediaArrays.find(arr => arr.key === activeArrayKey);
+    const isCaptionsArray = currentArray?.key?.toLowerCase().includes('caption');
 
     return (
         <div className="space-y-4">
             {mediaArrays.length > 1 && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     {mediaArrays.map((array) => (
                         <Button
                             key={array.key}
@@ -638,37 +995,69 @@ function MediaTab({
             {currentArray && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">
-                            {currentArray.title} ({currentArray.items.length} items)
-                        </h4>
+                        <div>
+                            <h4 className="text-sm font-medium">
+                                {currentArray.title} ({currentArray.items.length} items)
+                            </h4>
+                            {currentArray.path && (
+                                <p className="text-xs text-muted-foreground">
+                                    Path: {currentArray.path}
+                                </p>
+                            )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            Drag and drop to reorder • Click to expand
+                            {isCaptionsArray
+                                ? "Caption text with media items below"
+                                : "Drag and drop to reorder • Click to expand • Hover to replace"
+                            }
                         </p>
                     </div>
 
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext
-                            items={currentArray.items.map((_, index) => `${activeArrayKey!}-${index}`)}
-                            strategy={verticalListSortingStrategy}
+                    {isCaptionsArray ? (
+                        // Special display for captions
+                        <div className="space-y-4">
+                            {currentArray.items.map((caption, index) => (
+                                <CaptionSection
+                                    key={`${activeArrayKey}-${index}`}
+                                    caption={caption}
+                                    index={index}
+                                    arrayKey={activeArrayKey!}
+                                    onMediaClick={onMediaClick}
+                                    onDelete={handleDeleteItem}
+                                    onReplace={handleReplaceItem}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        // Regular media grid display
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={(event) => {
+                                console.log('Drag start event:', event.active.id);
+                            }}
+                            onDragEnd={handleDragEnd}
                         >
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {currentArray.items.map((item, index) => (
-                                    <SortableMediaItem
-                                        key={`${activeArrayKey}-${index}`}
-                                        item={item}
-                                        index={index}
-                                        arrayKey={activeArrayKey!}
-                                        onMediaClick={onMediaClick}
-                                        onDelete={handleDeleteItem}
-                                    />
-                                ))}
-                            </div>
-                        </SortableContext>
-                    </DndContext>
+                            <SortableContext
+                                items={currentArray.items.map((_, index) => `${activeArrayKey!}-${index}`)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {currentArray.items.map((item, index) => (
+                                        <SortableMediaItem
+                                            key={`${activeArrayKey}-${index}`}
+                                            item={item}
+                                            index={index}
+                                            arrayKey={activeArrayKey!}
+                                            onMediaClick={onMediaClick}
+                                            onDelete={handleDeleteItem}
+                                            onReplace={handleReplaceItem}
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    )}
                 </div>
             )}
         </div>
@@ -860,7 +1249,8 @@ function renderField(
     depth: number = 0,
     parentSchema?: any,
     availableReferences?: string[],
-    baseData?: Record<string, any>
+    baseData?: Record<string, any>,
+    showReferencesDropdown?: boolean
 ) {
     const fieldValue = currentValue;
     const handleChange = onChangeHandler || (() => { });
@@ -889,8 +1279,9 @@ function renderField(
                 const isFont = isFontField(fieldKey, field);
                 const isLargeText = isLargeTextField(fieldKey, field);
                 const isDataReferrable = isDataReferrableField(field);
+                const isTranscriptionIdField = fieldKey.toLowerCase() === 'transcriptionid';
 
-                if (isDataReferrable) {
+                if (isDataReferrable && showReferencesDropdown) {
                     return (
                         <DataReferrableDropdown
                             value={typeof fieldValue === 'string' ? fieldValue : ""}
@@ -898,6 +1289,24 @@ function renderField(
                             availableReferences={availableReferences || []}
                             fieldKey={fieldKey}
                         />
+                    );
+                }
+
+                if (isTranscriptionIdField) {
+                    return (
+                        <div className="flex gap-2">
+                            <Input
+                                value={typeof fieldValue === 'string' ? fieldValue : ""}
+                                onChange={(e) => handleChange(fieldKey, e.target.value)}
+                                placeholder={field.description || `Enter ${field.title || fieldKey}`}
+                                className="flex-1"
+                            />
+                            <TranscriptionPickerButton
+                                onSelect={(transcription) => {
+                                    handleChange(fieldKey, transcription._id);
+                                }}
+                            />
+                        </div>
                     );
                 }
 
@@ -977,23 +1386,12 @@ function renderField(
 
             case "object":
                 if (field.properties) {
-                    // Check if this should use flexible object field
-                    if (isFlexibleObjectField(field, availableReferences || [])) {
-                        return (
-                            <FlexibleObjectField
-                                value={fieldValue || {}}
-                                onChange={(val) => handleChange(fieldKey, val)}
-                                availableReferences={availableReferences || []}
-                                baseData={baseData || {}}
-                                fieldKey={fieldKey}
-                                field={field}
-                            />
-                        );
-                    }
-
                     const hasUrlProperties = Object.keys(field.properties || {}).some(propKey =>
                         isUrlField(propKey, { ...(field.properties?.[propKey] || {}), title: field.properties?.[propKey]?.title || '' })
                     );
+
+                    // Check if this should use flexible object field
+                    const isFlexible = isFlexibleObjectField(field, availableReferences || []);
 
                     if (hasUrlProperties) {
                         return (
@@ -1009,6 +1407,7 @@ function renderField(
                                             parentSchema={parentSchema}
                                             availableReferences={availableReferences}
                                             baseData={baseData}
+                                            showReferencesDropdown={showReferencesDropdown}
                                         />
                                     </div>
                                     <MediaPickerButton
@@ -1020,6 +1419,44 @@ function renderField(
                                         currentValue={typeof fieldValue === 'string' ? fieldValue : ""}
                                     />
                                 </div>
+                                {isFlexible && (
+                                    <div className="mt-4">
+                                        <FlexibleObjectField
+                                            value={fieldValue || {}}
+                                            onChange={(val) => handleChange(fieldKey, val)}
+                                            availableReferences={availableReferences || []}
+                                            baseData={baseData || {}}
+                                            fieldKey={fieldKey}
+                                            field={field}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    if (isFlexible) {
+                        return (
+                            <div className="space-y-4">
+                                <NestedForm
+                                    schema={field}
+                                    value={fieldValue || {}}
+                                    onChange={(val) => handleChange(fieldKey, val)}
+                                    fieldKey={fieldKey}
+                                    depth={depth}
+                                    parentSchema={parentSchema}
+                                    availableReferences={availableReferences}
+                                    baseData={baseData}
+                                    showReferencesDropdown={showReferencesDropdown}
+                                />
+                                <FlexibleObjectField
+                                    value={fieldValue || {}}
+                                    onChange={(val) => handleChange(fieldKey, val)}
+                                    availableReferences={availableReferences || []}
+                                    baseData={baseData || {}}
+                                    fieldKey={fieldKey}
+                                    field={field}
+                                />
                             </div>
                         );
                     }
@@ -1034,6 +1471,7 @@ function renderField(
                             parentSchema={parentSchema}
                             availableReferences={availableReferences}
                             baseData={baseData}
+                            showReferencesDropdown={showReferencesDropdown}
                         />
                     );
                 }
@@ -1056,7 +1494,8 @@ function renderField(
 
                     const isCaptionsArray = fieldKey.toLowerCase().includes('captions') || fieldKey.toLowerCase().includes('inputcaptions');
 
-                    if (isDataReferrable) {
+
+                    if (isDataReferrable && showReferencesDropdown) {
                         return (
                             <DataReferrableDropdown
                                 value={Array.isArray(fieldValue) ? fieldValue.join(', ') : (typeof fieldValue === 'string' ? fieldValue : "")}
@@ -1089,16 +1528,29 @@ function renderField(
                                             parentSchema={parentSchema}
                                             availableReferences={availableReferences}
                                             baseData={baseData}
+                                            showReferencesDropdown={showReferencesDropdown}
                                         />
                                     </div>
-                                    <MediaPickerButton
-                                        onSelect={(files) => {
-                                            const newValue = mapMediaFileToFieldValue(files, field, fieldValue);
-                                            handleChange(fieldKey, newValue);
-                                        }}
-                                        singular={false}
-                                        currentValue={typeof fieldValue === 'string' ? fieldValue : ""}
-                                    />
+                                    <div className="flex gap-1">
+                                        <MediaPickerButton
+                                            onSelect={(files) => {
+                                                const newValue = mapMediaFileToFieldValue(files, field, fieldValue);
+                                                handleChange(fieldKey, newValue);
+                                            }}
+                                            singular={false}
+                                            currentValue={typeof fieldValue === 'string' ? fieldValue : ""}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleChange(fieldKey, [])}
+                                            className="px-3"
+                                            title="Clear all items"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -1117,30 +1569,60 @@ function renderField(
                                             parentSchema={parentSchema}
                                             availableReferences={availableReferences}
                                             baseData={baseData}
+                                            showReferencesDropdown={showReferencesDropdown}
                                         />
                                     </div>
-                                    <TranscriptionPickerButton
-                                        onSelect={(transcription) => {
-                                            if (transcription.captions) {
-                                                handleChange(fieldKey, transcription.captions);
-                                            }
-                                        }}
-                                    />
+                                    <div className="flex gap-1">
+                                        <TranscriptionPickerButton
+                                            onSelect={(transcription) => {
+                                                if (transcription.captions) {
+                                                    handleChange(fieldKey, transcription.captions);
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleChange(fieldKey, [])}
+                                            className="px-3"
+                                            title="Clear all items"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         );
                     }
 
                     return (
-                        <ArrayManager
-                            schema={field}
-                            value={fieldValue || []}
-                            onChange={(val) => handleChange(fieldKey, val)}
-                            fieldKey={fieldKey}
-                            parentSchema={parentSchema}
-                            availableReferences={availableReferences}
-                            baseData={baseData}
-                        />
+                        <div className="space-y-2">
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <ArrayManager
+                                        schema={field}
+                                        value={fieldValue || []}
+                                        onChange={(val) => handleChange(fieldKey, val)}
+                                        fieldKey={fieldKey}
+                                        parentSchema={parentSchema}
+                                        availableReferences={availableReferences}
+                                        baseData={baseData}
+                                        showReferencesDropdown={showReferencesDropdown}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleChange(fieldKey, [])}
+                                    className="px-3"
+                                    title="Clear all items"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
                     );
                 }
                 return (
@@ -1211,7 +1693,7 @@ function renderField(
 }
 
 // Nested form component for objects
-function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema, availableReferences = [], baseData = {} }: NestedFormProps & { parentSchema?: any }) {
+function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema, availableReferences = [], baseData = {}, showReferencesDropdown = true }: NestedFormProps & { parentSchema?: any; showReferencesDropdown?: boolean }) {
     const [isOpen, setIsOpen] = useState(false); // Collapse all objects by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
@@ -1284,7 +1766,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
                                             </Tooltip>
                                         )}
                                     </div>
-                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema, availableReferences, baseData)}
+                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema, availableReferences, baseData, showReferencesDropdown)}
                                 </div>
                             );
                         })
@@ -1298,7 +1780,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
 }
 
 // Array management component
-function ArrayManager({ schema, value, onChange, fieldKey, parentSchema, availableReferences = [], baseData = {} }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any; availableReferences?: string[]; baseData?: Record<string, any> }) {
+function ArrayManager({ schema, value, onChange, fieldKey, parentSchema, availableReferences = [], baseData = {}, showReferencesDropdown = true }: { schema: any; value: any[]; onChange: (value: any[]) => void; fieldKey: string; parentSchema?: any; availableReferences?: string[]; baseData?: Record<string, any>; showReferencesDropdown?: boolean }) {
     const [isOpen, setIsOpen] = useState(false); // Collapse all arrays by default
     const isRequired = parentSchema && Array.isArray(parentSchema.required) && parentSchema.required.includes(fieldKey);
 
@@ -1423,6 +1905,7 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema, availab
                                             parentSchema={itemSchema}
                                             availableReferences={availableReferences}
                                             baseData={baseData}
+                                            showReferencesDropdown={showReferencesDropdown}
                                         />
                                     ) : (
                                         <div className="space-y-2">
@@ -1434,7 +1917,8 @@ function ArrayManager({ schema, value, onChange, fieldKey, parentSchema, availab
                                                 1,
                                                 itemSchema,
                                                 availableReferences,
-                                                baseData
+                                                baseData,
+                                                showReferencesDropdown
                                             )}
                                         </div>
                                     )}
@@ -1498,6 +1982,7 @@ export function SchemaForm({
     metadata,
     showTabs = true,
     showResetButton = true,
+    showReferencesDropdown = true,
     resetButtonText = "Reset to default values",
     onReset,
     customActions,
@@ -1515,7 +2000,24 @@ export function SchemaForm({
     } | null>(null);
 
     // Convert zod schema to JSON schema
-    const jsonSchema = schema && typeof schema === 'object' && schema._def ? toJSONSchema(schema) : schema;
+    let jsonSchema = schema && typeof schema === 'object' && schema._def ? toJSONSchema(schema) : schema;
+
+    // Manually preserve data-referrable descriptions that might be lost in conversion
+    if (jsonSchema && jsonSchema.properties) {
+        // List of fields that should be data-referrable based on the preset schemas
+        const dataReferrableFields = {
+            'captions': 'Captions to be used for the beatstitch (data-referrable)',
+            // Add more fields as needed
+        };
+
+        // Apply data-referrable descriptions
+        Object.entries(dataReferrableFields).forEach(([fieldName, description]) => {
+            if (jsonSchema.properties[fieldName]) {
+                jsonSchema.properties[fieldName].description = description;
+            }
+        });
+    }
+
 
     useEffect(() => {
         setFormData(value || {});
@@ -1698,7 +2200,7 @@ export function SchemaForm({
                                 <div className="space-y-4">
                                     {fields.map((field) => {
                                         const fieldValue = formData[field.key];
-                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData);
+                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData, showReferencesDropdown);
                                     })}
                                 </div>
                             ) : (
@@ -1731,7 +2233,7 @@ export function SchemaForm({
                             <div className="space-y-4">
                                 {fields.map((field) => {
                                     const fieldValue = formData[field.key];
-                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData)}</div>;
+                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData, showReferencesDropdown)}</div>;
                                 })}
                             </div>
                         ) : (

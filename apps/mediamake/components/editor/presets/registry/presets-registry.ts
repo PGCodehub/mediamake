@@ -19,6 +19,8 @@ import { subKineticMotionPreset } from './sub-kinetic-motion';
 import { customThemeBackgroundPreset } from './custom-theme-background';
 import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 import { lottieShowcasePreset } from './lottie-showcase';
+import { beatstitchWithCaptionsPreset } from './beatstitchwithcaptions';
+import { brollPreset } from './broll';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -41,6 +43,8 @@ export const predefinedPresets: Preset[] = [
   subKineticMotionPreset,
   advancedSubtitlesAnimsPreset,
   lottieShowcasePreset,
+  brollPreset,
+  // beatstitchWithCaptionsPreset, - not working for now
   // Add more predefined presets here
 ];
 
