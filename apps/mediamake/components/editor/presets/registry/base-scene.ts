@@ -12,6 +12,7 @@ import { PresetMetadata, PresetOutput } from '../types';
 
 const presetParams = z.object({
   backgroundColor: z.string(),
+  resolution: z.number().default(1080).optional(),
   duration: z.number().optional(),
   fitDurationTo: z.string().optional(),
   aspectRatio: z.string().optional(),
@@ -34,8 +35,14 @@ const presetExecution = (
   const aspectRatio = widthRatio / heightRatio;
 
   // Calculate dimensions based on aspect ratio (using 1920 as base width)
-  const baseWidth = aspectRatio > 1 ? 1920 : 1080;
-  const baseHeight = Math.round(baseWidth / aspectRatio);
+  let baseWidth, baseHeight;
+  if (params.resolution && aspectRatio > 1) {
+    baseHeight = params.resolution ?? 1920;
+    baseWidth = Math.round(baseHeight * aspectRatio);
+  } else {
+    baseWidth = params.resolution ?? 1080;
+    baseHeight = Math.round(baseWidth / aspectRatio);
+  }
 
   const sceneDuration =
     params.clip?.duration && params.clip?.duration > 0
@@ -53,16 +60,14 @@ const presetExecution = (
       : { fitDurationTo: fitDurationTo ?? 'this' };
 
   const start = params.clip?.start ? -params.clip.start : 0;
-  const durationData = params.clip
-    ? { duration: params.clip.duration }
-    : { duration: sceneDuration ?? 20 };
+  const durationData = params.clip ? {} : { duration: sceneDuration ?? 20 };
   return {
     output: {
       childrenData: [
         {
           id: 'BaseScene',
           componentId: 'BaseLayout',
-          type: fitDurationTo ? 'layout' : ('scene' as const),
+          type: 'layout' as const,
           data: {
             containerProps: {
               className: 'flex items-center justify-center absolute inset-0',
