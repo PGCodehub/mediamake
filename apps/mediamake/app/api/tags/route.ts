@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
       .sort({ displayName: 1 })
       .toArray();
 
-    const globalTags = await tagsCollection
-      .find({ clientId: undefined })
-      .sort({ displayName: 1 })
-      .toArray();
+    // const globalTags = await tagsCollection
+    //   .find({ clientId: undefined })
+    //   .sort({ displayName: 1 })
+    //   .toArray();
 
     // // Get file counts for each tag
     // const tagsWithCounts = await Promise.all(
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     //   }),
     // );
 
-    return NextResponse.json(tags.concat(globalTags));
+    return NextResponse.json(tags);
   } catch (error) {
     console.error('Error fetching tags:', error);
     return NextResponse.json(

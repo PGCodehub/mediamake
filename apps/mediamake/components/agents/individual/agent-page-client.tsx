@@ -49,7 +49,7 @@ export function AgentPageClient({ agentPath }: AgentPageClientProps) {
         setOutput(null);
 
         try {
-            const result = await callAgent(agentPath, params);
+            const result = await callAgent(agentPath as any, params);
             setOutput(result);
             return result;
         } catch (err) {

@@ -95,7 +95,7 @@ function MetadataUIInner() {
             } else if (Array.isArray(transcriptionData.captions)) {
                 params.sentences = transcriptionData.captions.map(c => c.text);
             }
-            const output = await callAgent(selectedAgentPath, params);
+            const output = await callAgent(selectedAgentPath as any, params);
             //setMetadataResult(output);
             if (refreshTranscription && typeof refreshTranscription === 'function') {
                 await refreshTranscription();

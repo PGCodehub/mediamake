@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { httpCache } from '@/lib/audio-cache';
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
@@ -105,6 +106,124 @@ const VideoDirect = ({ video }: { video: { src: string; title?: string; creator?
 };
 
 const AudioPlayer = ({ audio }: { audio: { src: string; title?: string; creator?: string; duration?: string; metadata?: any } }) => {
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [technicalData, setTechnicalData] = useState<any>(null);
+    const [isLoadingTechnical, setIsLoadingTechnical] = useState(false);
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    // Extract waveform and beat data from technical data
+    const waveform = technicalData?.technicalAnalysis?.waveform || [];
+    const beats = technicalData?.technicalAnalysis?.beats || [];
+    const audioAnalysis = audio.metadata?.analysis;
+
+    // Format time helper
+    const formatTime = (time: number) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Handle audio events
+    const handleTimeUpdate = () => {
+        if (audioRef.current) {
+            setCurrentTime(audioRef.current.currentTime);
+        }
+    };
+
+    const handleLoadedMetadata = () => {
+        if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+        }
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    // Load technical analysis data when component mounts
+    useEffect(() => {
+        const loadTechnicalData = async () => {
+            if (!audio.src || technicalData || isLoadingTechnical) return;
+
+            setIsLoadingTechnical(true);
+            try {
+                console.log('🎵 Loading technical analysis for:', audio.src);
+
+                // Check cache first
+                const cacheKey = `audio-technical-${audio.src}`;
+                const cached = await httpCache.get(cacheKey);
+
+                if (cached) {
+                    console.log('🎵 Technical analysis served from cache');
+                    setTechnicalData(cached);
+                    setIsLoadingTechnical(false);
+                    return;
+                }
+
+                console.log('🎵 Technical analysis not in cache, fetching from API...');
+                const response = await fetch('/api/media-files/audio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        audioUrl: audio.src,
+                        analysisOptions: {
+                            extractWaveform: true,
+                            analyzeFrequency: true,
+                            detectBeats: true,
+                        },
+                    }),
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    setTechnicalData(result);
+
+                    // Cache the result
+                    await httpCache.set(cacheKey, result, undefined);
+                    console.log('🎵 Technical analysis cached successfully');
+
+                    console.log('🎵 Technical analysis loaded:', {
+                        hasWaveform: !!result.technicalAnalysis?.waveform,
+                        hasBeats: !!result.technicalAnalysis?.beats,
+                    });
+                } else {
+                    console.warn('Failed to load technical analysis');
+                }
+            } catch (error) {
+                console.error('Error loading technical analysis:', error);
+            } finally {
+                setIsLoadingTechnical(false);
+            }
+        };
+
+        loadTechnicalData();
+    }, [audio.src, technicalData, isLoadingTechnical]);
+
+    // Calculate waveform bar heights
+    const getWaveformBars = () => {
+        if (!waveform.length) return [];
+
+        const maxBars = 100; // Limit number of bars for performance
+        const step = Math.max(1, Math.floor(waveform.length / maxBars));
+        const bars = [];
+
+        for (let i = 0; i < waveform.length; i += step) {
+            const value = Math.abs(waveform[i] || 0);
+            bars.push({
+                height: Math.max(2, value * 100), // Minimum height of 2px
+                time: (i / waveform.length) * duration
+            });
+        }
+
+        return bars;
+    };
+
+    const waveformBars = getWaveformBars();
+    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
     return (
         <div className="w-full bg-neutral-900 rounded-lg p-6">
             <div className="flex items-center gap-4 mb-4">
@@ -114,16 +233,128 @@ const AudioPlayer = ({ audio }: { audio: { src: string; title?: string; creator?
                 <div className="flex-1">
                     <h3 className="text-white font-medium">{audio.title || "Audio File"}</h3>
                     {audio.creator && <p className="text-neutral-400 text-sm">{audio.creator}</p>}
+                    {audioAnalysis && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">
+                                {audioAnalysis.mood}
+                            </span>
+                            <span className="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">
+                                {audioAnalysis.genre}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Waveform Visualization */}
+            {isLoadingTechnical ? (
+                <div className="mb-4">
+                    <div className="relative h-16 bg-neutral-800 rounded-lg p-2 overflow-hidden">
+                        <div className="flex items-center justify-center h-full">
+                            <div className="flex items-center gap-2 text-neutral-400">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                <span className="text-sm">Loading waveform...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : waveformBars.length > 0 ? (
+                <div className="mb-4">
+                    <div className="relative h-16 bg-neutral-800 rounded-lg p-2 overflow-hidden">
+                        <div className="flex items-end justify-between h-full gap-0.5">
+                            {waveformBars.map((bar, index) => {
+                                const isActive = (index / waveformBars.length) * 100 <= progress;
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`flex-1 transition-colors duration-100 ${isActive ? 'bg-blue-500' : 'bg-neutral-600'
+                                            }`}
+                                        style={{ height: `${Math.max(2, bar.height)}%` }}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        {/* Beat markers */}
+                        {beats.length > 0 && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1">
+                                {beats.map((beat: number, index: number) => {
+                                    const beatPosition = (beat / duration) * 100;
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="absolute w-0.5 h-full bg-yellow-400 opacity-60"
+                                            style={{ left: `${beatPosition}%` }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Time display */}
+                    <div className="flex justify-between text-xs text-neutral-400 mt-1">
+                        <span>{formatTime(currentTime)}</span>
+                        <span>{formatTime(duration)}</span>
+                    </div>
+                </div>
+            ) : null}
+
+            {/* Audio Controls */}
             <audio
+                ref={audioRef}
                 src={audio.src}
                 controls
                 className="w-full"
                 preload="metadata"
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onPlay={handlePlay}
+                onPause={handlePause}
             >
                 Your browser does not support the audio element.
             </audio>
+
+            {/* Copy Audio URL Button */}
+            <div className="mt-4 flex justify-end">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        navigator.clipboard.writeText(audio.src);
+                    }}
+                    className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Audio URL
+                </Button>
+            </div>
+
+            {/* Audio Analysis Display */}
+            {audioAnalysis && (
+                <div className="mt-4 p-3 bg-neutral-800/50 rounded-lg">
+                    <h4 className="text-sm font-medium text-white mb-2">AI Analysis</h4>
+                    <p className="text-xs text-neutral-300 mb-2">{audioAnalysis.analysis}</p>
+
+                    {audioAnalysis.keyElements.length > 0 && (
+                        <div className="mb-2">
+                            <span className="text-xs text-neutral-400">Key Elements: </span>
+                            <span className="text-xs text-neutral-300">
+                                {audioAnalysis.keyElements.join(', ')}
+                            </span>
+                        </div>
+                    )}
+
+                    {audioAnalysis.emotions.length > 0 && (
+                        <div>
+                            <span className="text-xs text-neutral-400">Emotions: </span>
+                            <span className="text-xs text-neutral-300">
+                                {audioAnalysis.emotions.join(', ')}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -283,11 +514,11 @@ export const MediaDialog = ({
 
     const handleGenerateSegmentation = async () => {
         if (!media || media.type !== 'image') return;
-        
+
         // We need to get the media file ID from somewhere
         // For now, we'll need to pass it through the metadata or find another way
         const mediaFileId = (media.image.metadata as any)?._id || (media.image.metadata as any)?.id;
-        
+
         if (!mediaFileId) {
             setSegmentationError('Cannot generate segmentation: Media file ID not found');
             console.error('Media file ID not found in metadata:', media.image.metadata);
@@ -318,10 +549,10 @@ export const MediaDialog = ({
 
             const result = await response.json();
             console.log('Segmentation API result:', result);
-            
+
             if (result.success && result.status === 'processing') {
                 console.log('Segmentation request accepted, polling for completion...');
-                
+
                 // Poll for completion
                 const pollInterval = 2000; // 2 seconds
                 const maxAttempts = 60; // 2 minutes total
@@ -329,7 +560,7 @@ export const MediaDialog = ({
 
                 const poll = async (): Promise<void> => {
                     attempts++;
-                    
+
                     if (attempts > maxAttempts) {
                         throw new Error('Segmentation timed out. Please try again.');
                     }

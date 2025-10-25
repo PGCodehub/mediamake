@@ -49,8 +49,8 @@ export function AgentOutput({ output, isLoading, customUIType }: AgentOutputProp
 
         if (typeof value === "string") {
             return (
-                <div className="flex items-start gap-2">
-                    <pre className="text-sm break-words flex-1 whitespace-pre-wrap">{value}</pre>
+                <div className="flex items-start gap-2 whitespace-pre-wrap">
+                    <pre className="text-sm break-all flex-1 whitespace-pre-wrap max-w-[400px]">{value}</pre>
                     <Button
                         size="sm"
                         variant="ghost"

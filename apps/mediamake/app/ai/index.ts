@@ -21,6 +21,9 @@ import { chatRestoreLocal } from '../api/studio/chat/sessions/chatSessionLocal';
 import transcriptionFixerAgent from './agents/words/transcriptionFixer';
 import { scriptMetaOrchestor } from './agents/scriptMeta';
 import { midjourneyPromptingAgent } from './agents/midjourney';
+import { videoGenerationOrchestrator } from './agents/video';
+import { audioAnalysisAgent } from './agents/analysis/audioAnlysisAgent';
+import { audioTechnicalAnalysisAgent } from './agents/analysis/audioTechnicalAnalysis';
 
 const aiRouter = new AiRouter();
 //aiRouter.setLogger(console);
@@ -33,8 +36,11 @@ const aiMainRouter = aiRouter
   .agent('/youtube-metadata', youtubeAgent)
   .agent('/concept-generation', conceptAgent)
   .agent('/video/shorts/music-stitch', musicStitchAgent)
+  .agent('/video', videoGenerationOrchestrator)
   .agent('/midjourney-prompting', midjourneyPromptingAgent)
   .agent('/script-meta', scriptMetaOrchestor)
+  .agent('/audio-analysis', audioAnalysisAgent)
+  .agent('/audio-technical-analysis', audioTechnicalAnalysisAgent)
   .use('/', contextLimiter(5))
   .use('/', onlyTextParts(100))
   .agent('/', async props => {
@@ -61,6 +67,7 @@ const aiMainRouter = aiRouter
         ...props.next.agentAsTool('/youtube-metadata'),
         ...props.next.agentAsTool('/concept-generation'),
         ...props.next.agentAsTool('/music-stitch'),
+        ...props.next.agentAsTool('/audio-analysis'),
       },
       toolChoice: 'auto',
       stopWhen: [

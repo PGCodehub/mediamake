@@ -1,5 +1,6 @@
 import { AiRouterTools } from '@/app/ai';
 import { isToolUIPart, UIMessage } from 'ai';
+import { aiRouterRegistry } from '@/app/ai';
 
 /**
  * Generic helper function to call any agent API endpoint
