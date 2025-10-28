@@ -1,1 +1,2 @@
-export { midjourneyPromptingAgent } from './prompting';
+export { midjourneyPromptingAgent } from './captionBasedPrompting';
+export { midjourneySimpleAgent } from './simple';

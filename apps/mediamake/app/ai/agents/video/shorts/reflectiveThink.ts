@@ -12,6 +12,10 @@ import {
   type VideoMetadata,
   type FrameExtractionOptions,
 } from './reflectiveThinkHelpers';
+import {
+  findMediaFileBySrc,
+  updateMediaFileWithAnalysis,
+} from '../../analysis/audioAnalysisHelper';
 
 const aiRouter = new AiRouter();
 
@@ -107,7 +111,23 @@ export const reflectiveThinkAgent = aiRouter
             updatedAt: new Date(),
           };
 
-          const mediaResult = await collection.insertOne(mediaFile);
+          const existingMediaFile = await findMediaFileBySrc(
+            videoUrl,
+            clientId,
+          );
+          let mediaResult: any;
+          if (existingMediaFile) {
+            mediaFile._id = existingMediaFile._id;
+            mediaResult = await updateMediaFileWithAnalysis(
+              existingMediaFile._id.toString(),
+              {
+                metadata: mediaFile.metadata,
+              },
+            );
+          } else {
+            mediaResult = await collection.insertOne(mediaFile);
+            mediaFile._id = mediaResult.insertedId;
+          }
 
           // Step 2: Extract frame from video using helper
           const tempFramePath = await extractFrame(videoUrl, {
@@ -175,7 +195,7 @@ export const reflectiveThinkAgent = aiRouter
             frameUrl: videoUrl, // Using original URL for now
             analysis: analysisResult.object.analysis,
             quote: quoteResult.object,
-            mediaFileId: mediaResult.insertedId.toString(),
+            mediaFileId: mediaFile?._id?.toString(),
             mediaFile: mediaFile,
           });
         } catch (error) {

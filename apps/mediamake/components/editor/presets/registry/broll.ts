@@ -55,6 +55,12 @@ const presetParams = z.object({
     ])
     .optional()
     .describe('Mode to play the captions'),
+  negativeOffset: z
+    .number()
+    .optional()
+    .describe(
+      'The negative offset in seconds - images will appear this many seconds before their original timing',
+    ),
   trackName: z.string().describe('Name of the track ( used for the ID )'),
   transition: z.object({
     impact: z.number().optional().describe('The impact of the transition'),
@@ -100,6 +106,7 @@ const presetExecution = async (
     imageScale = 1,
     imageEffect,
     captionGapThreshold = 0.33,
+    negativeOffset = 0,
   } = params;
 
   const { config } = props;
@@ -166,6 +173,10 @@ const presetExecution = async (
 
     if (!selectedImage?.src) return;
 
+    // Apply negative offset to timing - images appear earlier
+    const adjustedStart = Math.max(0, absoluteStart - negativeOffset);
+    const adjustedDuration = duration + (absoluteStart - adjustedStart);
+
     // Create image component for this caption
     const imageComponent: any = {
       id: `${trackName}-broll-image-${captionIndex}`,
@@ -183,8 +194,8 @@ const presetExecution = async (
       },
       context: {
         timing: {
-          start: absoluteStart,
-          duration: duration,
+          start: adjustedStart,
+          duration: adjustedDuration,
         },
       },
       effects: [],
@@ -381,6 +392,7 @@ const presetMetadata: PresetMetadata = {
       impact: 1,
     },
     captionGapThreshold: 0.33,
+    negativeOffset: 0.2,
   },
 };
 

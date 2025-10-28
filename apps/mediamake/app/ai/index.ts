@@ -24,6 +24,7 @@ import { midjourneyPromptingAgent } from './agents/midjourney';
 import { videoGenerationOrchestrator } from './agents/video';
 import { audioAnalysisAgent } from './agents/analysis/audioAnlysisAgent';
 import { audioTechnicalAnalysisAgent } from './agents/analysis/audioTechnicalAnalysis';
+import { midjourneySimpleAgent } from './agents/midjourney/simple';
 
 const aiRouter = new AiRouter();
 //aiRouter.setLogger(console);
@@ -38,6 +39,7 @@ const aiMainRouter = aiRouter
   .agent('/video/shorts/music-stitch', musicStitchAgent)
   .agent('/video', videoGenerationOrchestrator)
   .agent('/midjourney-prompting', midjourneyPromptingAgent)
+  .agent('/midjourney-simple', midjourneySimpleAgent)
   .agent('/script-meta', scriptMetaOrchestor)
   .agent('/audio-analysis', audioAnalysisAgent)
   .agent('/audio-technical-analysis', audioTechnicalAnalysisAgent)

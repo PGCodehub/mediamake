@@ -21,6 +21,8 @@ import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 import { lottieShowcasePreset } from './lottie-showcase';
 import { beatstitchWithCaptionsPreset } from './beatstitchwithcaptions';
 import { brollPreset } from './broll';
+import { quotePresentPreset } from './quote-present';
+import { htmlBlockAtomPreset } from './htmlBlockAtom';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -44,6 +46,8 @@ export const predefinedPresets: Preset[] = [
   advancedSubtitlesAnimsPreset,
   lottieShowcasePreset,
   brollPreset,
+  quotePresentPreset,
+  htmlBlockAtomPreset,
   // beatstitchWithCaptionsPreset, - not working for now
   // Add more predefined presets here
 ];
