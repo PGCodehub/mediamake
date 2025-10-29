@@ -282,7 +282,7 @@ ${userRequest ? `Please consider the user's specific request: ${userRequest}` : 
   })
   .actAsTool('/', {
     id: 'analyzeTranscriptionForRandomImages',
-    name: 'Analyze Transcription for Random Images',
+    name: 'Attache Random images to sentences',
     description:
       'Analyzes sentence-split transcripts to generate image search queries and find random images matching the provided tags. Attaches image metadata including colors, keywords, and tags to each sentence.',
     inputSchema: ScriptMetaInputSchema.extend({

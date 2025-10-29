@@ -25,7 +25,9 @@ interface PresetDataDocument {
   updatedAt: Date;
 }
 
-// GET /api/preset-data - Fetch saved preset data
+// GET /api/preset-data
+// - Without query: return only metadata (no presetData)
+// - With ?id=...: return full document including presetData
 export async function GET(request: NextRequest) {
   try {
     const db = await getDatabase();
@@ -34,14 +36,47 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
 
-    const query = clientId ? { clientId } : {};
+    const id = searchParams.get('id');
 
-    const presetData = await collection
-      .find(query)
+    // If id is provided, return the full document (including presetData)
+    if (id) {
+      try {
+        const objectId = new ObjectId(id);
+        const doc = await collection.findOne({
+          _id: objectId,
+          ...(clientId ? { clientId } : {}),
+        });
+        if (!doc) {
+          return NextResponse.json(
+            { error: 'Preset not found' },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json(doc);
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid preset ID' },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Otherwise, return only metadata without presetData
+    const query = clientId ? { clientId } : {};
+    const presetsMeta = await collection
+      .find(query, { projection: { name: 1, createdAt: 1, updatedAt: 1 } })
       .sort({ createdAt: -1 })
       .toArray();
 
-    return NextResponse.json(presetData);
+    // Normalize _id to id for client
+    const response = presetsMeta.map((d: any) => ({
+      id: d._id,
+      name: d.name,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    }));
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching preset data:', error);
     return NextResponse.json(

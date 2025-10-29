@@ -12,7 +12,7 @@ import { calculateComponentDuration } from '../../core';
 
 export const VideoAtomDataProps = z.object({
     src: z.string(),                    // Video source URL
-    srcDuration: z.number().optional(), // Video duration in seconds
+    srcDuration: z.number().optional(), // Video duration in seconds (or to say it more accurately, each iteration duration in a loop))
     style: z.record(z.string(), z.any()).optional(), // CSS styles object
     containerClassName: z.string().optional(),   // CSS class names
     className: z.string().optional(),   // CSS class names

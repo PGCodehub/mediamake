@@ -257,34 +257,32 @@ export const setDurationsInContext = async (root: InputCompositionProps) => {
         }
       }
 
-      if (
-        updatedComponent.type === 'atom' &&
-        !updatedComponent.context?.timing?.duration &&
-        !onlyScene
-      ) {
+      if (updatedComponent.type === 'atom' && !onlyScene) {
         if (
           updatedComponent.componentId === 'VideoAtom' ||
           updatedComponent.componentId === 'AudioAtom'
         ) {
-          const duration = await calculateComponentDuration(updatedComponent);
+          const mediaDuration =
+            await calculateComponentDuration(updatedComponent);
           if (!updatedComponent.context?.timing?.fitDurationTo) {
             updatedComponent.context = {
               ...(updatedComponent.context || {}),
               timing: {
                 ...(updatedComponent.context?.timing || {}),
-                duration: duration,
+                duration:
+                  updatedComponent?.context?.timing?.duration || mediaDuration,
               },
             };
             updatedComponent.data = {
               ...updatedComponent.data,
-              ...(updatedComponent.data.loop && updatedComponent.data.duration
-                ? { srcDuration: updatedComponent.data.duration }
+              ...(updatedComponent.data.loop
+                ? { srcDuration: mediaDuration }
                 : {}),
             };
           } else if (updatedComponent.context?.timing?.fitDurationTo) {
             updatedComponent.data = {
               ...updatedComponent.data,
-              srcDuration: duration,
+              srcDuration: mediaDuration,
             };
           }
         }

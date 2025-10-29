@@ -74,6 +74,27 @@ const presetParams = z.object({
     .enum(['top', 'center', 'bottom', 'left', 'right'])
     .optional()
     .describe('The position of the image'),
+  imageBlendMode: z
+    .enum([
+      'normal',
+      'multiply',
+      'screen',
+      'overlay',
+      'darken',
+      'lighten',
+      'color-dodge',
+      'color-burn',
+      'hard-light',
+      'soft-light',
+      'difference',
+      'exclusion',
+      'hue',
+      'saturation',
+      'color',
+      'luminosity',
+    ])
+    .optional()
+    .describe('Blend mode for the image (default: normal)'),
   imageOpacity: z.number().optional().describe('The opacity of the image'),
   imageScale: z.number().optional().describe('The scale of the image'),
   imageEffect: z.object({
@@ -102,6 +123,7 @@ const presetExecution = async (
     transition,
     imageFit = 'cover',
     imagePosition = 'center',
+    imageBlendMode = 'normal',
     imageOpacity = 1,
     imageScale = 1,
     imageEffect,
@@ -131,51 +153,77 @@ const presetExecution = async (
   const allImageComponents: any[] = [];
   const allCaptionComponents: any[] = [];
 
+  // Helper function to apply negative offset to captions
+  const applyNegativeOffset = (captions: any[], negativeOffset: number) => {
+    return captions.map(caption => {
+      const newAbsoluteStart = Math.max(
+        0,
+        caption.absoluteStart - negativeOffset,
+      );
+      const newAbsoluteEnd = Math.max(0, caption.absoluteEnd - negativeOffset);
+
+      return {
+        ...caption,
+        absoluteStart: newAbsoluteStart,
+        absoluteEnd: newAbsoluteEnd,
+        start: newAbsoluteStart,
+        end: newAbsoluteEnd,
+      };
+    });
+  };
+
   // Helper function to detect and fill gaps between captions
   const processCaptionsWithGapFilling = (
     captions: any[],
     gapThreshold: number,
   ) => {
-    const processedCaptions = [...captions];
+    const endingssetted = captions.reduce(
+      (processedCaptions, currentCaption, index) => {
+        // Add current caption to processed array
+        processedCaptions.push(currentCaption);
 
-    for (let i = 0; i < processedCaptions.length - 1; i++) {
-      const currentCaption = processedCaptions[i];
-      const nextCaption = processedCaptions[i + 1];
+        // Check for gap with next caption (if it exists)
+        if (index < captions.length - 1) {
+          const nextCaption = captions[index + 1];
+          const gap = nextCaption.absoluteStart - currentCaption.absoluteEnd;
 
-      const gap = nextCaption.absoluteStart - currentCaption.absoluteEnd;
+          // If gap is smaller than threshold, extend current caption to fill the gap
+          if (gap > 0 && gap < gapThreshold) {
+            // console.log(
+            //   `🔧 Filling gap of ${gap}s between captions ${index} and ${index + 1}`,
+            // );
+            // Update the last added caption (current one)
+            processedCaptions[processedCaptions.length - 1] = {
+              ...currentCaption,
+              absoluteEnd: currentCaption.absoluteEnd + gap,
+            };
+          }
+        }
 
-      // If gap is smaller than threshold, extend current caption to fill the gap
-      if (gap > 0 && gap < gapThreshold) {
-        console.log(
-          `🔧 Filling gap of ${gap}s between captions ${i} and ${i + 1}`,
-        );
-        processedCaptions[i] = {
-          ...currentCaption,
-          duration: currentCaption.duration + gap,
-          absoluteEnd: currentCaption.absoluteEnd + gap,
-        };
-      }
-    }
+        return processedCaptions;
+      },
+      [] as any[],
+    );
 
-    return processedCaptions;
+    return endingssetted.map((caption: any) => ({
+      ...caption,
+      duration: caption.absoluteEnd - caption.absoluteStart,
+    }));
   };
 
-  // Process captions to fill small gaps
+  // Apply negative offset first, then process captions to fill small gaps
+  const captionsWithOffset = applyNegativeOffset(captions, negativeOffset);
   const processedCaptions = processCaptionsWithGapFilling(
-    captions,
+    captionsWithOffset,
     captionGapThreshold,
   );
 
   // Process each caption and its associated image
-  processedCaptions.forEach((caption, captionIndex) => {
+  processedCaptions.forEach((caption: any, captionIndex: number) => {
     const { text, absoluteStart, duration, absoluteEnd, metadata } = caption;
     const selectedImage = metadata?.selectedImage;
 
     if (!selectedImage?.src) return;
-
-    // Apply negative offset to timing - images appear earlier
-    const adjustedStart = Math.max(0, absoluteStart - negativeOffset);
-    const adjustedDuration = duration + (absoluteStart - adjustedStart);
 
     // Create image component for this caption
     const imageComponent: any = {
@@ -190,12 +238,15 @@ const presetExecution = async (
           opacity: imageOpacity,
           transform: `scale(${imageScale})`,
           objectPosition: imagePosition,
+          ...(imageBlendMode && imageBlendMode !== 'normal'
+            ? { mixBlendMode: imageBlendMode }
+            : {}),
         },
       },
       context: {
         timing: {
-          start: adjustedStart,
-          duration: adjustedDuration,
+          start: absoluteStart,
+          duration: duration,
         },
       },
       effects: [],
@@ -331,7 +382,9 @@ const presetExecution = async (
           context: {
             timing: {
               start: 0,
-              duration: Math.max(...processedCaptions.map(c => c.absoluteEnd)),
+              duration: Math.max(
+                ...processedCaptions.map((c: any) => c.absoluteEnd),
+              ),
             },
           },
           childrenData: [...allImageComponents, ...allCaptionComponents],
@@ -385,6 +438,7 @@ const presetMetadata: PresetMetadata = {
     },
     imageFit: 'cover',
     imagePosition: 'center',
+    imageBlendMode: 'normal',
     imageOpacity: 0.8,
     imageScale: 1.1,
     imageEffect: {
