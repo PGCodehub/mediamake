@@ -113,7 +113,8 @@ export const POST = async (req: NextRequest) => {
       await renderMedia({
         composition,
         serveUrl: bundleLocation,
-        codec: 'h264', // Still need video codec for audio rendering
+        codec:
+          audioCodec === 'aac' || audioCodec === 'mp3' ? audioCodec : 'h264', // Still need video codec for audio rendering
         audioCodec,
         outputLocation: audioOutputPath,
         inputProps,
