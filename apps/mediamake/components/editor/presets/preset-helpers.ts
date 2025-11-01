@@ -3,7 +3,9 @@ import {
   RenderableComponentData,
   replaceMatchingComponent,
 } from '@microfox/datamotion';
-import { PresetOutput, PresetPassedProps } from './types';
+import { PresetOutput, PresetPassedProps, PresetMetadata } from './types';
+import { presetStdLib } from './preset-stdlib';
+import { getPredefinedPresetById } from './registry/presets-registry';
 
 const findMatchingComponents = (
   childrenData: RenderableComponentData[],
@@ -103,13 +105,68 @@ export const runPreset = async <T>(
   presetInput: any,
   presetFunction: string,
   props: PresetPassedProps,
+  metadata?: PresetMetadata,
 ): Promise<PresetOutput | null> => {
+  // Create a copy of props to inject dependencies
+  const injectedProps: PresetPassedProps = { ...props };
+
+  // Inject dependencies if metadata is provided
+  if (metadata?.dependencies) {
+    // Inject helper functions from stdlib
+    if (metadata.dependencies.helpers && metadata.dependencies.helpers.length > 0) {
+      injectedProps.helpers = {};
+      for (const helperName of metadata.dependencies.helpers) {
+        if (helperName in presetStdLib) {
+          injectedProps.helpers[helperName] =
+            presetStdLib[helperName as keyof typeof presetStdLib];
+        } else {
+          console.warn(
+            `Helper function "${helperName}" not found in presetStdLib`,
+          );
+        }
+      }
+    }
+
+    // Inject other presets as callable functions
+    if (metadata.dependencies.presets && metadata.dependencies.presets.length > 0) {
+      injectedProps.presets = {};
+      for (const presetId of metadata.dependencies.presets) {
+        const dependencyPreset = getPredefinedPresetById(presetId);
+        if (dependencyPreset) {
+          // Create a wrapper function that can be called from within the preset
+          injectedProps.presets[presetId] = async (
+            params: any,
+            childProps?: Partial<PresetPassedProps>,
+          ) => {
+            const result = await runPreset(
+              params,
+              dependencyPreset.presetFunction,
+              { ...injectedProps, ...childProps },
+              dependencyPreset.metadata,
+            );
+            if (!result) {
+              throw new Error(
+                `Preset dependency "${presetId}" returned null or failed to execute`,
+              );
+            }
+            return result;
+          };
+        } else {
+          console.warn(
+            `Preset dependency "${presetId}" not found in registry`,
+          );
+        }
+      }
+    }
+  }
+
+  // Execute the preset function with injected dependencies
   const presetJsFunction = new Function(
     'data',
     'props',
     `return (${presetFunction})(data, props);`,
   );
-  const output = await presetJsFunction(presetInput, props);
+  const output = await presetJsFunction(presetInput, injectedProps);
   if (!output) {
     return null;
   }

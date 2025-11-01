@@ -148,7 +148,8 @@ export function PresetUI({ presetSets = [], isLoading = false, baseData = {} }: 
                                     body: JSON.stringify(data),
                                 })
                             ),
-                        }
+                        },
+                        preset.metadata // Pass metadata for dependency injection
                     );
 
                     if (presetOutput) {

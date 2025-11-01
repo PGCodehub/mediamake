@@ -136,7 +136,8 @@ function PresetEditorContent({ selectedPresets, onPresetsChange, onPresetsProces
                                 body: JSON.stringify(data),
                             })
                         ),
-                    }
+                    },
+                    appliedPreset.preset.metadata // Pass metadata for dependency injection
                 );
 
                 if (presetOutput) {

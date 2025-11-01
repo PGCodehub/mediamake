@@ -26,6 +26,20 @@ import { beatstitchWithCaptionsPreset } from './beatstitchwithcaptions';
 import { brollPreset } from './broll';
 import { quotePresentPreset } from './quote-present';
 import { htmlBlockAtomPreset } from './htmlBlockAtom';
+// New dependency injection examples
+import { simpleOpacityEffectPreset } from './simple-opacity-effect';
+import { advancedWordEffectsPreset } from './advanced-word-effects';
+import { compositeSubtitleShowcasePreset } from './composite-subtitle-showcase';
+import { enhancedSubtitleDemoPreset } from './enhanced-subtitle-demo';
+import { basicTextLayerPreset } from './basic-text-layer';
+import { glowPulseEffectsPreset } from './glow-pulse-effects';
+import { layeredEffectsDemoPreset } from './layered-effects-demo';
+// Kinetic Typography presets
+import { kineticSlideInPreset } from './kinetic-slide-in';
+import { kineticBouncePreset } from './kinetic-bounce';
+import { kineticRotateFadePreset } from './kinetic-rotate-fade';
+import { kineticScalePulsePreset } from './kinetic-scale-pulse';
+import { kineticTypographyPreset } from './kinetic-typography';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -54,6 +68,20 @@ export const predefinedPresets: Preset[] = [
   brollPreset,
   quotePresentPreset,
   htmlBlockAtomPreset,
+  // New dependency injection examples
+  simpleOpacityEffectPreset,
+  advancedWordEffectsPreset,
+  compositeSubtitleShowcasePreset,
+  enhancedSubtitleDemoPreset,
+  basicTextLayerPreset,
+  glowPulseEffectsPreset,
+  layeredEffectsDemoPreset,
+  // Kinetic Typography presets
+  kineticSlideInPreset,
+  kineticBouncePreset,
+  kineticRotateFadePreset,
+  kineticScalePulsePreset,
+  kineticTypographyPreset,
   // beatstitchWithCaptionsPreset, - not working for now
   // Add more predefined presets here
 ];

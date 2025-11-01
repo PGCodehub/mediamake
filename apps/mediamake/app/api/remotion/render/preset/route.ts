@@ -187,6 +187,7 @@ export const POST = async (req: NextRequest) => {
               body: JSON.stringify(data),
             }),
         },
+        preset.metadata, // Pass metadata for dependency injection
       );
       if (!presetOutput) {
         return NextResponse.json(
