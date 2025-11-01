@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1
+
+### Patch Changes
+
+- 3ebccf0: Changes from PR #17: pg_presets_e11_1810
+- ef8ed5a: Changes from PR #20: pg_newtwo_2210
+- 5afec44: Changes from PR #21: mediamake-newstuff
+
 ## 1.2.0
 
 ### Minor Changes
