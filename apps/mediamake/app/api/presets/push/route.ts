@@ -58,17 +58,57 @@ export async function POST(req: NextRequest) {
     }
     const existingDbPreset = await collection.findOne(query);
 
+    const now = new Date();
+
     if (existingDbPreset) {
+      // Update existing preset
+      const updateData: any = {
+        metadata: {
+          ...existingDbPreset.metadata,
+          ...presetData.metadata,
+          type: 'database', // Ensure type is database
+          updatedAt: now,
+          // Preserve original createdAt
+          createdAt:
+            existingDbPreset.metadata.createdAt || existingDbPreset.createdAt,
+        },
+        presetFunction: presetData.presetFunction,
+        presetParams: presetData.presetParams,
+        updatedAt: now,
+      };
+
+      const updateResult = await collection.updateOne(query, {
+        $set: updateData,
+      });
+
+      if (updateResult.matchedCount === 0) {
+        return NextResponse.json(
+          { error: 'Failed to update preset' },
+          { status: 500 },
+        );
+      }
+
+      // Fetch the updated document
+      const updatedPreset = await collection.findOne(query);
+
+      console.log(`✅ API: Successfully updated preset in database:`, {
+        id: updatedPreset?._id.toString(),
+        title: updatedPreset?.metadata?.title,
+        type: updatedPreset?.metadata?.presetType,
+        clientId: updatedPreset?.clientId,
+      });
+
       return NextResponse.json(
         {
-          error: `A database preset with id '${presetData.metadata.id}' already exists.`,
+          success: true,
+          preset: updatedPreset,
+          message: `Successfully updated preset '${presetData.metadata.id}' in database`,
         },
-        { status: 409 },
+        { status: 200 },
       );
     }
 
-    // Prepare the database preset
-    const now = new Date();
+    // Prepare new database preset
     const preset: Omit<DatabasePreset, '_id'> = {
       clientId,
       metadata: {
