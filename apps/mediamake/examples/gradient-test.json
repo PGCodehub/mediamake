@@ -1,0 +1,109 @@
+{
+  "presetId": "sub-kinetic-gradient-flow",
+  "params": {
+    "inputCaptions": [
+      {
+        "id": "caption-1",
+        "text": "Beautiful Gradient",
+        "absoluteStart": 0,
+        "absoluteEnd": 3,
+        "start": 0,
+        "end": 3,
+        "duration": 3,
+        "metadata": {
+          "keyword": "Gradient"
+        },
+        "words": [
+          {
+            "id": "word-1",
+            "text": "Beautiful",
+            "start": 0,
+            "duration": 1.5,
+            "absoluteStart": 0,
+            "absoluteEnd": 1.5,
+            "confidence": 1
+          },
+          {
+            "id": "word-2",
+            "text": "Gradient",
+            "start": 1.5,
+            "duration": 1.5,
+            "absoluteStart": 1.5,
+            "absoluteEnd": 3,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "caption-2",
+        "text": "Text Animation",
+        "absoluteStart": 3.5,
+        "absoluteEnd": 6,
+        "start": 3.5,
+        "end": 6,
+        "duration": 2.5,
+        "metadata": {
+          "keyword": "Animation"
+        },
+        "words": [
+          {
+            "id": "word-3",
+            "text": "Text",
+            "start": 0,
+            "duration": 1,
+            "absoluteStart": 3.5,
+            "absoluteEnd": 4.5,
+            "confidence": 1
+          },
+          {
+            "id": "word-4",
+            "text": "Animation",
+            "start": 1,
+            "duration": 1.5,
+            "absoluteStart": 4.5,
+            "absoluteEnd": 6,
+            "confidence": 1
+          }
+        ]
+      }
+    ],
+    "position": {
+      "align": "center",
+      "textAlign": "center"
+    },
+    "subtitleSync": {
+      "animationStyle": "gradient-wave-float",
+      "layout": "horizontal",
+      "negativeOffset": 0.15,
+      "maxLines": 5,
+      "floatThreshold": 15,
+      "disableMetadata": false,
+      "fontScaling": {
+        "highlighted": 1.5,
+        "normal": 0.9
+      },
+      "impact": 1.0
+    },
+    "gradientChoices": [
+      {
+        "normalGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "highlightGradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+        "accentColor": "#f5576c"
+      }
+    ],
+    "fontChoices": [
+      {
+        "primaryFont": "Roboto:700",
+        "headerFont": "BebasNeue:700"
+      }
+    ],
+    "style": {
+      "textTransformSub": "uppercase",
+      "textTransformMain": "uppercase"
+    },
+    "avgFontSize": 60
+  }
+}
+
+
+

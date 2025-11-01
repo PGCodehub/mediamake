@@ -1007,6 +1007,7 @@ data: {
   text: string,                 // The text content (REQUIRED)
   style?: React.CSSProperties,  // Text styling
   className?: string,           // Tailwind/CSS classes
+  gradient?: string,            // CSS gradient for text (e.g., "linear-gradient(red, blue)")
   font?: {
     family: string,             // Font family name (e.g., 'Inter', 'Montserrat')
     weights?: string[],         // Font weights (e.g., ['400', '700'])
@@ -1051,6 +1052,37 @@ data: {
   }
 }
 ```
+
+**Example with Gradient Text:**
+
+```typescript
+{
+  id: 'GradientTitle',
+  componentId: 'TextAtom',
+  type: 'atom',
+  data: {
+    text: 'Gradient Text',
+    className: 'text-6xl font-bold',
+    gradient: 'linear-gradient(to right, #ff0080, #7928ca, #0070f3)',
+    font: {
+      family: 'Inter',
+      weights: ['700'],
+      display: 'swap'
+    },
+    style: {
+      fontSize: 72,
+      textShadow: '2px 2px 8px rgba(0,0,0,0.3)'
+    }
+  }
+}
+```
+
+**Gradient Examples:**
+
+- `"linear-gradient(red, blue)"` - Vertical gradient from red to blue
+- `"linear-gradient(to right, #ff0080, #7928ca)"` - Horizontal gradient
+- `"linear-gradient(45deg, yellow, red, pink)"` - Diagonal multi-color gradient
+- `"radial-gradient(circle, cyan, blue)"` - Radial gradient effect
 
 #### ImageAtom - Image Display
 
