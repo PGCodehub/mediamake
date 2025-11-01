@@ -19,6 +19,9 @@ import { subKineticMotionPreset } from './sub-kinetic-motion';
 import { customThemeBackgroundPreset } from './custom-theme-background';
 import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 import { lottieShowcasePreset } from './lottie-showcase';
+import { subKineticGradientFlowPreset } from './sub-kinetic-gradient-flow';
+// import { subKineticLayoutVerticalPreset } from './sub-kinetic-layout-vertical';
+// import { subKineticAnimKeywordFocusPreset } from './sub-kinetic-anim-keyword-focus';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -41,6 +44,9 @@ export const predefinedPresets: Preset[] = [
   subKineticMotionPreset,
   advancedSubtitlesAnimsPreset,
   lottieShowcasePreset,
+  subKineticGradientFlowPreset,
+  // subKineticLayoutVerticalPreset,
+  // subKineticAnimKeywordFocusPreset,
   // Add more predefined presets here
 ];
 

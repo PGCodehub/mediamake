@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-  swcMinify: true,
   webpack: (config, { isServer }) => {
     // Exclude TypeScript declaration files from webpack processing
     config.module.rules.push({

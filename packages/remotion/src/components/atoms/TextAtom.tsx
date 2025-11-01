@@ -23,6 +23,7 @@ export interface TextAtomData {
     text: string;
     style?: React.CSSProperties;
     className?: string;
+    gradient?: string; // CSS gradient string (e.g., "linear-gradient(red, blue)")
     font?: FontConfig;
     fallbackFonts?: string[];
     loadingState?: {
@@ -91,12 +92,30 @@ export const Atom: React.FC<TextAtomProps> = ({ id, data }) => {
         }
     }, [data.font, isReady, isLoaded, error]);
 
-    // Enhanced style with font loading support
-    const enhancedStyle: React.CSSProperties = useMemo(() => ({
-        fontFamily,
-        ...data.style,
-        ...overrideStyles,
-    }), [fontFamily, data.style, overrideStyles]);
+    // Enhanced style with font loading support and gradient text
+    const enhancedStyle: React.CSSProperties = useMemo(() => {
+        const baseStyle: React.CSSProperties = {
+            fontFamily,
+            ...data.style,
+        };
+
+        // Apply gradient text effect if gradient is provided
+        if (data.gradient) {
+            return {
+                ...baseStyle,
+                backgroundImage: data.gradient,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                color: 'transparent',
+                ...overrideStyles,
+            };
+        }
+
+        return {
+            ...baseStyle,
+            ...overrideStyles,
+        };
+    }, [fontFamily, data.style, data.gradient, overrideStyles]);
 
     // Loading state
     if (isFontLoading && data.loadingState?.showLoadingIndicator) {
