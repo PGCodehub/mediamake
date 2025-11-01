@@ -247,6 +247,7 @@ export function DefaultCard({
                                     onChange={(val) => updateReference(index, 'value', val)}
                                     showTabs={false}
                                     showResetButton={false}
+                                    showReferencesDropdown={false}
                                     title=""
                                     className="border rounded-md p-3"
                                 />
@@ -281,6 +282,7 @@ export function DefaultCard({
                                     onChange={(val) => updateReference(index, 'value', val)}
                                     showTabs={true}
                                     showResetButton={false}
+                                    showReferencesDropdown={false}
                                     title="Captions"
                                     className="border rounded-md p-3"
                                 />

@@ -67,7 +67,7 @@ export type AnalysisResponse = z.infer<typeof ResponseSchema>;
  * @param additionalData - Optional additional data for the analysis
  * @returns Promise with analysis result or null if analysis fails
  */
-export async function analyzeImage(
+export async function indexAndAnalyzeImage(
   imageUrl: string,
   clientId: string,
   additionalData?: Partial<AnalysisRequestBody>,
@@ -118,6 +118,83 @@ export async function analyzeImage(
 
     if (validatedResponse.doc?.metadata) {
       return validatedResponse.doc.metadata as RagImageMetadata;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error during AI analysis:', error);
+    return null;
+  }
+}
+
+/**
+ * Analyzes an audio file using the AI analysis endpoint
+ * @param audioUrl - URL of the audio file to analyze
+ * @param clientId - Client ID to use as indexingId
+ * @param metadata - Audio metadata from the analysis
+ * @param additionalData - Optional additional data for the analysis
+ * @returns Promise with analysis result or null if analysis fails
+ */
+export async function indexAudio(
+  audioUrl: string,
+  clientId: string,
+  metadata: any,
+  additionalData?: Partial<AnalysisRequestBody>,
+): Promise<any | null> {
+  try {
+    if (!AI_ANALYSIS_CONFIG.apiKey) {
+      console.warn('AI_ANALYSIS_API_KEY not configured, skipping analysis');
+      return null;
+    }
+
+    const requestBody: AnalysisRequestBody = {
+      src: audioUrl,
+      srcType: 'audio',
+      indexingId: clientId,
+      platform: metadata.platform || 'MediaMake',
+      platformId: metadata.platformId || 'mediamake/audio-analysis-agent',
+      platformUrl: metadata.platformUrl || audioUrl,
+      promptUsed: metadata.promptUsed,
+      tags: metadata.userTags || [],
+      ...additionalData,
+    };
+
+    // Validate request body
+    const validatedBody = RequestBodySchema.parse(requestBody);
+
+    const response = await fetch(
+      `${AI_ANALYSIS_CONFIG.baseUrl}/images/index/single`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${AI_ANALYSIS_CONFIG.apiKey}`,
+        },
+        body: JSON.stringify({
+          ...validatedBody,
+          metadata: metadata, // Pass the full metadata object
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      console.error(
+        `AI analysis failed with status ${response.status}:`,
+        await response.text(),
+      );
+      return null;
+    }
+
+    const responseData = await response.json();
+    const validatedResponse = ResponseSchema.parse(responseData);
+
+    if (validatedResponse.status === 'error') {
+      console.error('AI analysis returned error:', validatedResponse.message);
+      return null;
+    }
+
+    if (validatedResponse.doc?.metadata) {
+      return validatedResponse.doc.metadata;
     }
 
     return null;

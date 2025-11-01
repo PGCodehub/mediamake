@@ -32,6 +32,8 @@ export async function POST(
       );
     }
 
+    console.log('TRIGGERED METADATA UPDATE');
+
     // Get database connection
     const db = await getDatabase();
     const collection = db.collection<Transcription>('transcriptions');
@@ -56,7 +58,11 @@ export async function POST(
         ...transcription.processingData,
         step4: {
           ...transcription.processingData.step4,
-          metadata: body.captions.map(caption => caption.metadata),
+          metadata: {
+            ...(transcription.processingData?.step4?.metadata || {}),
+            sentences: body.captions.map(caption => caption.metadata),
+            generatedAt: new Date().toISOString(),
+          },
           updatedAt: new Date().toISOString(),
         },
       },

@@ -17,6 +17,13 @@ import { Loader2, Upload, Search, Calendar, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { DefaultPresetData } from "./types";
 
+interface SavedPresetMeta {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt?: string;
+}
+
 interface SavedPresetData {
     id: string;
     name: string;
@@ -27,7 +34,7 @@ interface SavedPresetData {
             presetType: string;
             presetInputData: any;
         }>;
-        defaultData?: DefaultPresetData; // Include baseData (references)
+        defaultData?: DefaultPresetData;
     };
 }
 
@@ -42,7 +49,7 @@ export function LoadPresetDialog({
     onOpenChange,
     onLoad
 }: LoadPresetDialogProps) {
-    const [savedPresets, setSavedPresets] = useState<SavedPresetData[]>([]);
+    const [savedPresets, setSavedPresets] = useState<SavedPresetMeta[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingPreset, setIsLoadingPreset] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -72,10 +79,23 @@ export function LoadPresetDialog({
         }
     };
 
-    const handleLoadPreset = async (preset: SavedPresetData) => {
+    const handleLoadPreset = async (presetMeta: SavedPresetMeta) => {
         try {
-            setIsLoadingPreset(preset.id);
-            await onLoad(preset);
+            setIsLoadingPreset(presetMeta.id);
+            // Fetch full data for selected preset
+            const response = await fetch(`/api/preset-data?id=${presetMeta.id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch preset');
+            }
+            const fullPreset = await response.json();
+            // Normalize _id -> id if needed from API
+            const normalized: SavedPresetData = {
+                id: fullPreset._id ?? fullPreset.id,
+                name: fullPreset.name,
+                createdAt: fullPreset.createdAt,
+                presetData: fullPreset.presetData,
+            };
+            await onLoad(normalized);
             onOpenChange(false);
         } catch (error) {
             console.error('Failed to load preset:', error);
@@ -142,25 +162,11 @@ export function LoadPresetDialog({
                                                     {preset.name}
                                                 </h4>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        {preset.presetData.presets.length} preset{preset.presetData.presets.length !== 1 ? 's' : ''}
-                                                    </Badge>
                                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                                         <Calendar className="h-3 w-3" />
                                                         {new Date(preset.createdAt).toLocaleDateString()}
                                                     </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                    {preset.presetData.presets.slice(0, 3).map((p, index) => (
-                                                        <Badge key={index} variant="outline" className="text-xs">
-                                                            {p.presetType}
-                                                        </Badge>
-                                                    ))}
-                                                    {preset.presetData.presets.length > 3 && (
-                                                        <Badge variant="outline" className="text-xs">
-                                                            +{preset.presetData.presets.length - 3} more
-                                                        </Badge>
-                                                    )}
+                                                    <Badge variant="outline" className="text-xs">Details on select</Badge>
                                                 </div>
                                             </div>
                                             {isLoadingPreset === preset.id && (

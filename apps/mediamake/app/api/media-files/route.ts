@@ -7,7 +7,7 @@ import {
   UpdateMediaFileRequest,
 } from '@/app/types/media';
 import { getClientId } from '@/lib/auth-utils';
-import { analyzeImage, hasDescription } from '@/lib/ai-analysis';
+import { indexAndAnalyzeImage, hasDescription } from '@/lib/sparkboard-lib';
 
 // GET /api/media-files - Fetch media files with optional tag filtering
 export async function GET(request: NextRequest) {
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
         // TODO: Add video analysis support when the endpoint supports it
         if (mediaSourceUrl) {
           console.log('Performing AI analysis for image:', mediaSourceUrl);
-          const aiMetadata = await analyzeImage(
+          const aiMetadata = await indexAndAnalyzeImage(
             mediaSourceUrl,
             clientId || 'default',
             {

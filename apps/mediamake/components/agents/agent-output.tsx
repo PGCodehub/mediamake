@@ -8,6 +8,7 @@ import { Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { PresetUI } from "./preset-ui";
 import { RenderProvider } from "../editor/player";
+import { JsonEditor } from "../editor/player/json-editor";
 
 interface AgentOutputProps {
     output: any;
@@ -49,8 +50,8 @@ export function AgentOutput({ output, isLoading, customUIType }: AgentOutputProp
 
         if (typeof value === "string") {
             return (
-                <div className="flex items-start gap-2">
-                    <pre className="text-sm break-words flex-1 whitespace-pre-wrap">{value}</pre>
+                <div className="flex items-start gap-2 whitespace-pre-wrap">
+                    <pre className="text-sm break-all flex-1 whitespace-pre-wrap max-w-[400px]">{value}</pre>
                     <Button
                         size="sm"
                         variant="ghost"
@@ -82,7 +83,7 @@ export function AgentOutput({ output, isLoading, customUIType }: AgentOutputProp
                             {typeof item === "string" ? (
                                 <pre className="text-sm break-words flex-1 whitespace-pre-wrap font-sans">{item}</pre>
                             ) : (
-                                <span className="text-sm">{JSON.stringify(item)}</span>
+                                <span className="text-sm whitespace-pre-wrap break-all">{JSON.stringify(item)}</span>
                             )}
                         </div>
                     ))}
@@ -107,11 +108,9 @@ export function AgentOutput({ output, isLoading, customUIType }: AgentOutputProp
             );
         }
 
-        return <span className="text-sm">{String(value)}</span>;
+        return <span className="text-sm whitespace-pre-wrap">{JSON.stringify(value)}</span>;
     };
 
-
-    console.log('output', output);
     // Handle custom UI for presets
     if (customUIType === 'presets' && output?.presetSets) {
         return <RenderProvider>

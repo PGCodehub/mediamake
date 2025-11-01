@@ -19,6 +19,10 @@ import { subKineticMotionPreset } from './sub-kinetic-motion';
 import { customThemeBackgroundPreset } from './custom-theme-background';
 import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 import { lottieShowcasePreset } from './lottie-showcase';
+import { beatstitchWithCaptionsPreset } from './beatstitchwithcaptions';
+import { brollPreset } from './broll';
+import { quotePresentPreset } from './quote-present';
+import { htmlBlockAtomPreset } from './htmlBlockAtom';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -41,13 +45,13 @@ export const predefinedPresets: Preset[] = [
   subKineticMotionPreset,
   advancedSubtitlesAnimsPreset,
   lottieShowcasePreset,
+  brollPreset,
+  quotePresentPreset,
+  htmlBlockAtomPreset,
+  // beatstitchWithCaptionsPreset, - not working for now
   // Add more predefined presets here
 ];
 
-export const getPresetById = (id: string): Preset | undefined => {
+export const getPredefinedPresetById = (id: string): Preset | undefined => {
   return predefinedPresets.find(preset => preset.metadata.id === id);
-};
-
-export const getPresetsByType = (type: 'predefined' | 'database'): Preset[] => {
-  return predefinedPresets.filter(preset => preset.metadata.type === type);
 };

@@ -171,7 +171,25 @@ const presetExecution = (
 
   // Analyze caption characteristics for smart motion design
   const analyzeCaptionCharacteristics = (caption: any) => {
-    const wordDurations = caption.words.map((w: any) => w.duration);
+    // Check if caption has words property and it's an array
+    if (
+      !caption.words ||
+      !Array.isArray(caption.words) ||
+      caption.words.length === 0
+    ) {
+      return {
+        isFastPaced: false,
+        isSlowPaced: false,
+        hasHighVariance: false,
+        isLongCaption: (caption.duration || 0) > 5,
+        isShortCaption: (caption.duration || 0) < 2,
+        hasEmphasis: false,
+        avgWordDuration: caption.duration || 1,
+        wordCount: 1,
+      };
+    }
+
+    const wordDurations = caption.words.map((w: any) => w.duration || 1);
     const avgWordDuration =
       wordDurations.reduce((a: number, b: number) => a + b, 0) /
       wordDurations.length;
@@ -469,12 +487,37 @@ const presetExecution = (
       const processedWords: any[] = [];
       let originalWordIndex = 0;
 
+      // Check if caption has words property and it's an array
+      if (!caption.words || !Array.isArray(caption.words)) {
+        // If no words property, create a single word from the text
+        const singleWord = {
+          text: caption.text || '',
+          start: caption.absoluteStart || 0,
+          duration:
+            caption.duration ||
+            caption.absoluteEnd - caption.absoluteStart ||
+            1,
+          absoluteStart: caption.absoluteStart || 0,
+          absoluteEnd: caption.absoluteEnd || caption.absoluteStart + 1,
+          confidence: 1,
+        };
+        return {
+          ...caption,
+          words: [singleWord],
+        };
+      }
+
       for (const word of caption.words) {
+        // Ensure word has required properties
+        if (!word.text) {
+          continue; // Skip words without text
+        }
+
         if (word.text.includes(' ')) {
           const subWords = word.text.split(' ');
-          const wordDuration = word.duration;
-          const wordStart = word.start;
-          const wordAbsoluteStart = word.absoluteStart;
+          const wordDuration = word.duration || 1;
+          const wordStart = word.start || 0;
+          const wordAbsoluteStart = word.absoluteStart || 0;
 
           const subWordDuration = wordDuration / subWords.length;
 
@@ -949,7 +992,7 @@ const presetExecution = (
 
         // Split sentence into parts
         const sentenceParts = splitSentenceIntoParts(
-          caption.words,
+          caption.words || [],
           maxLines,
           caption.metadata?.splitParts,
         );
@@ -962,7 +1005,7 @@ const presetExecution = (
             ?.toLowerCase()
             ?.split(' ')
             ?.map((keyword: string) => keyword.replace(/[^a-zA-Z0-9]/g, ''));
-          caption.words.forEach((word, index) => {
+          (caption.words || []).forEach((word, index) => {
             const cleanWord = word.text
               ?.toLowerCase()
               .replace(/[^a-zA-Z0-9]/g, '');
@@ -977,9 +1020,13 @@ const presetExecution = (
         }
 
         // Fallback to smart selection if no keyword matches
-        if (highlightedWordIndices.length === 0) {
+        if (
+          highlightedWordIndices.length === 0 &&
+          caption.words &&
+          Array.isArray(caption.words)
+        ) {
           let highlightedWordIndex = -1;
-          const wordDurations = caption.words.map(word => word.duration);
+          const wordDurations = caption.words.map(word => word.duration || 1);
           const avgDuration =
             wordDurations.reduce((sum, dur) => sum + dur, 0) /
             wordDurations.length;
@@ -1005,7 +1052,7 @@ const presetExecution = (
         }
 
         // Apply highlighting
-        const captionWords = caption.words.map((word, _j: number) => {
+        const captionWords = (caption.words || []).map((word, _j: number) => {
           const isHighlight = highlightedWordIndices.includes(_j);
           return {
             ...word,
@@ -1087,7 +1134,6 @@ const presetExecution = (
           secondary: '#cccccc',
           accent: '#ff6b6b',
         };
-
   // Process all captions with kinetic motion
   const captionsChildrenData = processCaptions(
     inputCaptions,

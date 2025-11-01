@@ -11,7 +11,7 @@ import { usePresetContext } from "./preset-provider";
 import { OutputCard } from "./output-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { getPresetById } from "./registry/presets-registry";
+import { getPredefinedPresetById } from "./registry/presets-registry";
 import { SavePresetDialog } from "./save-preset-dialog";
 import { LoadPresetDialog } from "./load-preset-dialog";
 import { DefaultCard } from "./default-card";
@@ -469,7 +469,7 @@ export function PresetList({
                     }
                 } else {
                     // Fetch from local registry
-                    const foundPreset = getPresetById(presetItem.presetId);
+                    const foundPreset = getPredefinedPresetById(presetItem.presetId);
                     if (!foundPreset) {
                         console.warn(`Predefined preset ${presetItem.presetId} not found`);
                         continue;

@@ -41,39 +41,52 @@ export function PresetsSidebar({ selectedPreset, onSelectPreset }: PresetsSideba
         onSelectPreset(preset);
     };
 
-    const renderPresetCard = (preset: Preset | DatabasePreset) => (
-        <div
-            key={preset.metadata.id}
-            className={`cursor-pointer hover:bg-muted/50 transition-colors border border-2 rounded-md p-2 ${selectedPreset?.metadata.id === preset.metadata.id ? 'ring-2 ring-primary' : ''
-                }`}
-            onClick={() => handlePresetSelect(preset)}
-        >
-            <div className="pb-2">
-                <div className="flex items-start justify-between">
-                    <CardTitle className="text-sm">{preset.metadata.title}</CardTitle>
-                    <Badge variant="secondary" className="text-xs">
-                        {preset.metadata.presetType}
-                    </Badge>
+    const renderPresetCard = (preset: Preset | DatabasePreset) => {
+        // Use _id for database presets, metadata.id for predefined presets
+        const uniqueId = '_id' in preset && preset._id
+            ? preset._id.toString()
+            : preset.metadata.id;
+
+        // Check if this preset is selected
+        const isSelected = selectedPreset && (
+            ('_id' in selectedPreset && '_id' in preset && selectedPreset._id?.toString() === preset._id?.toString()) ||
+            selectedPreset.metadata.id === preset.metadata.id
+        );
+
+        return (
+            <div
+                key={uniqueId}
+                className={`cursor-pointer hover:bg-muted/50 transition-colors border border-2 rounded-md p-2 ${isSelected ? 'ring-2 ring-primary' : ''
+                    }`}
+                onClick={() => handlePresetSelect(preset)}
+            >
+                <div className="pb-2">
+                    <div className="flex items-start justify-between">
+                        <CardTitle className="text-sm">{preset.metadata.title}</CardTitle>
+                        <Badge variant="secondary" className="text-xs">
+                            {preset.metadata.presetType}
+                        </Badge>
+                    </div>
+                </div>
+                <div>
+                    {preset.metadata.tags && preset.metadata.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                            {preset.metadata.tags.slice(0, 3).map((tag) => (
+                                <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
+                                    {tag}
+                                </Badge>
+                            ))}
+                            {preset.metadata.tags.length > 3 && (
+                                <Badge variant="outline" className="text-xs px-1 py-0">
+                                    +{preset.metadata.tags.length - 3}
+                                </Badge>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
-            <div>
-                {preset.metadata.tags && preset.metadata.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                        {preset.metadata.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
-                                {tag}
-                            </Badge>
-                        ))}
-                        {preset.metadata.tags.length > 3 && (
-                            <Badge variant="outline" className="text-xs px-1 py-0">
-                                +{preset.metadata.tags.length - 3}
-                            </Badge>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="w-80 border-r bg-background">

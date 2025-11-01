@@ -310,6 +310,7 @@ ${userWrittenTranscription ? `USER'S WRITTEN VERSION: ${userWrittenTranscription
         'database',
       ],
       hidden: true,
+      hideUI: true,
     },
   });
 
