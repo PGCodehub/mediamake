@@ -22,6 +22,10 @@ import { lottieShowcasePreset } from './lottie-showcase';
 import { subKineticGradientFlowPreset } from './sub-kinetic-gradient-flow';
 // import { subKineticLayoutVerticalPreset } from './sub-kinetic-layout-vertical';
 // import { subKineticAnimKeywordFocusPreset } from './sub-kinetic-anim-keyword-focus';
+import { beatstitchWithCaptionsPreset } from './beatstitchwithcaptions';
+import { brollPreset } from './broll';
+import { quotePresentPreset } from './quote-present';
+import { htmlBlockAtomPreset } from './htmlBlockAtom';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -47,13 +51,13 @@ export const predefinedPresets: Preset[] = [
   subKineticGradientFlowPreset,
   // subKineticLayoutVerticalPreset,
   // subKineticAnimKeywordFocusPreset,
+  brollPreset,
+  quotePresentPreset,
+  htmlBlockAtomPreset,
+  // beatstitchWithCaptionsPreset, - not working for now
   // Add more predefined presets here
 ];
 
-export const getPresetById = (id: string): Preset | undefined => {
+export const getPredefinedPresetById = (id: string): Preset | undefined => {
   return predefinedPresets.find(preset => preset.metadata.id === id);
-};
-
-export const getPresetsByType = (type: 'predefined' | 'database'): Preset[] => {
-  return predefinedPresets.filter(preset => preset.metadata.type === type);
 };

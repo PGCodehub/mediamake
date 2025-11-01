@@ -8,6 +8,7 @@ import { Upload } from "lucide-react";
 interface DropzoneProps {
     onDrop: (files: File[]) => void;
     onPaste?: (e: ClipboardEvent) => void;
+    onPasteClick?: () => void;
     accept?: Record<string, string[]>;
     maxFiles?: number;
     className?: string;
@@ -17,11 +18,14 @@ interface DropzoneProps {
     uploadLinkText?: string;
     description?: string;
     hint?: string;
+    showPasteButton?: boolean;
+    pasteButtonText?: string;
 }
 
 export function Dropzone({
     onDrop,
     onPaste,
+    onPasteClick,
     accept = {
         "video/*": [".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm"],
         "audio/*": [".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a"],
@@ -35,6 +39,8 @@ export function Dropzone({
     uploadLinkText = "click to upload",
     description = "Drop your files here or",
     hint = "Copy/Paste Image / URLs",
+    showPasteButton = true,
+    pasteButtonText = "Paste Image",
 }: DropzoneProps) {
     const dropzoneRef = useRef<HTMLDivElement>(null);
 
@@ -88,15 +94,32 @@ export function Dropzone({
                     <p className="text-sm text-muted-foreground">
                         {isDragActive ? "Drop files here..." : description}
                     </p>
-                    {showUploadLink && (
-                        <button
-                            type="button"
-                            onClick={open}
-                            className="text-primary hover:text-primary/80 underline font-medium text-sm transition-colors"
-                        >
-                            {uploadLinkText}
-                        </button>
-                    )}
+                    <div className="flex gap-2 justify-center">
+                        {showUploadLink && (
+                            <button
+                                type="button"
+                                onClick={open}
+                                className="text-primary hover:text-primary/80 underline font-medium text-sm transition-colors"
+                            >
+                                {uploadLinkText}
+                            </button>
+                        )}
+                        {showPasteButton && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    if (onPasteClick) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onPasteClick();
+                                    }
+                                }}
+                                className="text-primary hover:text-primary/80 underline font-medium text-sm transition-colors"
+                            >
+                                {pasteButtonText}
+                            </button>
+                        )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
                         {hint}
                     </p>

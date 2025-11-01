@@ -24,7 +24,16 @@ const presetParams = z.object({
         fit: z
           .enum(['cover', 'contain', 'fill', 'none', 'scale-down'])
           .optional(),
-        startOffset: z.number().optional(),
+        startCropVideo: z.number().optional(),
+        ranges: z
+          .array(
+            z
+              .string()
+              .describe(
+                'Time ranges to make the video appear until 0:10-2:30 will make it appear from context start: 10, duration: 140',
+              ),
+          )
+          .optional(),
         duration: z.number().optional(),
         loop: z.boolean().optional(),
         blendMode: z
@@ -116,6 +125,8 @@ const presetExecution = (
     mediaItem: z.infer<typeof presetParams>['mediaItems'][0],
     sceneId: string,
     isFadeIn: boolean = true,
+    timeRangeOffset: number = 0,
+    timeRangeDuration?: number,
   ): (GenericEffectData | ShakeEffectData)[] => {
     const effects: (GenericEffectData | ShakeEffectData)[] = [];
     const transition = isFadeIn
@@ -128,11 +139,8 @@ const presetExecution = (
     if (!transition || transition === 'none') return effects;
 
     const effectDuration = duration || (isFadeIn ? 1.5 : 1); // Default durations
-    const startTime = isFadeIn
-      ? 0
-      : mediaItem.duration
-        ? mediaItem.duration - effectDuration
-        : 0;
+    const mediaDuration = timeRangeDuration || mediaItem.duration || 0;
+    const startTime = isFadeIn ? 0 : mediaDuration - effectDuration;
 
     // Base opacity effect for all transitions (including pure opacity)
     effects.push({
@@ -369,162 +377,245 @@ const presetExecution = (
 
     return effects;
   };
-  // Parse aspect ratio
+  // Helper function to parse time range (MM:SS-MM:SS format)
+  const parseTimeRange = (
+    range: string,
+  ): { start: number; duration: number } | null => {
+    if (!range) return null;
+
+    const match = range.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+
+    const startMinutes = parseInt(match[1], 10);
+    const startSeconds = parseInt(match[2], 10);
+    const endMinutes = parseInt(match[3], 10);
+    const endSeconds = parseInt(match[4], 10);
+
+    const startTime = startMinutes * 60 + startSeconds;
+    const endTime = endMinutes * 60 + endSeconds;
+    const duration = endTime - startTime;
+
+    return {
+      start: startTime,
+      duration: duration,
+    };
+  };
 
   // Create scenes for each video
   const scenes = params.mediaItems
-    .map((mediaItem, index) => {
-      const sceneId = `${params.trackName ?? 'media-track'}-${mediaItem.type}-${index}`;
+    .flatMap((mediaItem, index) => {
+      // If ranges array is provided, create a scene for each range
+      const ranges = mediaItem.ranges || [];
 
-      // Create transition effects
-      const fadeInEffects = createTransitionEffects(mediaItem, sceneId, true);
-      const fadeOutEffects = createTransitionEffects(mediaItem, sceneId, false);
-      const allEffects = [...fadeInEffects, ...fadeOutEffects];
-
-      let mediaType = mediaItem.type;
-
-      if (!mediaType) {
-        if (
-          mediaItem.src.endsWith('.png') ||
-          mediaItem.src.endsWith('.jpg') ||
-          mediaItem.src.endsWith('.jpeg') ||
-          mediaItem.src.endsWith('.gif') ||
-          mediaItem.src.endsWith('.webp') ||
-          mediaItem.src.endsWith('.svg') ||
-          mediaItem.src.endsWith('.avif')
-        ) {
-          mediaType = 'image';
-        } else if (
-          mediaItem.src.endsWith('.mp4') ||
-          mediaItem.src.endsWith('.webm') ||
-          mediaItem.src.endsWith('.mov') ||
-          mediaItem.src.endsWith('.avi') ||
-          mediaItem.src.endsWith('.mkv') ||
-          mediaItem.src.endsWith('.flv') ||
-          mediaItem.src.endsWith('.wmv')
-        ) {
-          mediaType = 'video';
-        } else {
-          mediaType = 'audio';
-        }
+      // If no ranges provided, create a single scene with no time range
+      if (ranges.length === 0) {
+        return [createMediaScene(mediaItem, index, 0, null)];
       }
 
-      if (mediaType === 'video') {
-        return {
-          id: sceneId,
-          componentId: 'VideoAtom',
-          type: 'atom' as const,
-          data: {
-            ...(mediaItem.duration && !mediaItem.fitDurationTo && mediaItem.loop
-              ? { srcDuration: mediaItem.duration }
-              : {}),
-            src: mediaItem.src,
-            className:
-              mediaItem.fit === 'cover'
-                ? 'w-full h-full object-cover'
-                : 'w-full h-auto',
-            fit: mediaItem.fit ?? ('cover' as const),
-            loop: mediaItem.loop ?? false,
-            muted: mediaItem.mute ?? false,
-            volume: mediaItem.volume ?? 1,
-            playbackRate: mediaItem.playbackRate ?? 1,
-            style: {
-              ...(mediaItem.blendMode
-                ? { mixBlendMode: mediaItem.blendMode }
-                : {}),
-              ...(mediaItem.opacity !== undefined
-                ? { opacity: mediaItem.opacity }
-                : {}),
-            },
-            startFrom: mediaItem.startOffset ?? 0,
-          } as VideoAtomDataProps,
-          context: {
-            timing: {
-              ...(mediaItem.duration ? { duration: mediaItem.duration } : {}),
-              ...(mediaItem.fitDurationTo
-                ? { fitDurationTo: mediaItem.fitDurationTo }
-                : {}),
-            },
-          },
-          effects: allEffects.map((effect, effectIndex) => {
-            // Use shake component for shake effects
-            const isShakeEffect =
-              'amplitude' in effect && effect.amplitude !== undefined;
-            return {
-              id: `${sceneId}-effect-${effectIndex}`,
-              componentId: isShakeEffect ? 'shake' : 'generic',
-              data: effect,
-            };
-          }),
-        };
-      } else if (mediaType === 'image') {
-        return {
-          id: sceneId,
-          componentId: 'ImageAtom',
-          type: 'atom' as const,
-          data: {
-            src: mediaItem.src,
-            className: 'w-full h-auto object-cover',
-            fit: mediaItem.fit ?? ('cover' as const),
-            style: {
-              ...(mediaItem.opacity !== undefined
-                ? { opacity: mediaItem.opacity }
-                : {}),
-            },
-          },
-          context: {
-            timing: {
-              ...(mediaItem.startOffset
-                ? { start: mediaItem.startOffset }
-                : {}),
-              ...(mediaItem.duration ? { duration: mediaItem.duration } : {}),
-              ...(mediaItem.fitDurationTo
-                ? { fitDurationTo: mediaItem.fitDurationTo }
-                : {}),
-            },
-          },
-          effects: allEffects.map((effect, effectIndex) => {
-            // Use shake component for shake effects
-            const isShakeEffect =
-              'amplitude' in effect && effect.amplitude !== undefined;
-            return {
-              id: `${sceneId}-effect-${effectIndex}`,
-              componentId: isShakeEffect ? 'shake' : 'generic',
-              data: effect,
-            };
-          }),
-        };
-      } else if (mediaType === 'audio') {
-        return {
-          id: sceneId,
-          componentId: 'AudioAtom',
-          type: 'atom' as const,
-          data: {
-            src: mediaItem.src,
-            className: 'w-full h-auto object-cover',
-            fit: mediaItem.fit ?? ('cover' as const),
-            volume: mediaItem.volume ?? 1,
-            startFrom: mediaItem.startOffset ?? 0,
-          } as AudioAtomDataProps,
-          context: {
-            timing: {
-              ...(mediaItem.duration ? { duration: mediaItem.duration } : {}),
-            },
-          },
-          effects: allEffects.map((effect, effectIndex) => {
-            // Use shake component for shake effects
-            const isShakeEffect =
-              'amplitude' in effect && effect.amplitude !== undefined;
-            return {
-              id: `${sceneId}-effect-${effectIndex}`,
-              componentId: isShakeEffect ? 'shake' : 'generic',
-              data: effect,
-            };
-          }),
-        };
-      }
+      // Create a scene for each range
+      return ranges.map((range, rangeIndex) => {
+        const timeRange = parseTimeRange(range);
+        return createMediaScene(mediaItem, index, rangeIndex, timeRange);
+      });
     })
     .filter(scene => scene !== undefined);
+
+  // Helper function to create a media scene
+  function createMediaScene(
+    mediaItem: z.infer<typeof presetParams>['mediaItems'][0],
+    index: number,
+    rangeIndex: number,
+    timeRange: { start: number; duration: number } | null,
+  ) {
+    const sceneId = `${params.trackName ?? 'media-track'}-${mediaItem.type}-${index}${rangeIndex > 0 ? `-range-${rangeIndex}` : ''}`;
+
+    // Create transition effects
+    const timeRangeOffset = timeRange ? timeRange.start : 0;
+    const timeRangeDuration = timeRange ? timeRange.duration : undefined;
+    const fadeInEffects = createTransitionEffects(
+      mediaItem,
+      sceneId,
+      true,
+      timeRangeOffset,
+      timeRangeDuration,
+    );
+    const fadeOutEffects = createTransitionEffects(
+      mediaItem,
+      sceneId,
+      false,
+      timeRangeOffset,
+      timeRangeDuration,
+    );
+    const allEffects = [...fadeInEffects, ...fadeOutEffects];
+
+    let mediaType = mediaItem.type;
+
+    if (!mediaType) {
+      if (
+        mediaItem.src.endsWith('.png') ||
+        mediaItem.src.endsWith('.jpg') ||
+        mediaItem.src.endsWith('.jpeg') ||
+        mediaItem.src.endsWith('.gif') ||
+        mediaItem.src.endsWith('.webp') ||
+        mediaItem.src.endsWith('.svg') ||
+        mediaItem.src.endsWith('.avif')
+      ) {
+        mediaType = 'image';
+      } else if (
+        mediaItem.src.endsWith('.mp4') ||
+        mediaItem.src.endsWith('.webm') ||
+        mediaItem.src.endsWith('.mov') ||
+        mediaItem.src.endsWith('.avi') ||
+        mediaItem.src.endsWith('.mkv') ||
+        mediaItem.src.endsWith('.flv') ||
+        mediaItem.src.endsWith('.wmv')
+      ) {
+        mediaType = 'video';
+      } else {
+        mediaType = 'audio';
+      }
+    }
+
+    if (mediaType === 'video') {
+      return {
+        id: sceneId,
+        componentId: 'VideoAtom',
+        type: 'atom' as const,
+        data: {
+          src: mediaItem.src,
+          className:
+            mediaItem.fit === 'cover'
+              ? 'w-full h-full object-cover'
+              : 'w-full h-auto',
+          fit: mediaItem.fit ?? ('cover' as const),
+          loop: mediaItem.loop ?? false,
+          muted: mediaItem.mute ?? false,
+          volume: mediaItem.volume ?? 1,
+          playbackRate: mediaItem.playbackRate ?? 1,
+          style: {
+            ...(mediaItem.blendMode
+              ? { mixBlendMode: mediaItem.blendMode }
+              : {}),
+            ...(mediaItem.opacity !== undefined
+              ? { opacity: mediaItem.opacity }
+              : {}),
+          },
+          startFrom: mediaItem.startCropVideo ?? 0,
+          ...(timeRange &&
+            !mediaItem.duration && {
+              srcDuration: timeRange.duration,
+            }),
+        } as VideoAtomDataProps,
+        context: {
+          timing: {
+            ...(mediaItem.duration && !timeRange
+              ? { duration: mediaItem.duration }
+              : {}),
+            ...(mediaItem.fitDurationTo
+              ? { fitDurationTo: mediaItem.fitDurationTo }
+              : {}),
+            ...(timeRange
+              ? {
+                  start: timeRange.start,
+                  duration: timeRange.duration,
+                }
+              : {}),
+          },
+        },
+        effects: allEffects.map((effect, effectIndex) => {
+          // Use shake component for shake effects
+          const isShakeEffect =
+            'amplitude' in effect && effect.amplitude !== undefined;
+          return {
+            id: `${sceneId}-effect-${effectIndex}`,
+            componentId: isShakeEffect ? 'shake' : 'generic',
+            data: effect,
+          };
+        }),
+      };
+    } else if (mediaType === 'image') {
+      return {
+        id: sceneId,
+        componentId: 'ImageAtom',
+        type: 'atom' as const,
+        data: {
+          src: mediaItem.src,
+          className: 'w-full h-auto object-cover',
+          fit: mediaItem.fit ?? ('cover' as const),
+          style: {
+            ...(mediaItem.opacity !== undefined
+              ? { opacity: mediaItem.opacity }
+              : {}),
+          },
+        },
+        context: {
+          timing: {
+            ...(timeRange
+              ? {
+                  start: timeRange.start,
+                  duration: timeRange.duration,
+                }
+              : {}),
+            ...(mediaItem.startCropVideo && !timeRange
+              ? { start: mediaItem.startCropVideo }
+              : {}),
+            ...(mediaItem.duration && !timeRange
+              ? { duration: mediaItem.duration }
+              : {}),
+            ...(mediaItem.fitDurationTo
+              ? { fitDurationTo: mediaItem.fitDurationTo }
+              : {}),
+          },
+        },
+        effects: allEffects.map((effect, effectIndex) => {
+          // Use shake component for shake effects
+          const isShakeEffect =
+            'amplitude' in effect && effect.amplitude !== undefined;
+          return {
+            id: `${sceneId}-effect-${effectIndex}`,
+            componentId: isShakeEffect ? 'shake' : 'generic',
+            data: effect,
+          };
+        }),
+      };
+    } else if (mediaType === 'audio') {
+      return {
+        id: sceneId,
+        componentId: 'AudioAtom',
+        type: 'atom' as const,
+        data: {
+          src: mediaItem.src,
+          className: 'w-full h-auto object-cover',
+          fit: mediaItem.fit ?? ('cover' as const),
+          volume: mediaItem.volume ?? 1,
+          startFrom: mediaItem.startCropVideo ?? 0,
+        } as AudioAtomDataProps,
+        context: {
+          timing: {
+            ...(timeRange
+              ? {
+                  start: timeRange.start,
+                  duration: timeRange.duration,
+                }
+              : {}),
+            ...(mediaItem.duration && !timeRange
+              ? { duration: mediaItem.duration }
+              : {}),
+          },
+        },
+        effects: allEffects.map((effect, effectIndex) => {
+          // Use shake component for shake effects
+          const isShakeEffect =
+            'amplitude' in effect && effect.amplitude !== undefined;
+          return {
+            id: `${sceneId}-effect-${effectIndex}`,
+            componentId: isShakeEffect ? 'shake' : 'generic',
+            data: effect,
+          };
+        }),
+      };
+    }
+  }
 
   return {
     output: {
@@ -586,12 +677,14 @@ const _presetMetadata: PresetMetadata = {
         type: 'video',
         fit: 'cover',
         opacity: 0.8,
+        ranges: ['0:10-2:30'],
       },
       {
         src: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
         type: 'video',
         fit: 'cover',
         opacity: 1.0,
+        ranges: ['2:30-5:00', '6:00-8:30'],
       },
     ],
     trackName: 'media-track',

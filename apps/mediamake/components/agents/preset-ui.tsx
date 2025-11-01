@@ -26,7 +26,7 @@ import { runPreset, insertPresetToComposition } from "../editor/presets/preset-h
 import { processPresetInputData, createBaseDataFromReferences } from "../editor/presets/preset-data-mutation";
 import { createCachedFetcher } from "@/lib/audio-cache";
 import { SimplePresetProvider } from "./preset-provider-simple";
-import { getPresetById, predefinedPresets } from "../editor/presets/registry/presets-registry";
+import { getPredefinedPresetById, predefinedPresets } from "../editor/presets/registry/presets-registry";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RenderButton, RenderProvider, useRender } from '../editor/player';
 import { useRouter } from 'next/navigation';
@@ -122,7 +122,7 @@ export function PresetUI({ presetSets = [], isLoading = false, baseData = {} }: 
 
                 try {
                     // Get the preset from the registry
-                    const preset = getPresetById(presetItem.presetId);
+                    const preset = getPredefinedPresetById(presetItem.presetId);
                     if (!preset) {
                         console.warn(`Preset ${presetItem.presetId} not found in registry`);
                         continue;

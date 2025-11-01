@@ -144,9 +144,6 @@ export function MetaDataCard({
                                 showTabs={true}
                                 showResetButton={true}
                             />
-                            <div className="mt-2 text-[10px] text-muted-foreground">
-                                Input: 333+753(R), Output: 33
-                            </div>
                         </div>
                     </CardContent>
                 )}

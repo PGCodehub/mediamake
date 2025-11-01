@@ -129,7 +129,7 @@ export function PresetProvider({ children }: PresetProviderProps) {
             // For predefined presets, reload from registry
             if (presetToRefresh.preset.metadata.type === 'predefined') {
                 // Import the registry dynamically to get the latest version
-                import('./registry/presets-registry').then(({ getPresetById }) => {
+                import('./registry/presets-registry').then(({ getPredefinedPresetById: getPresetById }) => {
                     const refreshedPreset = getPresetById(presetToRefresh.preset.metadata.id);
                     if (refreshedPreset) {
                         setAppliedPresets((currentPrev: AppliedPresetsState) => ({

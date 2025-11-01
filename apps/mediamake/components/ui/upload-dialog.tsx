@@ -26,6 +26,7 @@ import {
     AlertCircle
 } from "lucide-react";
 import { Tag } from "@/app/types/media";
+import { callAgent } from "@/components/agents/agent-helper";
 
 interface UploadDialogProps {
     isOpen: boolean;
@@ -67,6 +68,7 @@ export function UploadDialog({
     const [contentSubType, setContentSubType] = useState<string>('full');
     const [contentSource, setContentSource] = useState<string>('upload');
     const [selectedTags, setSelectedTags] = useState<string[]>(preselectedTags);
+    const [analyzeAudio, setAnalyzeAudio] = useState<boolean>(true);
 
     // Tag management
     const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -304,6 +306,34 @@ export function UploadDialog({
                 }
 
                 const result = await response.json();
+
+                // Run audio analysis if it's an audio file and analyzeAudio is enabled
+                if (detectedContentType === 'audio' && analyzeAudio && media.mediaUrl) {
+                    try {
+                        console.log('Running audio analysis for:', media.mediaName);
+
+                        // Call the audio analysis agent using the helper function
+                        const analysisResult = await callAgent('audio-analysis', {
+                            audioUrls: [media.mediaUrl],
+                            clientId: 'default',
+                            tags: selectedTags,
+                            userRequest: `Analyze audio file: ${media.mediaName}`,
+                            analysisOptions: {
+                                extractWaveform: true,
+                                analyzeFrequency: true,
+                                detectBeats: true,
+                            },
+                        });
+
+                        console.log('Audio analysis completed for:', media.mediaName);
+
+                        // Update the result with analysis data
+                        result.analysisResult = analysisResult;
+                    } catch (analysisError) {
+                        console.warn('Error running audio analysis:', analysisError);
+                        // Don't fail the entire operation if analysis fails
+                    }
+                }
 
                 // Update progress
                 setEntryCreationProgress(prev => {
@@ -729,6 +759,23 @@ export function UploadDialog({
                                 onChange={(e) => setContentSource(e.target.value)}
                                 placeholder="e.g., upload, web, youtube, pinterest, etc."
                             />
+                        </div>
+
+                        {/* Audio Analysis */}
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="analyzeAudio"
+                                    checked={analyzeAudio}
+                                    onCheckedChange={(checked) => setAnalyzeAudio(checked as boolean)}
+                                />
+                                <Label htmlFor="analyzeAudio" className="text-sm">
+                                    Analyze Audio Files
+                                </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Automatically analyze audio files for mood, genre, and technical characteristics
+                            </p>
                         </div>
 
                         {/* Tags */}

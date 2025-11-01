@@ -13,7 +13,7 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { renderRequestDB } from '@/lib/render-mongodb';
 import { getDatabase } from '@/lib/mongodb';
-import { getPresetById } from '@/components/editor/presets/registry/presets-registry';
+import { getPredefinedPresetById } from '@/components/editor/presets/registry/presets-registry';
 import {
   runPreset,
   insertPresetToComposition,
@@ -108,7 +108,7 @@ export const POST = async (req: NextRequest) => {
 
       // Fetch preset based on type
       if (presetType === 'predefined') {
-        const foundPreset = getPresetById(presetId);
+        const foundPreset = getPredefinedPresetById(presetId);
         if (!foundPreset) {
           return NextResponse.json(
             { error: `Predefined preset with ID '${presetId}' not found` },

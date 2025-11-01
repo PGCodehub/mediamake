@@ -118,6 +118,7 @@ export const ComponentRenderer: React.FC<BaseRenderableData> = ({
         id, componentId, data, context: context
     };
 
+
     if (type === 'layout') {
 
         const config = getComponentConfig(componentId);

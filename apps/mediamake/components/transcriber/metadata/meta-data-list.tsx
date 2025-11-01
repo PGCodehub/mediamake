@@ -180,8 +180,8 @@ export function MetaDataList({
                             onClick={onRefresh}
                             disabled={isRefreshing || isRunning}
                         >
-                            <RefreshCw className="h-3 w-3 mr-2" />
-                            Refresh
+                            <RefreshCw className={`h-3 w-3 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            {isRefreshing ? 'Refreshing...' : 'Refresh'}
                         </Button>
                         <Button
                             onClick={onRun}

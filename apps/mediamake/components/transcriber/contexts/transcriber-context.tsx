@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Transcription } from "@/app/types/transcription";
+import { toast } from "sonner";
 
 type CurrentView = 'explorer' | 'assembly' | 'elevenlabs' | 'settings' | 'new' | 'editor' | 'info' | 'video' | 'metadata' | 'autofix';
 interface TranscriberContextType {
@@ -46,22 +47,29 @@ export function TranscriberProvider({ children }: { children: ReactNode }) {
         if (selectedTranscription) {
             try {
                 setIsRefreshing(true);
+                setError(null);
                 const response = await fetch(`/api/transcriptions/${selectedTranscription}`);
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Refresh response:', data);
                     setTranscriptionData(data.transcription);
                     setError(null);
+                    toast.success('Transcription data refreshed successfully');
                 } else {
-                    setError('Transcription not found');
+                    const errorMessage = 'Transcription not found';
+                    setError(errorMessage);
+                    toast.error(errorMessage);
                 }
             } catch (error) {
                 console.error('Error refreshing transcription:', error);
-                setError('Failed to refresh transcription');
+                const errorMessage = 'Failed to refresh transcription';
+                setError(errorMessage);
+                toast.error(errorMessage);
             } finally {
                 setIsRefreshing(false);
             }
         }
-    }, []);
+    }, [selectedTranscription]);
 
     // Auto-switch to editor view when transcription is selected (only from explorer)
     useEffect(() => {

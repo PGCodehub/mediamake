@@ -6,7 +6,7 @@ import {
   TextAtomData,
 } from '@microfox/remotion';
 import z from 'zod';
-import { PresetMetadata, PresetOutput } from '../types';
+import { PresetMetadata, PresetOutput, PresetPassedProps } from '../types';
 import { CSSProperties } from 'react';
 
 const presetParams = z.object({
@@ -145,6 +145,7 @@ const presetParams = z.object({
 
 const presetExecution = (
   params: z.infer<typeof presetParams>,
+  props: Partial<PresetPassedProps>,
 ): PresetOutput => {
   const {
     inputCaptions,

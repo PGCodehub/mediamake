@@ -75,6 +75,101 @@ export function UploadTrigger({
         }
     };
 
+    // Handle paste button click
+    const handlePasteClick = async () => {
+        try {
+            // Access clipboard data directly
+            const clipboardItems = await navigator.clipboard.read();
+            const files: File[] = [];
+            const urls: string[] = [];
+
+            // Process clipboard items
+            for (const item of clipboardItems) {
+                if (item.types.includes('text/plain')) {
+                    const text = await item.getType('text/plain');
+                    const textContent = await text.text();
+
+                    // Check if it's a URL
+                    try {
+                        const url = new URL(textContent);
+                        if (url.protocol === 'http:' || url.protocol === 'https:') {
+                            urls.push(textContent);
+                        }
+                    } catch (error) {
+                        // Not a URL, ignore
+                    }
+                }
+
+                if (item.types.some(type => type.startsWith('image/'))) {
+                    const blob = await item.getType(item.types.find(type => type.startsWith('image/'))!);
+                    const file = new File([blob], 'pasted-image.png', { type: blob.type });
+                    files.push(file);
+                }
+            }
+
+            // Handle files from clipboard
+            if (files.length > 0) {
+                setDownloadStatus("Processing pasted files...");
+                setSelectedFiles(files);
+                setIsDialogOpen(true);
+                setDownloadStatus("");
+            }
+
+            // Handle URLs from clipboard
+            if (urls.length > 0) {
+                console.log('Processing URLs:', urls);
+                setIsDownloading(true);
+                setDownloadStatus(`Downloading from ${urls.length} URL${urls.length > 1 ? 's' : ''}...`);
+
+                // Download and convert URLs to files
+                const urlFiles = await Promise.all(
+                    urls.map(async (url) => {
+                        try {
+                            console.log('Downloading URL:', url);
+                            setDownloadStatus(`Downloading: ${url.length > 50 ? url.substring(0, 50) + '...' : url}`);
+
+                            const response = await fetch('/api/download-media', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ url })
+                            });
+
+                            console.log('Download response status:', response.status);
+                            if (response.ok) {
+                                const blob = await response.blob();
+                                console.log('Downloaded blob:', blob.type, blob.size);
+                                const fileName = url.split('/').pop() || 'downloaded-file';
+                                const file = new (File as any)([blob], fileName, { type: blob.type });
+                                return file as File;
+                            } else {
+                                const errorText = await response.text();
+                                console.error('Download failed:', response.status, errorText);
+                            }
+                        } catch (error) {
+                            console.error('Error downloading from URL:', error);
+                        }
+                        return null;
+                    })
+                );
+
+                const validFiles = urlFiles.filter((file): file is File => file !== null);
+                if (validFiles.length > 0) {
+                    setDownloadStatus("Opening upload dialog...");
+                    setSelectedFiles(validFiles);
+                    setIsDialogOpen(true);
+                }
+
+                setIsDownloading(false);
+                setDownloadStatus("");
+            }
+
+        } catch (error) {
+            console.error('Error accessing clipboard:', error);
+            // Show a message to the user
+            alert('Unable to access clipboard. Please try copying an image and using Ctrl+V instead.');
+        }
+    };
+
     // Handle clipboard paste
     const handlePaste = async (e: ClipboardEvent) => {
         e.preventDefault();
@@ -179,11 +274,14 @@ export function UploadTrigger({
                     <Dropzone
                         onDrop={onDrop}
                         onPaste={handlePaste}
+                        onPasteClick={handlePasteClick}
                         maxFiles={maxFiles}
                         className={cn("p-8", dropzoneClassName)}
                         uploadLinkText="click to upload"
                         description="Drop your files here or"
                         hint={`Max ${maxFiles} files • Copy/Paste Image / URLs`}
+                        showPasteButton={true}
+                        pasteButtonText="Paste Image"
                     />
 
                     {/* Download Progress Overlay */}
