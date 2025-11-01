@@ -10,7 +10,8 @@
     "remotion": "remotion studio components/remotion/index.ts",
     "render": "remotion render",
     "deploy": "node deploy.mjs",
-    "db:optimize": "npx tsx lib/scripts/optimize-database-indexes.ts"
+    "db:optimize": "npx tsx lib/scripts/optimize-database-indexes.ts",
+    "push": "npx tsx scripts/push-preset.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.17",
