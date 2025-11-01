@@ -19,6 +19,9 @@ import { subKineticMotionPreset } from './sub-kinetic-motion';
 import { customThemeBackgroundPreset } from './custom-theme-background';
 import { advancedSubtitlesAnimsPreset } from './advanced-subtitles-anims';
 import { lottieShowcasePreset } from './lottie-showcase';
+import { subKineticGradientFlowPreset } from './sub-kinetic-gradient-flow';
+// import { subKineticLayoutVerticalPreset } from './sub-kinetic-layout-vertical';
+// import { subKineticAnimKeywordFocusPreset } from './sub-kinetic-anim-keyword-focus';
 import { beatstitchWithCaptionsPreset } from './beatstitchwithcaptions';
 import { brollPreset } from './broll';
 import { quotePresentPreset } from './quote-present';
@@ -45,6 +48,9 @@ export const predefinedPresets: Preset[] = [
   subKineticMotionPreset,
   advancedSubtitlesAnimsPreset,
   lottieShowcasePreset,
+  subKineticGradientFlowPreset,
+  // subKineticLayoutVerticalPreset,
+  // subKineticAnimKeywordFocusPreset,
   brollPreset,
   quotePresentPreset,
   htmlBlockAtomPreset,
