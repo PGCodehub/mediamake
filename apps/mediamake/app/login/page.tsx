@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import Link from 'next/link';
+// import Link from 'next/link';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -53,10 +53,11 @@ export default function LoginForm() {
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your Client ID and Key to access your account. Don't have an account?{' '}
+            Enter your Client ID and Key to access your account.
+            {/* Don't have an account?{' '}
             <Link href="/signup" className="text-primary hover:underline">
               Sign Up
-            </Link>
+            </Link> */}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -69,7 +70,7 @@ export default function LoginForm() {
                 placeholder="Your client ID"
                 required
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
+                onChange={e => setClientId(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
@@ -82,7 +83,7 @@ export default function LoginForm() {
                 required
                 placeholder="Your client key"
                 value={clientKey}
-                onChange={(e) => setClientKey(e.target.value)}
+                onChange={e => setClientKey(e.target.value)}
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
