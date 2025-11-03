@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TranscriptionPicker } from "../../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
 import { FlexibleObjectField } from "../flexible-object-field";
+import { PresetSelectorField } from "./preset-selector-field";
 import {
     DndContext,
     closestCenter,
@@ -1250,10 +1251,34 @@ function renderField(
     parentSchema?: any,
     availableReferences?: string[],
     baseData?: Record<string, any>,
-    showReferencesDropdown?: boolean
+    showReferencesDropdown?: boolean,
+    metadata?: PresetMetadata,
+    allFieldValues?: Record<string, any>
 ) {
     const fieldValue = currentValue;
     const handleChange = onChangeHandler || (() => { });
+
+    // Check if this field is a preset selector
+    const isPresetSelector = metadata?.presetSelector?.field === fieldKey && field.enum;
+
+    if (isPresetSelector && metadata) {
+        return (
+            <PresetSelectorField
+                field={field}
+                fieldKey={fieldKey}
+                value={fieldValue}
+                onChange={handleChange}
+                metadata={metadata}
+                onChildFieldChange={handleChange}
+                childFieldValues={allFieldValues || {}}
+                parentSchema={parentSchema}
+                availableReferences={availableReferences}
+                baseData={baseData}
+                showReferencesDropdown={showReferencesDropdown}
+                renderField={renderField}
+            />
+        );
+    }
 
     const renderInput = () => {
         switch (field.type) {
@@ -1766,7 +1791,7 @@ function NestedForm({ schema, value, onChange, fieldKey, depth = 0, parentSchema
                                             </Tooltip>
                                         )}
                                     </div>
-                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema, availableReferences, baseData, showReferencesDropdown)}
+                                    {renderField(field, field.key, fieldValue, handleFieldChange, depth + 1, schema, availableReferences, baseData, showReferencesDropdown, undefined, undefined)}
                                 </div>
                             );
                         })
@@ -2200,7 +2225,7 @@ export function SchemaForm({
                                 <div className="space-y-4">
                                     {fields.map((field) => {
                                         const fieldValue = formData[field.key];
-                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData, showReferencesDropdown);
+                                        return renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData, showReferencesDropdown, metadata, formData);
                                     })}
                                 </div>
                             ) : (
@@ -2233,7 +2258,7 @@ export function SchemaForm({
                             <div className="space-y-4">
                                 {fields.map((field) => {
                                     const fieldValue = formData[field.key];
-                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData, showReferencesDropdown)}</div>;
+                                    return <div key={field.key}>{renderField(field, field.key, fieldValue, handleFieldChange, 0, schema, availableReferences, baseData, showReferencesDropdown, metadata, formData)}</div>;
                                 })}
                             </div>
                         ) : (

@@ -306,7 +306,7 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
 
         switch (key) {
             case 'scale':
-                styles.transform = `scale(${value})`;
+                styles.transform = `${styles.transform || ''} scale(${value})`.trim();
                 break;
             case 'rotate':
                 const rotateValue = typeof value === 'string' && value.includes('deg') ? value : `${value}deg`;

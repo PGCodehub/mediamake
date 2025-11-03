@@ -20,6 +20,11 @@ export interface PresetMetadata {
     presets?: string[]; // IDs of other presets to inject
     helpers?: string[]; // Names of helper functions from stdlib to inject
   };
+  // NEW: Preset selector configuration for dynamic schema loading
+  presetSelector?: {
+    field: string; // The field name that acts as the selector (e.g., 'animationStyle')
+    mapping: Record<string, string>; // Maps selector value to preset ID
+  };
 }
 
 export interface Preset {

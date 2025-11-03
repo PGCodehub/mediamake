@@ -39,12 +39,14 @@ const presetParams = z.object({
     .describe('Array of captions with timing and words (data-referrable)'),
   
   // === ANIMATION SELECTOR ===
+  // This field will dynamically load the selected preset's parameters in the UI
   animationStyle: z
     .enum(['slide-in', 'bounce', 'rotate-fade', 'scale-pulse'])
     .default('slide-in')
     .describe('Choose which animation style to apply'),
   
   // === COMMON PARAMETERS ===
+  // These are shared across all animation styles
   fontSize: z
     .number()
     .min(20)
@@ -64,56 +66,12 @@ const presetParams = z.object({
     .default(0.8)
     .describe('Animation duration in seconds'),
   
-  // === SLIDE-IN SPECIFIC ===
-  slideDirection: z
-    .enum(['left', 'right', 'top', 'bottom'])
-    .default('left')
-    .describe('[Slide-In] Direction from which text slides in'),
-  
-  slideDistance: z
-    .number()
-    .min(50)
-    .max(500)
-    .default(200)
-    .describe('[Slide-In] Distance to slide in pixels'),
-  
-  // === BOUNCE SPECIFIC ===
-  bounceHeight: z
-    .number()
-    .min(10)
-    .max(100)
-    .default(30)
-    .describe('[Bounce] Height of bounce in pixels'),
-  
-  // === ROTATE-FADE SPECIFIC ===
-  rotationDegrees: z
-    .number()
-    .min(-360)
-    .max(360)
-    .default(90)
-    .describe('[Rotate-Fade] Degrees to rotate'),
-  
-  // === SCALE-PULSE SPECIFIC ===
-  maxScale: z
-    .number()
-    .min(1)
-    .max(2)
-    .default(1.3)
-    .describe('[Scale-Pulse] Maximum scale multiplier'),
-  
-  addGlow: z
-    .boolean()
-    .default(true)
-    .describe('[Scale-Pulse] Add glow effect that pulses with scale'),
-  
-  glowColor: z
-    .string()
-    .default('#00ffff')
-    .describe('[Scale-Pulse] Glow color in hex'),
+  // Child preset-specific parameters will be dynamically loaded based on animationStyle selection
+  // No need to define them here - they come from the child presets automatically!
 });
 
 const presetExecution = async (
-  params: z.infer<typeof presetParams>,
+  params: z.infer<typeof presetParams> & Record<string, any>, // Allow dynamic child preset fields
   props: any,
 ): Promise<PresetOutput> => {
   const { presets } = props;
@@ -124,6 +82,7 @@ const presetExecution = async (
   console.log('   - Font size:', params.fontSize);
 
   // === SELECT AND CALL THE CHOSEN ANIMATION PRESET ===
+  // Child preset-specific fields are dynamically loaded and passed through params
   let selectedOutput: PresetOutput;
 
   switch (params.animationStyle) {
@@ -135,8 +94,8 @@ const presetExecution = async (
       selectedOutput = await presets['kinetic-slide-in'](
         {
           inputCaptions: params.inputCaptions,
-          direction: params.slideDirection,
-          distance: params.slideDistance,
+          direction: params.direction || params.slideDirection, // Support both field names
+          distance: params.distance || params.slideDistance,
           duration: params.animationDuration,
           fontSize: params.fontSize,
           textColor: params.textColor,
@@ -225,6 +184,16 @@ const presetMetadata: PresetMetadata = {
       'kinetic-scale-pulse',
     ],
   },
+  // NEW: Preset selector configuration for dynamic schema loading
+  presetSelector: {
+    field: 'animationStyle',
+    mapping: {
+      'slide-in': 'kinetic-slide-in',
+      'bounce': 'kinetic-bounce',
+      'rotate-fade': 'kinetic-rotate-fade',
+      'scale-pulse': 'kinetic-scale-pulse',
+    },
+  },
   defaultInputParams: {
     inputCaptions: [
       {
@@ -253,17 +222,7 @@ const presetMetadata: PresetMetadata = {
     fontSize: 56,
     textColor: '#ffffff',
     animationDuration: 0.8,
-    // Slide-in defaults
-    slideDirection: 'left',
-    slideDistance: 200,
-    // Bounce defaults
-    bounceHeight: 30,
-    // Rotate-fade defaults
-    rotationDegrees: 90,
-    // Scale-pulse defaults
-    maxScale: 1.3,
-    addGlow: true,
-    glowColor: '#00ffff',
+    // Child preset-specific defaults will be loaded from the selected child preset
   },
 };
 
