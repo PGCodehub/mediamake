@@ -256,6 +256,10 @@ const presetExecution = (
             id: effectId,
             componentId: 'pan',
             data: {
+              mode: 'provider',
+              targetIds: [
+                `${params.trackName ?? 'imageloop'}-image-${imageIndex}`,
+              ],
               panDirection: effect.pan?.direction || 'up',
               panDistance: effect.pan?.distance || 200,
               loopTimes: effect.pan?.loopTimes || 1,
@@ -270,6 +274,10 @@ const presetExecution = (
             id: effectId,
             componentId: 'zoom',
             data: {
+              mode: 'provider',
+              targetIds: [
+                `${params.trackName ?? 'imageloop'}-image-${imageIndex}`,
+              ],
               zoomDirection: effect.zoom?.direction || 'in',
               zoomDepth: effect.zoom?.depth || 1.2,
               loopTimes: effect.zoom?.loopTimes || 1,
@@ -285,7 +293,9 @@ const presetExecution = (
             componentId: 'generic',
             data: {
               mode: 'provider',
-              targetIds: [`image-${imageIndex}`],
+              targetIds: [
+                `${params.trackName ?? 'imageloop'}-image-${imageIndex}`,
+              ],
               type: effect.generic?.animationType || 'ease-in-out',
               ranges:
                 effect.generic?.animationRanges?.map(range => ({
@@ -311,6 +321,10 @@ const presetExecution = (
               duration: effectDuration,
               start: timeRange?.start || 0,
               end: timeRange?.end || undefined,
+              mode: 'provider',
+              targetIds: [
+                `${params.trackName ?? 'imageloop'}-image-${imageIndex}`,
+              ],
             },
           };
 

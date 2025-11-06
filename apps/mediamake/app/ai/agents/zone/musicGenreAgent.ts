@@ -339,7 +339,7 @@ export const musicGenreAgent = aiRouter
 
       const { musicDescription, model } = ctx.request.params;
 
-      const selectedModel = google(model || 'gemini-1.5-pro');
+      const selectedModel = google(model || 'gemini-2.5-pro');
 
       const result = await generateObject({
         model: selectedModel,
