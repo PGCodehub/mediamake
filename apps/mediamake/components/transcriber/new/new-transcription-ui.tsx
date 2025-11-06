@@ -78,6 +78,7 @@ export function NewTranscriptionUI() {
     // Audio-to-text states
     const [audioUrl, setAudioUrl] = useState("");
     const [language, setLanguage] = useState("");
+    const [transcriptionProvider, setTranscriptionProvider] = useState<"assembly" | "gemini">("assembly");
     const [error, setError] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -172,7 +173,7 @@ export function NewTranscriptionUI() {
         }
 
         const voiceId = useCustomVoice ? customVoiceId.trim() : selectedVoice;
-        
+
         if (!voiceId) {
             setError("Please select or enter a voice ID");
             return;
@@ -225,10 +226,17 @@ export function NewTranscriptionUI() {
         setProgressMessage("Starting transcription...");
 
         try {
-            console.log('Starting transcription with audio URL:', audioUrl.trim(), 'and language:', language.trim() || undefined);
+            console.log('Starting transcription with audio URL:', audioUrl.trim(), 'language:', language.trim() || undefined, 'provider:', transcriptionProvider);
+
+            // Determine API endpoint based on provider
+            const apiEndpoint = transcriptionProvider === 'gemini'
+                ? '/api/transcribe/gemini'
+                : '/api/transcribe/assembly';
+
+            setProgressMessage(`Starting transcription with ${transcriptionProvider === 'gemini' ? 'Gemini' : 'AssemblyAI'}...`);
 
             // Call the transcription API
-            const response = await fetch('/api/transcribe/assembly', {
+            const response = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -254,7 +262,8 @@ export function NewTranscriptionUI() {
             setProgressMessage("Transcription completed! Processing with AI...");
 
             // If autofix is enabled, trigger it automatically
-            if (enableAutofix && result.transcription.assemblyId) {
+            // Autofix works with both AssemblyAI and Gemini transcriptions
+            if (enableAutofix && result.transcription?._id) {
                 setIsAutofixing(true);
                 setProgressMessage("AI is fixing transcription errors...");
                 try {
@@ -264,7 +273,7 @@ export function NewTranscriptionUI() {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            assemblyId: result.transcription.assemblyId,
+                            transcriptionId: result.transcription._id,
                             userRequest: userRequest.trim() || undefined,
                             userWrittenTranscription: userWrittenTranscription.trim() || undefined,
                         }),
@@ -344,7 +353,7 @@ export function NewTranscriptionUI() {
                     <h1 className="text-xl font-bold">Start New Transcription</h1>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                    {mode === "audio-to-text" 
+                    {mode === "audio-to-text"
                         ? "Enter an audio URL to begin transcribing. The audio will be processed and converted to text with timestamps."
                         : "Enter text to convert to speech with ElevenLabs. Audio and timing data will be generated automatically."
                     }
@@ -421,6 +430,39 @@ export function NewTranscriptionUI() {
                                             </div>
 
                                             <div className="space-y-2">
+                                                <Label htmlFor="transcriptionProvider" className="flex items-center gap-2">
+                                                    <Bot className="h-4 w-4" />
+                                                    Transcription Provider
+                                                </Label>
+                                                <Select
+                                                    value={transcriptionProvider}
+                                                    onValueChange={(value: "assembly" | "gemini") => setTranscriptionProvider(value)}
+                                                    disabled={isTranscribing}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="assembly">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">AssemblyAI</span>
+                                                                <span className="text-xs text-muted-foreground">High accuracy, word-level timestamps</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                        <SelectItem value="gemini">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">Google Gemini</span>
+                                                                <span className="text-xs text-muted-foreground">AI-powered transcription with timestamps</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Choose your preferred transcription service provider.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
                                                 <Label htmlFor="language" className="flex items-center gap-2">
                                                     <Globe className="h-4 w-4" />
                                                     Language (Optional)
@@ -469,7 +511,7 @@ export function NewTranscriptionUI() {
                                                             value={userRequest}
                                                             onChange={(e) => setUserRequest(e.target.value)}
                                                             placeholder="e.g., Fix spelling errors and improve sentence flow..."
-                                                            className="h-[60px] resize-none text-sm overflow-y-auto"
+                                                            className="min-h-[100px] resize-none text-sm overflow-y-auto"
                                                             disabled={isTranscribing}
                                                         />
                                                     </div>
@@ -480,7 +522,7 @@ export function NewTranscriptionUI() {
                                                             value={userWrittenTranscription}
                                                             onChange={(e) => setUserWrittenTranscription(e.target.value)}
                                                             placeholder="Paste your corrected version here for reference..."
-                                                            className="h-[80px] resize-none text-sm overflow-y-auto"
+                                                            className="min-h-[400px] resize-none text-sm overflow-y-auto"
                                                             disabled={isTranscribing}
                                                         />
                                                     </div>

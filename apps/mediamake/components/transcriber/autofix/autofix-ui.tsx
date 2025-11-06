@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
     Bot,
     Sparkles,
@@ -13,14 +14,19 @@ import {
     Check,
     X,
     AlertCircle,
-    Users
+    Users,
+    Copy,
+    Edit2
 } from "lucide-react";
 import { useTranscriber } from "../contexts/transcriber-context";
+import { AudioPlayerProvider, useAudioPlayer } from "../audio-player-context";
+import { AudioPlayer } from "../audio-player";
 import { Transcription } from "@/app/types/transcription";
-import { fixTranscriptionErrors } from "../transcription-metadata";
 import { toast } from "sonner";
+import { callAgent } from "@/components/agents/agent-helper";
 
-export function AutofixUI() {
+// Internal component that uses the audio player context
+function AutofixUIInner() {
     const {
         transcriptionData,
         setTranscriptionData,
@@ -30,6 +36,8 @@ export function AutofixUI() {
         error
     } = useTranscriber();
 
+    const { setAudioUrl } = useAudioPlayer();
+
     const [userRequest, setUserRequest] = useState("");
     const [userWrittenTranscription, setUserWrittenTranscription] = useState("");
     const [isAIFixing, setIsAIFixing] = useState(false);
@@ -37,6 +45,17 @@ export function AutofixUI() {
     const [aiConfidence, setAiConfidence] = useState<number>(0);
     const [aiFixesAppliedToDatabase, setAiFixesAppliedToDatabase] = useState(false);
     const [autofixError, setAutofixError] = useState<string | null>(null);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [editedTitle, setEditedTitle] = useState("");
+    const [isSavingTitle, setIsSavingTitle] = useState(false);
+
+    // Set audio URL when transcription data changes
+    useEffect(() => {
+        if (transcriptionData?.audioUrl) {
+            console.log('Setting audio URL:', transcriptionData.audioUrl);
+            setAudioUrl(transcriptionData.audioUrl);
+        }
+    }, [transcriptionData?.audioUrl, setAudioUrl]);
 
     // Load existing autofix data if available
     useEffect(() => {
@@ -46,6 +65,84 @@ export function AutofixUI() {
             setUserWrittenTranscription(autofix.userWrittenTranscription || "");
         }
     }, [transcriptionData]);
+
+    const copyAudioUrl = () => {
+        if (!transcriptionData?.audioUrl) {
+            toast.error('No audio URL available');
+            return;
+        }
+
+        navigator.clipboard.writeText(transcriptionData.audioUrl);
+        toast.success('Audio URL copied to clipboard');
+    };
+
+    const copyCaptionJson = () => {
+        if (!transcriptionData) return;
+
+        const exportData = {
+            id: transcriptionData._id,
+            audioUrl: transcriptionData.audioUrl,
+            language: transcriptionData.language,
+            captions: transcriptionData.captions,
+            correctedText: transcriptionData.processingData?.step2?.humanCorrectedText,
+            exportedAt: new Date().toISOString()
+        };
+
+        navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+        toast.success('Caption JSON copied to clipboard');
+    };
+
+    // Handler to save the edited title
+    const handleSaveTitle = async () => {
+        if (!transcriptionData?._id || !editedTitle.trim()) {
+            setIsEditingTitle(false);
+            return;
+        }
+
+        setIsSavingTitle(true);
+        try {
+            const response = await fetch(`/api/transcriptions/${transcriptionData._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: editedTitle.trim(),
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update title');
+            }
+
+            // Update local state
+            setTranscriptionData({
+                ...transcriptionData,
+                title: editedTitle.trim(),
+            });
+
+            setIsEditingTitle(false);
+            toast.success('Title updated successfully');
+        } catch (error) {
+            console.error('Error updating title:', error);
+            toast.error('Failed to update title');
+        } finally {
+            setIsSavingTitle(false);
+        }
+    };
+
+    // Handler to start editing
+    const handleStartEditingTitle = () => {
+        if (!transcriptionData) return;
+        setEditedTitle(transcriptionData.title || 'Untitled Transcription');
+        setIsEditingTitle(true);
+    };
+
+    // Handler to cancel editing
+    const handleCancelEditingTitle = () => {
+        setIsEditingTitle(false);
+        setEditedTitle("");
+    };
 
     const handleTranscriptionDataUpdate = async (updatedData: any) => {
         try {
@@ -77,8 +174,8 @@ export function AutofixUI() {
     };
 
     const handleAIAutofix = async () => {
-        if (!transcriptionData?.assemblyId) {
-            setAutofixError("Assembly ID not found. Cannot perform AI autofix.");
+        if (!transcriptionData?._id) {
+            setAutofixError("Transcription ID not found. Cannot perform AI autofix.");
             return;
         }
 
@@ -86,12 +183,14 @@ export function AutofixUI() {
         setAutofixError(null);
 
         try {
-            const result = await fixTranscriptionErrors(
-                transcriptionData.assemblyId,
-                userRequest.trim() || undefined,
-                userWrittenTranscription.trim() || undefined,
-            );
+            const result = await callAgent('/transcription-fixer', {
+                transcriptionId: transcriptionData._id,
+                assemblyId: transcriptionData.assemblyId, // May be undefined for Gemini, but that's okay
+                userRequest: userRequest.trim() || undefined,
+                userWrittenTranscription: userWrittenTranscription.trim() || undefined,
+            })
 
+            console.log('AI autofix result:', result);
             if (result && result.success) {
                 setAiChanges(result.changes);
                 setAiConfidence(result.confidence);
@@ -181,6 +280,79 @@ export function AutofixUI() {
 
     return (
         <div className="flex-1 flex flex-col h-full">
+            {/* Audio Player */}
+            {transcriptionData?.audioUrl && (
+                <div className="p-4 border-b border-border">
+                    <div className="mb-2 text-sm text-muted-foreground flex flex-row justify-between">
+                        <div className="min-w-0 flex-1">
+                            {isEditingTitle ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={editedTitle}
+                                        onChange={(e) => setEditedTitle(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSaveTitle();
+                                            if (e.key === 'Escape') handleCancelEditingTitle();
+                                        }}
+                                        className="text-xl font-bold h-auto py-1"
+                                        autoFocus
+                                        disabled={isSavingTitle}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={handleSaveTitle}
+                                        disabled={isSavingTitle}
+                                        className="flex-shrink-0"
+                                    >
+                                        {isSavingTitle ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Check className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={handleCancelEditingTitle}
+                                        disabled={isSavingTitle}
+                                        className="flex-shrink-0"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 group">
+                                    <h1 className="text-xl font-bold truncate">
+                                        {transcriptionData.title || 'Untitled Transcription'}
+                                    </h1>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={handleStartEditingTitle}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 h-6 w-6 p-0"
+                                    >
+                                        <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-row items-center gap-2">
+                            <span className="max-w-[30ch] truncate"> Audio (URL: {transcriptionData.audioUrl})</span>
+                            <div className="flex flex-row items-center gap-2 cursor-pointer hover:text-primary" onClick={copyAudioUrl}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                URL
+                            </div>
+                            <div className="flex flex-row items-center gap-2 cursor-pointer hover:text-primary" onClick={copyCaptionJson}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                JSON
+                            </div>
+                        </div>
+                    </div>
+                    <AudioPlayer />
+                </div>
+            )}
+
             {/* Header */}
             <div className="py-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -198,125 +370,117 @@ export function AutofixUI() {
             <div className="flex-1 p-6 overflow-y-auto">
                 <div className="space-y-6">
                     {/* AI Autofix Section */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Bot className="h-5 w-5 text-blue-600" />
-                                AI Autofixer
-                                <Badge variant="outline" className="text-xs">Beta</Badge>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="userRequest">User Request (Optional)</Label>
-                                    <Textarea
-                                        id="userRequest"
-                                        value={userRequest}
-                                        onChange={(e) => setUserRequest(e.target.value)}
-                                        placeholder="e.g., Fix spelling errors and improve sentence flow..."
-                                        className="h-[80px] resize-none overflow-y-auto"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="userWrittenTranscription">Your Written Version (Optional)</Label>
-                                    <Textarea
-                                        id="userWrittenTranscription"
-                                        value={userWrittenTranscription}
-                                        onChange={(e) => setUserWrittenTranscription(e.target.value)}
-                                        placeholder="Paste your corrected version here for reference..."
-                                        className="h-[80px] resize-none overflow-y-auto"
-                                    />
-                                </div>
+
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="userRequest">User Request (Optional)</Label>
+                                <Textarea
+                                    id="userRequest"
+                                    value={userRequest}
+                                    onChange={(e) => setUserRequest(e.target.value)}
+                                    placeholder="e.g., Fix spelling errors and improve sentence flow..."
+                                    className="min-h-[200px] resize-none overflow-y-auto"
+                                />
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="userWrittenTranscription">Your Written Version (Optional)</Label>
+                                <Textarea
+                                    id="userWrittenTranscription"
+                                    value={userWrittenTranscription}
+                                    onChange={(e) => setUserWrittenTranscription(e.target.value)}
+                                    placeholder="Paste your corrected version here for reference..."
+                                    className="h-[400px] resize-none overflow-y-auto"
+                                />
+                            </div>
+                        </div>
 
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <Button
-                                    onClick={handleAIAutofix}
-                                    disabled={isAIFixing}
-                                    variant="default"
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                    {isAIFixing ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            AI Fixing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="h-4 w-4 mr-2" />
-                                            AI Autofix
-                                        </>
-                                    )}
-                                </Button>
-
-                                {aiChanges.length > 0 && !aiFixesAppliedToDatabase && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Button
+                                onClick={handleAIAutofix}
+                                disabled={isAIFixing}
+                                variant="default"
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                {isAIFixing ? (
                                     <>
-                                        <Button
-                                            onClick={handleApplyAIFixes}
-                                            variant="default"
-                                            size="sm"
-                                            className="bg-green-600 hover:bg-green-700"
-                                        >
-                                            <Check className="h-4 w-4 mr-2" />
-                                            Apply AI Fixes
-                                        </Button>
-                                        <Button
-                                            onClick={handleClear}
-                                            variant="outline"
-                                            size="sm"
-                                        >
-                                            <X className="h-4 w-4 mr-2" />
-                                            Clear
-                                        </Button>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        AI Fixing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="h-4 w-4 mr-2" />
+                                        AI Autofix
                                     </>
                                 )}
-                            </div>
+                            </Button>
 
-                            {/* AI Changes Display */}
-                            {aiChanges.length > 0 && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Label>AI Changes Made</Label>
-                                        {aiFixesAppliedToDatabase && (
-                                            <Badge className="bg-green-100 text-green-800">
-                                                <Check className="h-3 w-3 mr-1" />
-                                                Applied to Database
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <div className="space-y-2">
-                                            {aiChanges.map((change, index) => (
-                                                <div key={index} className="text-sm">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {change.type.replace('_', ' ')}
-                                                        </Badge>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {change.confidence ? `${(change.confidence * 100).toFixed(0)}% confidence` : ''}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-xs">
-                                                        <span className="text-red-600 line-through">{change.original}</span>
-                                                        <span className="mx-2">→</span>
-                                                        <span className="text-green-600">{change.fixed}</span>
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground mt-1">
-                                                        {change.reason}
-                                                    </div>
+                            {aiChanges.length > 0 && !aiFixesAppliedToDatabase && (
+                                <>
+                                    <Button
+                                        onClick={handleApplyAIFixes}
+                                        variant="default"
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700"
+                                    >
+                                        <Check className="h-4 w-4 mr-2" />
+                                        Apply AI Fixes
+                                    </Button>
+                                    <Button
+                                        onClick={handleClear}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        <X className="h-4 w-4 mr-2" />
+                                        Clear
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* AI Changes Display */}
+                        {aiChanges.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Label>AI Changes Made</Label>
+                                    {aiFixesAppliedToDatabase && (
+                                        <Badge className="bg-green-100 text-green-800">
+                                            <Check className="h-3 w-3 mr-1" />
+                                            Applied to Database
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="space-y-2">
+                                        {aiChanges.map((change, index) => (
+                                            <div key={index} className="text-sm">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {change.type.replace('_', ' ')}
+                                                    </Badge>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {change.confidence ? `${(change.confidence * 100).toFixed(0)}% confidence` : ''}
+                                                    </span>
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <div className="text-xs">
+                                                    <span className="text-red-600 line-through">{change.original}</span>
+                                                    <span className="mx-2">→</span>
+                                                    <span className="text-green-600">{change.fixed}</span>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground mt-1">
+                                                    {change.reason}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Human Correction Section */}
-                    <Card>
+                    {/* <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Users className="h-5 w-5 text-green-600" />
@@ -328,7 +492,7 @@ export function AutofixUI() {
                                 For manual corrections, use the main editor interface. This tab focuses on AI-powered autofix capabilities.
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card> */}
 
                     {/* Error Display */}
                     {autofixError && (
@@ -343,5 +507,14 @@ export function AutofixUI() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Main component that provides the audio player context
+export function AutofixUI() {
+    return (
+        <AudioPlayerProvider>
+            <AutofixUIInner />
+        </AudioPlayerProvider>
     );
 }

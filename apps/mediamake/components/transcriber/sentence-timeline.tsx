@@ -154,9 +154,9 @@ const SentenceTrack = React.forwardRef<HTMLDivElement, SentenceTrackProps>(
     ({ sentence, pixelsPerSecond, onWordUpdate, prevSentenceEnd, nextSentenceStart }, ref) => {
         return (
             <div ref={ref} className="h-12 border-b relative my-1">
-                {sentence.words.map(word => (
+                {sentence.words.map((word, _ind) => (
                     <WordBlock
-                        key={word.id}
+                        key={`${word.id}-${_ind}`}
                         word={word}
                         sentence={sentence}
                         pixelsPerSecond={pixelsPerSecond}
@@ -581,7 +581,7 @@ export function SentenceTimeline({
                                                 sentenceTrackRefs.current[sentence.id] = el;
                                             }
                                         }}
-                                        key={sentence.id}
+                                        key={`${sentence.id}-${index}`}
                                         sentence={sentence}
                                         pixelsPerSecond={pixelsPerSecond}
                                         onWordUpdate={handleWordUpdate}
