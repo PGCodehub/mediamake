@@ -27,7 +27,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TranscriptionPicker } from "../../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
-import { FlexibleObjectField } from "../flexible-object-field";
+import { FlexibleObjectField } from "./flexible-object-field";
 import { PresetSelectorField } from "./preset-selector-field";
 import {
     DndContext,

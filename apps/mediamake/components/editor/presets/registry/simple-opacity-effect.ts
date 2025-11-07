@@ -3,7 +3,7 @@ import { PresetMetadata, PresetOutput } from '../types';
 
 /**
  * Simple Opacity Effect Preset
- * 
+ *
  * This is a simple example preset that demonstrates the new dependency injection system.
  * It uses helper functions from preset-stdlib instead of defining them inline.
  */
@@ -36,7 +36,7 @@ const presetExecution = (
   }
 
   // Use the createOpacityEffect helper from stdlib
-  const effects = params.targetWords.map((word) => ({
+  const effects = params.targetWords.map(word => ({
     id: `opacity-${word.id}`,
     componentId: 'generic',
     data: helpers.createOpacityEffect(word.id, word, null),
@@ -102,4 +102,3 @@ export const simpleOpacityEffectPreset = {
   presetFunction: _presetExecution,
   presetParams: z.toJSONSchema(presetParams),
 };
-

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Plus, Trash2, Settings } from "lucide-react";
-import { JsonEditor } from "../player/json-editor";
+import { JsonEditor } from "../../player/json-editor";
 
 interface FlexibleObjectFieldProps {
     value: any;

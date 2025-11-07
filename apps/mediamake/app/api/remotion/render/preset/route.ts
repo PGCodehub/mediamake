@@ -17,11 +17,11 @@ import { getPredefinedPresetById } from '@/components/editor/presets/registry/pr
 import {
   runPreset,
   insertPresetToComposition,
-} from '@/components/editor/presets/preset-helpers';
+} from '@/components/editor/presets/engine/preset-helpers';
 import {
   processPresetInputData,
   createBaseDataFromReferences,
-} from '@/components/editor/presets/preset-data-mutation';
+} from '@/components/editor/presets/engine/preset-data-mutation';
 import { createCachedFetcher } from '@/lib/audio-cache';
 import {
   DatabasePreset,

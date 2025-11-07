@@ -14,8 +14,8 @@ import { toast } from "sonner";
 import { getPredefinedPresetById } from "./registry/presets-registry";
 import { SavePresetDialog } from "./save-preset-dialog";
 import { LoadPresetDialog } from "./load-preset-dialog";
-import { DefaultCard } from "./default-card";
-import { createBaseDataFromReferences } from "./preset-data-mutation";
+import { DefaultCard } from "./form/default-card";
+import { createBaseDataFromReferences } from "./engine/preset-data-mutation";
 import {
     DndContext,
     closestCenter,

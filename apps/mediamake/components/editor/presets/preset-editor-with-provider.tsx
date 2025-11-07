@@ -3,9 +3,12 @@
 import { InputCompositionProps, RenderableComponentData } from "@microfox/remotion";
 import { useEffect, useState, useRef } from "react";
 import { Preset, DatabasePreset, AppliedPreset, AppliedPresetsState } from "./types";
-import { PresetProvider, PresetList, PresetPlayer, createAppliedPreset, usePresetContext } from "./index";
-import { runPreset, insertPresetToComposition } from "./preset-helpers";
-import { processPresetInputData, createBaseDataFromReferences } from "./preset-data-mutation";
+import { PresetProvider, usePresetContext } from "./preset-provider";
+import { PresetList } from "./preset-list";
+import { PresetPlayer } from "./preset-player";
+import { createAppliedPreset } from "./preset-list";
+import { runPreset, insertPresetToComposition } from "./engine/preset-helpers";
+import { processPresetInputData, createBaseDataFromReferences } from "./engine/preset-data-mutation";
 import AudioScene from "../../remotion/test.json";
 import { RenderProvider } from "../player";
 import { config } from "process";

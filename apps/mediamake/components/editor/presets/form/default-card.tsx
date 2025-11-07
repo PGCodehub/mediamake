@@ -10,14 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Plus, Trash2, Settings, Image, Code, Save, Loader2 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { ReferenceItem, DefaultPresetData } from "./types";
-import { createBaseDataFromReferences } from "./preset-data-mutation";
-import { MediaPicker } from "../media/media-picker";
+import { ReferenceItem, DefaultPresetData } from "../types";
+import { createBaseDataFromReferences } from "../engine/preset-data-mutation";
+import { MediaPicker } from "../../media/media-picker";
 import { MediaFile } from "@/app/types/media";
-import { TranscriptionPicker } from "../../transcriber/picker/transcription-picker";
+import { TranscriptionPicker } from "../../../transcriber/picker/transcription-picker";
 import { Transcription } from "@/app/types/transcription";
-import { JsonEditor } from "../player/json-editor";
-import { SchemaForm } from "./form/schema-form";
+import { JsonEditor } from "../../player/json-editor";
+import { SchemaForm } from "./schema-form";
 import { z } from "zod";
 
 interface DefaultCardProps {
@@ -27,6 +27,11 @@ interface DefaultCardProps {
     onToggleExpansion?: () => void;
 }
 
+/**
+ * Default Card is the Base Data Card for the Preset Editor.
+ * @param param0 
+ * @returns 
+ */
 export function DefaultCard({
     defaultData,
     onDefaultDataChange,

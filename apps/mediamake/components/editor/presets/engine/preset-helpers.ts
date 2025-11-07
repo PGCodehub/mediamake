@@ -3,9 +3,15 @@ import {
   RenderableComponentData,
   replaceMatchingComponent,
 } from '@microfox/datamotion';
-import { PresetOutput, PresetPassedProps, PresetMetadata } from './types';
+import {
+  PresetOutput,
+  PresetPassedProps,
+  PresetMetadata,
+  Preset,
+  DatabasePreset,
+} from '../types';
 import { presetStdLib } from './preset-stdlib';
-import { getPredefinedPresetById } from './registry/presets-registry';
+import { getPredefinedPresetById } from '../registry/presets-registry';
 
 const findMatchingComponents = (
   childrenData: RenderableComponentData[],
@@ -78,6 +84,54 @@ const findMatchingComponentsByQuery = (
 // Export the new function
 export { findMatchingComponentsByQuery };
 
+/**
+ * Helper function to get a preset by metadata.id from either predefined or database sources
+ * Works in both server-side and client-side contexts
+ */
+const getPresetById = async (
+  presetId: string,
+): Promise<Preset | DatabasePreset | null> => {
+  // First, try predefined presets
+  const predefinedPreset = getPredefinedPresetById(presetId);
+  if (predefinedPreset) {
+    return predefinedPreset;
+  }
+
+  // Try to fetch from database by metadata.id
+  // First, try server-side database access (if available)
+  try {
+    const { getDatabase } = await import('@/lib/mongodb');
+    const db = await getDatabase();
+    const collection = db.collection<DatabasePreset>('presets');
+    const preset = await collection.findOne({
+      'metadata.id': presetId,
+    });
+    if (preset) {
+      return preset;
+    }
+  } catch (error) {
+    // If database import fails (client-side), try API fetch
+    if (typeof window !== 'undefined' || typeof fetch !== 'undefined') {
+      try {
+        const response = await fetch(`/api/presets/by-metadata-id/${presetId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.preset) {
+            return data.preset as DatabasePreset;
+          }
+        }
+      } catch (fetchError) {
+        console.warn(
+          `Failed to fetch database preset by metadata.id ${presetId}:`,
+          fetchError,
+        );
+      }
+    }
+  }
+
+  return null;
+};
+
 // Helper function to clean function string by removing imports and type annotations
 export const cleanFunctionString = (func: Function): string => {
   const funcString = func.toString();
@@ -113,7 +167,10 @@ export const runPreset = async <T>(
   // Inject dependencies if metadata is provided
   if (metadata?.dependencies) {
     // Inject helper functions from stdlib
-    if (metadata.dependencies.helpers && metadata.dependencies.helpers.length > 0) {
+    if (
+      metadata.dependencies.helpers &&
+      metadata.dependencies.helpers.length > 0
+    ) {
       injectedProps.helpers = {};
       for (const helperName of metadata.dependencies.helpers) {
         if (helperName in presetStdLib) {
@@ -128,10 +185,13 @@ export const runPreset = async <T>(
     }
 
     // Inject other presets as callable functions
-    if (metadata.dependencies.presets && metadata.dependencies.presets.length > 0) {
+    if (
+      metadata.dependencies.presets &&
+      metadata.dependencies.presets.length > 0
+    ) {
       injectedProps.presets = {};
       for (const presetId of metadata.dependencies.presets) {
-        const dependencyPreset = getPredefinedPresetById(presetId);
+        const dependencyPreset = await getPresetById(presetId);
         if (dependencyPreset) {
           // Create a wrapper function that can be called from within the preset
           injectedProps.presets[presetId] = async (
@@ -153,7 +213,7 @@ export const runPreset = async <T>(
           };
         } else {
           console.warn(
-            `Preset dependency "${presetId}" not found in registry`,
+            `Preset dependency "${presetId}" not found in predefined or database presets`,
           );
         }
       }
