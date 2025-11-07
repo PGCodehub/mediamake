@@ -16,6 +16,18 @@ export interface PresetMetadata {
   createdAt?: Date;
   updatedAt?: Date;
   defaultInputParams?: any;
+  dependencies?: {
+    presets?: string[]; // IDs of other presets to inject
+    helpers?: string[]; // Names of helper functions from stdlib to inject
+  };
+  // NEW: Preset selector configuration for dynamic schema loading
+  presetSelector?: {
+    field: string; // The field name that acts as the selector (e.g., 'animationStyle')
+    mapping: Record<string, string>; // Maps selector value to preset ID
+  };
+  // Internal preset metadata - only used by other presets, not via insertPresetToComposition
+  _internalPreset?: boolean; // Marks preset as internal-only (used as helper function)
+  _internalPresetOutput?: 'effects' | 'children' | 'data'; // What to extract from internal preset output
 }
 
 export interface Preset {
@@ -37,6 +49,12 @@ export interface PresetPassedProps {
   };
   fetcher?: (url: string, data?: any) => Promise<any>;
   baseData?: Record<string, any>; // Base data containing references for data:[key] replacement
+  // Injected dependencies (populated at runtime by runPreset)
+  helpers?: Record<string, Function>;
+  presets?: Record<
+    string,
+    (params: any, props?: Partial<PresetPassedProps>) => Promise<PresetOutput>
+  >;
 }
 
 export interface PresetOutput {

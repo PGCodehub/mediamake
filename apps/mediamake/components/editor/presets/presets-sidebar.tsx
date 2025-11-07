@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Database, Code, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Preset, DatabasePreset } from "./types";
-import { predefinedPresets } from "./registry/presets-registry";
+import { predefinedPresets } from "./registry/registry/presets-registry";
 
 interface PresetsSidebarProps {
     selectedPreset: Preset | DatabasePreset | null;

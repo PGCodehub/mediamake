@@ -13,15 +13,15 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { renderRequestDB } from '@/lib/render-mongodb';
 import { getDatabase } from '@/lib/mongodb';
-import { getPredefinedPresetById } from '@/components/editor/presets/registry/presets-registry';
+import { getPredefinedPresetById } from '@/components/editor/presets/registry/registry/presets-registry';
 import {
   runPreset,
   insertPresetToComposition,
-} from '@/components/editor/presets/preset-helpers';
+} from '@/components/editor/presets/engine/preset-helpers';
 import {
   processPresetInputData,
   createBaseDataFromReferences,
-} from '@/components/editor/presets/preset-data-mutation';
+} from '@/components/editor/presets/engine/preset-data-mutation';
 import { createCachedFetcher } from '@/lib/audio-cache';
 import {
   DatabasePreset,
@@ -187,6 +187,7 @@ export const POST = async (req: NextRequest) => {
               body: JSON.stringify(data),
             }),
         },
+        preset.metadata, // Pass metadata for dependency injection
       );
       if (!presetOutput) {
         return NextResponse.json(

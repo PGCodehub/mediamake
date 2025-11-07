@@ -148,11 +148,21 @@ const parseHexColor = (hex: string): ColorRGBA => {
 const parseRgbaColor = (rgba: string): ColorRGBA => {
     const match = rgba.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
     if (match) {
+        let alpha = 1;
+        if (match[4]) {
+            const alphaValue = parseFloat(match[4]);
+            // Handle percentage values (e.g., 75.6 means 0.756)
+            if (alphaValue > 1) {
+                alpha = Math.max(0, Math.min(1, alphaValue / 100));
+            } else {
+                alpha = Math.max(0, Math.min(1, alphaValue));
+            }
+        }
         return {
             r: Math.max(0, Math.min(255, parseInt(match[1], 10))),
             g: Math.max(0, Math.min(255, parseInt(match[2], 10))),
             b: Math.max(0, Math.min(255, parseInt(match[3], 10))),
-            a: match[4] ? Math.max(0, Math.min(1, parseFloat(match[4]))) : 1
+            a: alpha
         };
     }
     return { r: 0, g: 0, b: 0, a: 1 };
@@ -172,16 +182,28 @@ const parseColor = (color: string): ColorRGBA => {
 };
 
 // Convert RGBA back to CSS color string
-const rgbaToString = (color: ColorRGBA): string => {
-    if (color.a === 1) {
-        return `rgb(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)})`;
-    } else {
-        return `rgba(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)}, ${color.a})`;
+// Always use rgba format to preserve consistency
+const rgbaToString = (color: ColorRGBA, preserveFormat?: { hasSpaces: boolean }): string => {
+    const r = Math.round(color.r);
+    const g = Math.round(color.g);
+    const b = Math.round(color.b);
+    const a = color.a;
+
+    // If format preservation is requested, match the spacing
+    if (preserveFormat) {
+        if (preserveFormat.hasSpaces) {
+            return `rgba(${r}, ${g}, ${b}, ${a})`;
+        } else {
+            return `rgba(${r},${g},${b},${a})`;
+        }
     }
+
+    // Default: always use rgba with spaces for readability
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
 
 // Interpolate between two colors
-const interpolateColors = (color1: string, color2: string, progress: number): string => {
+const interpolateColors = (color1: string, color2: string, progress: number, preserveFormat?: { hasSpaces: boolean }): string => {
     const parsedColor1 = parseColor(color1);
     const parsedColor2 = parseColor(color2);
 
@@ -192,7 +214,119 @@ const interpolateColors = (color1: string, color2: string, progress: number): st
         a: interpolate(progress, [0, 1], [parsedColor1.a, parsedColor2.a])
     };
 
-    return rgbaToString(interpolatedColor);
+    return rgbaToString(interpolatedColor, preserveFormat);
+};
+
+// Find all color patterns in a string (rgba, rgb, hex)
+interface ColorMatch {
+    fullMatch: string;
+    color: string;
+    startIndex: number;
+    endIndex: number;
+}
+
+const findColorsInString = (str: string): ColorMatch[] => {
+    const matches: ColorMatch[] = [];
+
+    // Match rgba/rgb patterns: rgba(255, 68, 15, 0.5) or rgb(255, 68, 15)
+    // Use a new regex instance each time to avoid global flag issues
+    const rgbaPattern = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/g;
+    let match;
+    // Reset lastIndex to ensure we start from the beginning
+    rgbaPattern.lastIndex = 0;
+    while ((match = rgbaPattern.exec(str)) !== null) {
+        matches.push({
+            fullMatch: match[0],
+            color: match[0],
+            startIndex: match.index,
+            endIndex: match.index + match[0].length
+        });
+    }
+
+    // Match hex patterns: #fff, #ffffff, #ffffffff
+    const hexPattern = /#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/g;
+    hexPattern.lastIndex = 0;
+    while ((match = hexPattern.exec(str)) !== null) {
+        matches.push({
+            fullMatch: match[0],
+            color: match[0],
+            startIndex: match.index,
+            endIndex: match.index + match[0].length
+        });
+    }
+
+    // Sort by start index (ascending for easier debugging, we'll reverse when needed)
+    return matches.sort((a, b) => a.startIndex - b.startIndex);
+};
+
+// Interpolate colors embedded within complex CSS property values
+const interpolateColorsInString = (str1: string, str2: string, progress: number): string => {
+    // Find all colors in both strings (already sorted ascending)
+    const colors1 = findColorsInString(str1);
+    const colors2 = findColorsInString(str2);
+
+    // If no colors found, return the first string
+    if (colors1.length === 0 && colors2.length === 0) {
+        return str1;
+    }
+
+    // If only one string has colors, return the first string
+    if (colors1.length === 0 || colors2.length === 0) {
+        return str1;
+    }
+
+    const minLength = Math.min(colors1.length, colors2.length);
+
+    // Create replacements array - we'll apply from end to start
+    const replacements: Array<{ startIndex: number; endIndex: number; replacement: string }> = [];
+
+    // Match colors by their order in the string (first with first, second with second, etc.)
+    for (let i = 0; i < minLength; i++) {
+        const color1 = colors1[i];
+        const color2 = colors2[i];
+
+        // Detect format from the original color (first string) - preserve exact spacing
+        const originalColor = color1.color;
+        // Check if original has spaces after commas by looking at the actual matched string
+        const hasSpaces = originalColor.includes(', ');
+
+        // Interpolate with format preservation - always use rgba format (never rgb)
+        const interpolatedColor = interpolateColors(color1.color, color2.color, progress, { hasSpaces });
+
+        replacements.push({
+            startIndex: color1.startIndex,
+            endIndex: color1.endIndex,
+            replacement: interpolatedColor
+        });
+    }
+
+    // Sort replacements by startIndex descending for safe replacement (end to start)
+    replacements.sort((a, b) => b.startIndex - a.startIndex);
+
+    // Apply replacements from end to start to preserve indices
+    // Since we sorted by descending startIndex, we can safely replace from end to start
+    let result = str1;
+    for (const replacement of replacements) {
+        // Verify we're replacing the correct substring
+        const originalSubstring = result.substring(replacement.startIndex, replacement.endIndex);
+        const expectedColor = colors1.find(c => c.startIndex === replacement.startIndex);
+
+        // Only replace if the substring matches what we expect (or is a color value)
+        if (expectedColor && (originalSubstring === expectedColor.color || originalSubstring.trim().match(/^rgba?\(/i))) {
+            result = result.substring(0, replacement.startIndex) + replacement.replacement + result.substring(replacement.endIndex);
+        } else {
+            // If the string structure changed, try to find the color again
+            const currentColors = findColorsInString(result);
+            const matchingColor = currentColors.find(c =>
+                Math.abs(c.startIndex - replacement.startIndex) < 30 // Allow some offset
+            );
+            if (matchingColor) {
+                result = result.substring(0, matchingColor.startIndex) + replacement.replacement + result.substring(matchingColor.endIndex);
+            }
+        }
+    }
+
+    return result;
 };
 
 // Calculate animated value based on ranges and progress
@@ -240,8 +374,19 @@ const calculateAnimatedValue = (
                     return trimmed.startsWith('#') || trimmed.startsWith('rgb');
                 };
 
+                // Check if both are simple color strings
                 if (isColor(currentValue) && isColor(nextValue)) {
                     return interpolateColors(currentValue, nextValue, localProgress);
+                }
+
+                // Check if strings contain colors (e.g., drop-shadow, linear-gradient, etc.)
+                const colors1 = findColorsInString(currentValue);
+                const colors2 = findColorsInString(nextValue);
+
+                if (colors1.length > 0 || colors2.length > 0) {
+                    // If strings have similar structure and contain colors, interpolate the colors
+                    // This handles cases like: drop-shadow(0 0 864px rgba(255,68,15,0))
+                    return interpolateColorsInString(currentValue, nextValue, localProgress);
                 }
 
                 const getUnitAndValue = (str: string) => {
@@ -306,7 +451,7 @@ const rangesToCSSProperties = (ranges: AnimationRange[], progress: number): Reac
 
         switch (key) {
             case 'scale':
-                styles.transform = `scale(${value})`;
+                styles.transform = `${styles.transform || ''} scale(${value})`.trim();
                 break;
             case 'rotate':
                 const rotateValue = typeof value === 'string' && value.includes('deg') ? value : `${value}deg`;
@@ -539,8 +684,6 @@ export const useAnimatedStyles = (componentId: string): React.CSSProperties => {
     }
 
     const { animatedStyles, targetIds } = context;
-
-
 
     if (targetIds.includes(componentId)) {
         return animatedStyles;
