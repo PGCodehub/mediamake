@@ -26,7 +26,7 @@ import { runPreset, insertPresetToComposition } from "../editor/presets/engine/p
 import { processPresetInputData, createBaseDataFromReferences } from "../editor/presets/engine/preset-data-mutation";
 import { createCachedFetcher } from "@/lib/audio-cache";
 import { SimplePresetProvider } from "./preset-provider-simple";
-import { getPredefinedPresetById, predefinedPresets } from "../editor/presets/registry/presets-registry";
+import { getPredefinedPresetById, predefinedPresets } from "../editor/presets/registry/registry/presets-registry";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RenderButton, RenderProvider, useRender } from '../editor/player';
 import { useRouter } from 'next/navigation';

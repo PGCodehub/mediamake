@@ -13,7 +13,7 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { renderRequestDB } from '@/lib/render-mongodb';
 import { getDatabase } from '@/lib/mongodb';
-import { getPredefinedPresetById } from '@/components/editor/presets/registry/presets-registry';
+import { getPredefinedPresetById } from '@/components/editor/presets/registry/registry/presets-registry';
 import {
   runPreset,
   insertPresetToComposition,

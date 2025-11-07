@@ -47,7 +47,7 @@ Or registered into the database check `scripts/push_presets.ts`;
 
 Presets are executed via `runPreset()` which:
 
-- Injects dependencies (helpers from stdlib, other presets)
+- Injects dependencies (helpers from stdlib, other presets from predefined/databse)
 - Executes the preset function with input data and props
 - Returns a `PresetOutput` containing composition data
 
@@ -61,7 +61,7 @@ The output is then merged into the composition using `insertPresetToComposition(
 
 1. **Dependency Injection** - If metadata declares dependencies:
    - **Helpers**: Injects functions from `presetStdLib` into `props.helpers`
-   - **Presets**: Injects other presets as callable functions into `props.presets`
+   - **Presets**: Injects other presets as callable functions into `props.presets` meaning whatever is actually defined in dpendencies of the current preset metadata
 
 2. **Function Execution** - Converts stringified function to executable code and runs it with:
    - `data`: The preset input parameters

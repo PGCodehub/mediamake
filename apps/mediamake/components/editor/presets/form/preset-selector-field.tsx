@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getPredefinedPresetById } from "../registry/presets-registry";
+import { getPredefinedPresetById } from "../registry/registry/presets-registry";
 import { PresetMetadata } from "../types";
 
 interface FormField {
@@ -74,12 +74,12 @@ export function PresetSelectorField({
                 const childPreset = getPredefinedPresetById(presetId);
                 if (childPreset) {
                     setChildPresetMetadata(childPreset.metadata);
-                    
+
                     // Extract unique fields from child preset that aren't in parent
                     const parentKeys = Object.keys(parentSchema?.properties || {});
                     const childSchema = childPreset.presetParams;
                     const childProperties = childSchema?.properties || {};
-                    
+
                     const uniqueFields = Object.entries(childProperties)
                         .filter(([key]) => !parentKeys.includes(key))
                         .map(([key, fieldDef]: [string, any]) => ({
@@ -93,9 +93,9 @@ export function PresetSelectorField({
                             properties: fieldDef.properties,
                             items: fieldDef.items
                         }));
-                    
+
                     setChildFields(uniqueFields);
-                    
+
                     // Initialize default values for child fields that aren't set yet
                     // Only do this once per preset selection to avoid infinite loops
                     if (initializedForValue.current !== value) {
@@ -140,7 +140,7 @@ export function PresetSelectorField({
                         </Tooltip>
                     )}
                 </div>
-                
+
                 <Select value={value || ""} onValueChange={(val) => onChange(fieldKey, val)}>
                     <SelectTrigger>
                         <SelectValue placeholder={`Select ${field.title || fieldKey}`} />
@@ -153,7 +153,7 @@ export function PresetSelectorField({
                         ))}
                     </SelectContent>
                 </Select>
-                
+
                 {field.enum && (
                     <div className="flex flex-wrap gap-1">
                         {field.enum.map((option: any) => (
@@ -190,7 +190,7 @@ export function PresetSelectorField({
                                 )}
                             </Button>
                         </CollapsibleTrigger>
-                        
+
                         <CollapsibleContent className="space-y-4 mt-4">
                             {childFields.map((childField) => {
                                 const childFieldValue = childFieldValues[childField.key];

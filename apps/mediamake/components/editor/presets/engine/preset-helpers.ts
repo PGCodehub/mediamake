@@ -11,7 +11,7 @@ import {
   DatabasePreset,
 } from '../types';
 import { presetStdLib } from './preset-stdlib';
-import { getPredefinedPresetById } from '../registry/presets-registry';
+import { getPredefinedPresetById } from '../registry/registry/presets-registry';
 
 const findMatchingComponents = (
   childrenData: RenderableComponentData[],
@@ -95,6 +95,13 @@ const getPresetById = async (
   const predefinedPreset = getPredefinedPresetById(presetId);
   if (predefinedPreset) {
     return predefinedPreset;
+  }
+
+  // Debug logging to help diagnose missing preset issues
+  if (process.env.NODE_ENV === 'development') {
+    console.debug(
+      `[getPresetById] Preset "${presetId}" not found in predefined presets. Searching database...`,
+    );
   }
 
   // Try to fetch from database by metadata.id
@@ -209,11 +216,55 @@ export const runPreset = async <T>(
                 `Preset dependency "${presetId}" returned null or failed to execute`,
               );
             }
+
+            // Handle internal presets - extract specific output based on _internalPresetOutput
+            if (
+              dependencyPreset.metadata._internalPreset &&
+              dependencyPreset.metadata._internalPresetOutput
+            ) {
+              const outputType =
+                dependencyPreset.metadata._internalPresetOutput;
+
+              if (outputType === 'effects') {
+                // Extract effects from the first child
+                const firstChild = result.output.childrenData?.[0];
+                if (firstChild?.effects) {
+                  return {
+                    ...result,
+                    output: {
+                      ...result.output,
+                      _extractedEffects: Array.isArray(firstChild.effects)
+                        ? firstChild.effects
+                        : [firstChild.effects],
+                    },
+                  };
+                }
+              }
+              // Add more output types as needed (children, data, etc.)
+            }
+
             return result;
           };
         } else {
-          console.warn(
-            `Preset dependency "${presetId}" not found in predefined or database presets`,
+          // Throw an error if a required dependency is not found
+          // This provides immediate feedback instead of failing later when the preset tries to use it
+          // Debug: Try to get list of available preset IDs for better error message
+          let availablePresetIds = 'N/A';
+          try {
+            const { predefinedPresets } = await import(
+              '../registry/registry/presets-registry'
+            );
+            availablePresetIds = predefinedPresets
+              .map(p => p.metadata.id)
+              .join(', ');
+          } catch (e) {
+            // Ignore import errors
+          }
+
+          throw new Error(
+            `Preset dependency "${presetId}" not found. Check metadata.dependencies. ` +
+              `Looking for preset ID: "${presetId}". ` +
+              `Available predefined preset IDs: ${availablePresetIds}`,
           );
         }
       }

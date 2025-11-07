@@ -11,7 +11,7 @@ import { usePresetContext } from "./preset-provider";
 import { OutputCard } from "./output-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { getPredefinedPresetById } from "./registry/presets-registry";
+import { getPredefinedPresetById } from "./registry/registry/presets-registry";
 import { SavePresetDialog } from "./save-preset-dialog";
 import { LoadPresetDialog } from "./load-preset-dialog";
 import { DefaultCard } from "./form/default-card";

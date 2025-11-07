@@ -25,6 +25,9 @@ export interface PresetMetadata {
     field: string; // The field name that acts as the selector (e.g., 'animationStyle')
     mapping: Record<string, string>; // Maps selector value to preset ID
   };
+  // Internal preset metadata - only used by other presets, not via insertPresetToComposition
+  _internalPreset?: boolean; // Marks preset as internal-only (used as helper function)
+  _internalPresetOutput?: 'effects' | 'children' | 'data'; // What to extract from internal preset output
 }
 
 export interface Preset {
