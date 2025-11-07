@@ -63,8 +63,8 @@ export const POST = async (req: NextRequest) => {
       inputProps: inputProps,
       audioCodec: audioCodec ?? 'aac',
       //      framesPerLambda: 10,
-      concurrency: 5,
-      timeoutInMilliseconds: 280 * 1000,
+      //concurrency: 10,
+      timeoutInMilliseconds: 240 * 1000,
       downloadBehavior: {
         type: isDownloadable ? 'download' : 'play-in-browser',
         fileName: isDownloadable ? fileName || 'video.mp4' : null,
