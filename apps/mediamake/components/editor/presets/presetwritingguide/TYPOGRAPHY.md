@@ -325,3 +325,180 @@ This creates a blurred background box around each word with padding, instead of 
 ---
 
 ## 3. How to use componentalised Preset for Effects
+
+### Overview
+
+Abstract reusable effects into separate preset modules in `registry/internalEffects/` rather than embedding them in main presets. This promotes code reuse and maintainability.
+
+**Internal Effect Presets** (`registry/internalEffects/`):
+
+- Reusable effect modules called programmatically by other presets
+- Examples: `generic-opacity-effect.ts`, `glow-pulse-text-effect.ts`
+- Not used directly via `insertPresetToComposition`
+
+**Main Presets** (e.g., `registry/captions/sub-main-typography.ts`):
+
+- Compose effects and components using internal effect presets as dependencies
+
+### Requirements for Internal Effect Presets
+
+#### 1. Metadata Requirements
+
+```typescript
+const presetMetadata: PresetMetadata = {
+  id: 'genericOpacityEffect',
+  presetType: 'effects',
+  tags: ['effects', 'opacity', 'fade', 'generic', 'internal'], // Must include 'internal'
+  _internalPreset: true, // REQUIRED
+  _internalPresetOutput: 'effects', // REQUIRED: 'effects' | 'children' | 'data'
+  dependencies: {
+    presets: [], // Other presets if needed
+    helpers: ['hexToRgb'], // Helper functions if needed
+  },
+};
+```
+
+**Required fields:**
+
+- `_internalPreset: true` - Marks as internal preset
+- `_internalPresetOutput: 'effects'` - Specifies output type to extract
+- `tags` - Must include `'internal'` and `'generic'`
+
+#### 2. Output Structure
+
+```typescript
+return {
+  output: {
+    childrenData: [
+      {
+        id: 'effect-container',
+        type: 'layout',
+        componentId: 'BaseLayout',
+        effects: [effect], // Effect(s) to extract
+        childrenData: [],
+      },
+    ],
+  },
+};
+```
+
+The system automatically extracts `effects` from the first child when `_internalPresetOutput: 'effects'` is set.
+
+#### 3. Documentation Requirements
+
+Every internal effect preset must document at the top:
+
+```typescript
+/**
+ * Generic Opacity Effect Preset
+ *
+ * SINGLE EFFECT:
+ * Applies fade-in opacity animation (0 → 1) to target component.
+ *
+ * ARRAY OF EFFECTS (if applicable):
+ * Some effects return arrays for complex animations (e.g., oscillating letters).
+ *
+ * Advanced Usage:
+ * Apply at word level and parse all letter target IDs into effect's targetIds
+ * array to animate all letters simultaneously.
+ */
+```
+
+### Using Internal Effects in Main Presets
+
+#### 1. Declare Dependencies
+
+```typescript
+const presetMetadata: PresetMetadata = {
+  dependencies: {
+    presets: ['genericOpacityEffect', 'glowPulseTextEffect'], // REQUIRED
+  },
+};
+```
+
+#### 2. Call Internal Preset
+
+```typescript
+const { presets } = props;
+
+// Determine which effect preset to use
+const effectPresetId = 'genericOpacityEffect'; // or based on params
+
+// Validate dependency
+if (!presets || !presets[effectPresetId]) {
+  throw new Error(`Preset dependency "${effectPresetId}" not found`);
+}
+
+// Prepare effect parameters
+const effectParams = {
+  targetId: wordId,
+  effectStart: word.start,
+  effectDuration: wordDuration,
+  impact: params.impact,
+};
+
+// Call internal preset using bracket notation
+const effectResult = await presets[effectPresetId](effectParams, props);
+
+// Extract effect
+const wordEffect =
+  effectResult?.output?._extractedEffects?.[0] ||
+  effectResult?.output?.childrenData?.[0]?.effects?.[0];
+
+// Apply to component
+wordComponent.effects = wordEffect ? [wordEffect] : [];
+```
+
+### When to Create New vs. Reuse
+
+**Before creating new internal effect:**
+
+1. Check `registry/internalEffects/` for existing effects
+2. Review documentation to understand capabilities
+3. Consider combining existing effects
+
+**Create new if:**
+
+- Effect is reusable across multiple presets → `registry/internalEffects/`
+- Generic effect (opacity, glow, scale, etc.) → Internal effect preset
+- Private/one-off → `registry/private/` (if user requests)
+
+**Remember**: Internal effect is defined by `_internalPreset: true` in metadata, not folder location.
+
+### Finding Existing Effects
+
+1. Browse `registry/internalEffects/`
+2. Read documentation at top of each file
+3. Check tags for `'internal'` and effect type
+4. Review usage in `textbase.ts`
+
+### Best Practices
+
+- Always check for existing effects first
+- Document thoroughly (single effect, array of effects, parameters, usage)
+- Include required metadata (`_internalPreset`, `_internalPresetOutput`, tags)
+- Keep effects focused (one effect or cohesive set)
+
+### Advanced: Array of Effects
+
+Some effects return arrays for complex animations:
+
+```typescript
+// Internal preset returns array
+return {
+  output: {
+    childrenData: [
+      {
+        // other fiels
+        effects: [effect1, effect2, effect3],
+      },
+    ],
+  },
+};
+
+// Main preset extracts all
+const allEffects = effectResult?.output?._extractedEffects || [];
+wordComponent.effects = allEffects;
+```
+
+**Advanced use case**: Apply effect at word level with all letter target IDs in `targetIds` array to animate letters simultaneously.
