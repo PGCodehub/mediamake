@@ -144,6 +144,7 @@ const presetParams = z.object({
         .enum(['none', 'uppercase', 'lowercase', 'capitalize'])
         .optional()
         .describe('text transform'),
+      extraStyleProps: z.any().optional().describe('extra style properties'),
     })
     .optional()
     .describe('style'),
@@ -414,16 +415,6 @@ const presetExecution = (
             {
               key: 'translateX',
               val: 0,
-              prog: 1,
-            },
-            {
-              key: 'filter',
-              val: `blur(8px) drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))`,
-              prog: 0,
-            },
-            {
-              key: 'filter',
-              val: `blur(0px) drop-shadow(0 0 12px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.8))`,
               prog: 1,
             },
             {
@@ -825,12 +816,14 @@ const presetExecution = (
 
       // Set text colors based on highlight status
       const textColor = isHighlight
-        ? selectedColorChoice.accent
+        ? selectedColorChoice.secondary
         : selectedColorChoice.primary;
-      const textShadowColor = isHighlight
-        ? selectedColorChoice.accent
-        : selectedColorChoice.secondary;
 
+      const accentRgb = hexToRgb(selectedColorChoice.accent);
+      const textShadowStyle = {
+        filter:
+          `drop-shadow(0 0 8px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.7))` as any,
+      };
       // Apply text transform based on highlight status
       const textTransform = isHighlight
         ? style?.textTransformMain || 'none'
@@ -905,6 +898,8 @@ const presetExecution = (
             color: textColor,
             opacity: staticWordOpacity,
             ...fontStyle,
+            ...style?.extraStyleProps,
+            ...textShadowStyle,
           },
           font: {
             family: fontFamily,

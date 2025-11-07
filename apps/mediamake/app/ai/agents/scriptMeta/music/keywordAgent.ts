@@ -177,7 +177,7 @@ Consider:
   })
   .actAsTool('/', {
     id: 'analyzeTranscriptionMusicMetadata',
-    name: 'Analyze Transcription Music Metadata',
+    name: 'Detect Keywords and Emotions in Scentences',
     description:
       'Analyzes sentence-split transcripts to generate metadata for lyricography, including keyword identification, emotional strength, feel, and split recommendations. Can work with transcriptionId or direct sentences. Updates database directly when transcriptionId is provided.',
     inputSchema: ScriptMetaInputSchema,

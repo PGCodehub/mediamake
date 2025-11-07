@@ -5,6 +5,7 @@ import { google } from '@ai-sdk/google';
 import { getDatabase } from '@/lib/mongodb';
 import { Transcription } from '@/app/types/transcription';
 import dedent from 'dedent';
+import { ObjectId } from 'mongodb';
 
 /**
  * Transcription Fixer Agent - /transcription-fixer
@@ -95,16 +96,16 @@ export const transcriptionFixerAgent = aiRouter
         loader: 'Fixing transcription errors...',
       });
 
-      const { assemblyId, userRequest, userWrittenTranscription } = ctx.request
-        .params as {
-        assemblyId: string;
+      const { transcriptionId, userRequest, userWrittenTranscription } = ctx
+        .request.params as {
+        transcriptionId: string;
         userRequest?: string;
         userWrittenTranscription?: string;
       };
 
-      if (!assemblyId) {
-        console.log('NO ASSEMBLY ID FOUND');
-        throw new Error('Invalid input: assemblyId is required');
+      if (!transcriptionId) {
+        console.log('NO TRANSCRIPTION ID FOUND');
+        throw new Error('Invalid input: transcriptionId is required');
       }
 
       // Get database connection
@@ -112,7 +113,9 @@ export const transcriptionFixerAgent = aiRouter
       const collection = db.collection<Transcription>('transcriptions');
 
       // Find transcription by assemblyId
-      const transcription = await collection.findOne({ assemblyId });
+      const transcription = await collection.findOne({
+        _id: new ObjectId(transcriptionId),
+      });
 
       if (!transcription) {
         console.log('TRANSCRIPTION NOT FOUND');
@@ -243,6 +246,7 @@ ${userWrittenTranscription ? `USER'S WRITTEN VERSION: ${userWrittenTranscription
         { $set: updatedTranscription },
       );
 
+      console.log('TRANSCRIPTION FIXED:', updatedTranscription.captions.length);
       return {
         success: true,
         appliedToDatabase: true,
@@ -263,7 +267,9 @@ ${userWrittenTranscription ? `USER'S WRITTEN VERSION: ${userWrittenTranscription
     description:
       'Fixes transcription errors including word boundary issues, spelling mistakes, and improves sentence structure while preserving timing information. Updates the database directly.',
     inputSchema: z.object({
-      assemblyId: z.string().describe('AssemblyAI transcription ID to fix'),
+      transcriptionId: z
+        .string()
+        .describe('AssemblyAI transcription ID to fix'),
       userRequest: z
         .string()
         .optional()

@@ -56,13 +56,29 @@ function EditorUIInner() {
 
     const handleTranscriptionDataUpdate = async (updatedData: any) => {
         try {
+            const beforeDataCaptions = transcriptionData?.captions;
+            const mismatchLength = beforeDataCaptions?.length !== updatedData.captions?.length;
+            let updatedDataCaptions =
+                updatedData.captions?.map((caption: any, index: number) => {
+                    return {
+                        ...caption,
+                        metadata: {
+                            ...beforeDataCaptions?.[index]?.metadata,
+                            ...caption.metadata
+                        }
+                    };
+                });
+            if (mismatchLength) {
+                toast.error('Captions length mismatch, resetting & cleaning up metadata');
+                updatedDataCaptions = updatedData.captions;
+            }
             const response = await fetch(`/api/transcriptions/${updatedData._id ?? transcriptionData?._id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ...(updatedData.captions && { captions: updatedData.captions }),
+                    ...(updatedData.captions && { captions: updatedDataCaptions }),
                     ...(updatedData.processingData && { processingData: updatedData.processingData }),
                     ...(updatedData.status && { status: updatedData.status }),
                     ...(updatedData.error && { error: updatedData.error }),
@@ -205,7 +221,7 @@ function EditorUIInner() {
         setIsSavingTitle(true);
         try {
             const response = await fetch(`/api/transcriptions/${transcriptionData._id}`, {
-                method: 'PATCH',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
