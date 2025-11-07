@@ -62,7 +62,8 @@ export const POST = async (req: NextRequest) => {
       composition: id ?? 'DataMotion',
       inputProps: inputProps,
       audioCodec: audioCodec ?? 'aac',
-      framesPerLambda: 10,
+      //      framesPerLambda: 10,
+      concurrency: 5,
       timeoutInMilliseconds: 280 * 1000,
       downloadBehavior: {
         type: isDownloadable ? 'download' : 'play-in-browser',
