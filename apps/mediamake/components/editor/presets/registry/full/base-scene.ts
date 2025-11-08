@@ -80,7 +80,14 @@ const presetExecution = (
       : { fitDurationTo: fitDurationTo ?? 'this' };
 
   const start = params.clip?.start ? -params.clip.start : 0;
-  const durationData = params.clip ? {} : { duration: sceneDuration ?? 20 };
+  const durationData =
+    params.clip?.duration && params.clip?.duration > 0
+      ? {
+          duration: params.clip?.duration,
+        }
+      : params.clip
+        ? {}
+        : { duration: sceneDuration ?? 20 };
   return {
     output: {
       childrenData: [
