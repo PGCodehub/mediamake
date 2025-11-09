@@ -9,10 +9,45 @@ import {
   SentenceSchema,
 } from './zod';
 import dedent from 'dedent';
+import {
+  getPromptPreset,
+  getAllPromptPresets,
+  getAllPromptsWithCustom,
+  getPromptPresetWithCustom,
+  getPromptPresetsByCategory,
+  getPromptPresetsByTag,
+  searchPromptPresets,
+  DEFAULT_PRESET_ID,
+  type ImagePromptPreset,
+} from './imagePromptRegistry';
+import { getDatabase } from '@/lib/mongodb';
+import {
+  CustomImagePromptSchema,
+  customPromptDocumentToResponse,
+  type CustomImagePromptDocument,
+} from '@/lib/models/CustomImagePrompt';
 
 /**
  * Text-to-Image Agent - /text-to-image
- * Generate images for each caption using AI prompt transformation and KIE AI text-to-image API
+ * 
+ * MAIN ROUTE:
+ * - / : Generate images for each caption using AI prompt transformation and text-to-image API
+ * 
+ * EASY WORKFLOW (View, Edit, Save):
+ * - /prompts/preview : Preview full prompt text when you select a preset
+ * - /prompts/save-and-use : Save edited prompt and get the new ID to use
+ * 
+ * OTHER PROMPT ROUTES:
+ * - /prompts/list : List all available prompt presets (built-in + custom)
+ * - /prompts/get/:id : Get full details of a specific prompt including systemPrompt text
+ * - /prompts/save : Save or update a custom prompt preset (advanced)
+ * - /prompts/delete/:id : Delete a custom prompt preset
+ * 
+ * RECOMMENDED WORKFLOW:
+ * 1. Select preset from dropdown → Use /prompts/preview to see full text
+ * 2. Copy systemPrompt → Edit it
+ * 3. Use /prompts/save-and-use → Get your new custom ID
+ * 4. Generate images with your custom promptPresetId
  */
 
 const aiRouter = new AiRouter();
@@ -22,6 +57,7 @@ const TextToImageMetadataSchema = z.object({
   imagePrompt: z
     .string()
     .describe('The AI-generated image prompt for this caption'),
+  promptPresetId: z.string().optional().describe('The prompt preset ID used'),
   taskId: z.string().optional().describe('The text-to-image task ID'),
   imageUrl: z.string().optional().describe('The generated image URL'),
   imageSize: z.string().optional().describe('The image size used'),
@@ -33,66 +69,8 @@ const TextToImageMetadataSchema = z.object({
   completedAt: z.string().optional().describe('When the image was completed (ISO timestamp)'),
 });
 
-// Image generation system prompt
-const IMAGE_GENERATION_SYSTEM_PROMPT = dedent`
-  You are an AI specialized in creating image generation prompts for a consistent explainer video series. Your task is to take a user-provided sentence and transform it into a detailed, descriptive prompt that strictly adheres to a predefined artistic style.
-
-  The Style Guidelines are:
-
-  Aesthetic: A stylized, hand-drawn illustration that feels like it's from a high-quality graphic novel. The art must be expressive and intentionally non-photorealistic, focusing on simplified forms, heavy ink outlines, and visible texture.
-
-  Texture: The image must have a tactile feel. Use keywords like heavy colored pencil shading, expressive crosshatching, textured paper background, and bold, imperfect ink outlines.
-
-  Color Palette (STRICT): The entire image, including all objects, backgrounds, and text, must exclusively use colors from the following limited palette:
-
-  Dark Indigo/Navy Blue (for shadows, outlines, and text)
-
-  Burnt Orange (as a primary or accent color)
-
-  Muted Tan / Off-White (for backgrounds and highlights)
-
-  A small amount of a fourth color like Muted Teal or Warm Gray is permissible if absolutely necessary for a specific object, but the core palette is paramount.
-
-  Format: Assume a 16:9 aspect ratio suitable for video.
-
-  Text Integration and Layout (CRITICAL):
-
-  The text is a primary design element, not an afterthought.
-
-  Artistic Font Style: The text must be rendered in a bold, blocky, hand-lettered style. It should look like it was drawn with a thick ink pen, having significant width, slight irregularities, and visible texture. It should feel weighty and integrated into the artwork.
-
-  Dynamic Layout: The text must be broken into multiple lines and arranged creatively within the composition. The placement should enhance the visual narrative.
-
-  Text Color: The text color must be drawn from the approved color palette, typically the Dark Indigo.
-
-  Your Process:
-
-  Analyze the user's sentence.
-
-  Devise a simple, stylized visual to represent the core concept.
-
-  Construct a prompt that strictly enforces all guidelines: the non-photorealistic aesthetic, the limited color palette, the bold font, and the dynamic text layout.
-
-  Here are examples of how you should perform this transformation:
-
-  Example 1:
-
-  User Input Sentence: "The power grid's been dark for 72 hours"
-
-  Your Generated Prompt: A stylized graphic novel illustration of a dark suburban street. The forms of houses and power lines are simplified and silhouetted. The entire scene strictly uses a limited color palette of dark indigo, burnt orange for the sunset glow, and muted tan. Across the sky, the text "THE POWER GRID'S BEEN DARK FOR 72 HOURS" is arranged in a bold, blocky, textured hand-lettered font, colored dark indigo. The style is intentionally non-photorealistic with heavy crosshatching.
-
-  Example 2:
-
-  User Input Sentence: "Your smart thermostat can't connect to the internet."
-
-  Your Generated Prompt: A stylized, non-photorealistic illustration of a smart thermostat. The device's form is simplified with bold ink outlines. On its dark screen is a small "no connection" icon in burnt orange. The entire image uses only dark indigo, burnt orange, and an off-white textured paper background. To the right, the text is arranged in three lines: "CAN'T CONNECT", "TO THE", "INTERNET". The font is a heavy, blocky, hand-lettered style with a textured, inky feel.
-
-  Example 3:
-
-  User Input Sentence: "Not because you're hiding—because they can't see"
-
-  Your Generated Prompt: A simple, stylized colored pencil illustration of a window with its curtains drawn shut. The curtains are burnt orange, and the window frame is dark indigo. The background is a clean, off-white textured paper. To the right of the window, the text is arranged dynamically: "NOT BECAUSE", "YOU'RE HIDING—", "BECAUSE", "THEY CAN'T SEE". The text is rendered in a bold, wide, hand-lettered ink font in dark indigo. The artwork is expressive and avoids realism.
-`;
+// Legacy: IMAGE_GENERATION_SYSTEM_PROMPT moved to imagePromptRegistry.ts
+// Now using dynamic prompt presets from the registry
 
 // Helper function to call text-to-image API with webhook
 async function generateImageForCaption(
@@ -176,11 +154,39 @@ const textToImageAgent = aiRouter
         userRequest,
         imageSize = 'landscape_16_9',
         imageResolution = '1K',
+        promptPresetId = DEFAULT_PRESET_ID,
+        customPrompt,
       } = ctx.request.params as {
         userRequest?: string;
         imageSize?: string;
         imageResolution?: string;
+        promptPresetId?: string;
+        customPrompt?: string;
       };
+
+      // Determine which prompt to use
+      let systemPrompt: string;
+      let selectedPresetId: string | undefined;
+
+      if (customPrompt) {
+        // Use custom prompt if provided
+        systemPrompt = customPrompt;
+        console.log('Using custom prompt for image generation');
+      } else {
+        // Use preset from registry (checks custom prompts first, then built-in)
+        const preset = await getPromptPresetWithCustom(promptPresetId);
+        if (!preset) {
+          throw new Error(
+            `Prompt preset '${promptPresetId}' not found. Available presets: ${getAllPromptPresets()
+              .map(p => p.id)
+              .join(', ')}`
+          );
+        }
+        systemPrompt = preset.systemPrompt;
+        selectedPresetId = preset.id;
+        const presetType = preset.isCustom ? 'custom' : 'built-in';
+        console.log(`Using ${presetType} prompt preset: ${preset.name} (${preset.id})`);
+      }
 
       // Get sentences from context state (loaded by middleware)
       const sentencesToAnalyze = ctx.state?.sentences || [];
@@ -209,7 +215,7 @@ const textToImageAgent = aiRouter
 
             const promptResult = await generateText({
               model: google('gemini-2.5-pro'),
-              system: IMAGE_GENERATION_SYSTEM_PROMPT,
+              system: systemPrompt,
               prompt: dedent`
                 Transform the following sentence into an image generation prompt following the style guidelines:
 
@@ -248,6 +254,7 @@ const textToImageAgent = aiRouter
                 originalText: sentence,
                 metadata: {
                   imagePrompt,
+                  promptPresetId: selectedPresetId,
                   status: 'failed' as const,
                   error: taskError || 'Failed to create task',
                   imageSize,
@@ -266,6 +273,7 @@ const textToImageAgent = aiRouter
               originalText: sentence,
               metadata: {
                 imagePrompt,
+                promptPresetId: selectedPresetId,
                 taskId,
                 status: 'processing' as const,
                 imageSize,
@@ -280,6 +288,7 @@ const textToImageAgent = aiRouter
               originalText: sentence,
               metadata: {
                 imagePrompt: '',
+                promptPresetId: selectedPresetId,
                 status: 'failed' as const,
                 error:
                   error instanceof Error
@@ -343,7 +352,7 @@ const textToImageAgent = aiRouter
     id: 'generateImagesForTranscription',
     name: 'Generate Images for Transcription',
     description:
-      'Generates images for each caption in a transcription using AI prompt transformation and text-to-image API. Transforms each caption into a stylized graphic novel image prompt and generates the corresponding image.',
+      'Generates images for each caption in a transcription using AI prompt transformation and text-to-image API. Supports multiple visual styles through prompt presets or custom prompts. Available presets: graphic-novel (default), cinematic-realism, minimalist-flat, watercolor-artistic, abstract-geometric.',
     inputSchema: ScriptMetaInputSchema.extend({
       imageSize: z
         .enum([
@@ -363,6 +372,24 @@ const textToImageAgent = aiRouter
         .enum(['1K', '2K', '4K'])
         .optional()
         .describe('Image resolution (default: 1K)'),
+      promptPresetId: z
+        .enum([
+          'graphic-novel',
+          'cinematic-realism',
+          'minimalist-flat',
+          'watercolor-artistic',
+          'abstract-geometric',
+        ])
+        .optional()
+        .describe(
+          'Prompt preset to use for image generation. Options: graphic-novel (hand-drawn with limited palette), cinematic-realism (photo-realistic with dramatic lighting), minimalist-flat (clean geometric design), watercolor-artistic (soft painted style), abstract-geometric (bold shapes and colors). Default: graphic-novel'
+        ),
+      customPrompt: z
+        .string()
+        .optional()
+        .describe(
+          'Custom system prompt for image generation. If provided, overrides promptPresetId. Use this to define your own unique visual style and guidelines.'
+        ),
     }),
     outputSchema: TextToImageTranscriptionSchema,
     metadata: {
@@ -375,7 +402,469 @@ const textToImageAgent = aiRouter
         'ai',
         'metadata',
         'database',
+        'style-presets',
       ],
+      hidden: false,
+    },
+  });
+
+// ============================================================================
+// PROMPT MANAGEMENT ROUTES
+// ============================================================================
+
+// Preview prompt - Shows full prompt text when you select from dropdown
+textToImageAgent
+  .agent('/prompts/preview', async ctx => {
+    const { promptPresetId = DEFAULT_PRESET_ID } = ctx.request.params as {
+      promptPresetId?: string;
+    };
+
+    const preset = await getPromptPresetWithCustom(promptPresetId);
+
+    if (!preset) {
+      throw new Error(`Prompt preset '${promptPresetId}' not found`);
+    }
+
+    return {
+      preset,
+      message: `Preview of "${preset.name}" prompt. You can copy and edit the systemPrompt below, then use /prompts/save-and-use to save it as a custom preset.`,
+    };
+  })
+  .actAsTool('/prompts/preview', {
+    id: 'previewImagePrompt',
+    name: 'Preview Selected Image Prompt',
+    description:
+      'Shows the full system prompt for a selected preset. Use this to see what prompt will be used before generating images. Returns the complete prompt text that you can then edit and save as custom.',
+    inputSchema: z.object({
+      promptPresetId: z
+        .enum([
+          'graphic-novel',
+          'cinematic-realism',
+          'minimalist-flat',
+          'watercolor-artistic',
+          'abstract-geometric',
+        ])
+        .default('graphic-novel')
+        .describe('The preset to preview'),
+    }),
+    outputSchema: z.object({
+      preset: z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        systemPrompt: z.string().describe('The full prompt text - copy this to edit'),
+        category: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        isCustom: z.boolean().optional(),
+      }),
+      message: z.string(),
+    }),
+    metadata: {
+      category: 'utility',
+      tags: ['prompt-preview', 'text-to-image'],
+      hidden: false,
+    },
+  });
+
+// Save and use - Saves edited prompt and returns the new ID to use
+textToImageAgent
+  .agent('/prompts/save-and-use', async ctx => {
+    const {
+      newPromptId,
+      name,
+      description,
+      systemPrompt,
+      category,
+      tags,
+      basePromptId,
+    } = ctx.request.params as {
+      newPromptId: string;
+      name: string;
+      description?: string;
+      systemPrompt: string;
+      category?: string;
+      tags?: string[];
+      basePromptId?: string;
+    };
+
+    // Validate input
+    const validatedData = CustomImagePromptSchema.parse({
+      id: newPromptId,
+      name,
+      description: description || `Custom version based on ${basePromptId || 'custom'}`,
+      systemPrompt,
+      category,
+      tags,
+      isBuiltInOverride: false,
+      originalPresetId: basePromptId,
+    });
+
+    const db = await getDatabase();
+    const collection = db.collection<CustomImagePromptDocument>('customImagePrompts');
+
+    // Check if exists
+    const existing = await collection.findOne({ id: validatedData.id });
+
+    if (existing) {
+      // Update existing
+      const result = await collection.findOneAndUpdate(
+        { id: validatedData.id },
+        {
+          $set: {
+            ...validatedData,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      return {
+        success: true,
+        message: `Prompt "${name}" updated successfully! You can now use promptPresetId: "${newPromptId}" when generating images.`,
+        prompt: customPromptDocumentToResponse(result!),
+        useThisId: newPromptId,
+      };
+    } else {
+      // Create new
+      const now = new Date();
+      const document: CustomImagePromptDocument = {
+        ...validatedData,
+        isCustom: true,
+        isBuiltInOverride: validatedData.isBuiltInOverride ?? false,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const result = await collection.insertOne(document);
+
+      return {
+        success: true,
+        message: `Prompt "${name}" saved successfully! Use promptPresetId: "${newPromptId}" when generating images.`,
+        prompt: customPromptDocumentToResponse({ ...document, _id: result.insertedId }),
+        useThisId: newPromptId,
+      };
+    }
+  })
+  .actAsTool('/prompts/save-and-use', {
+    id: 'saveAndUseImagePrompt',
+    name: 'Save Custom Prompt & Get ID',
+    description:
+      'After previewing and editing a prompt, use this to save it as a custom preset. It will return the new prompt ID that you can then use with promptPresetId parameter when generating images.',
+    inputSchema: z.object({
+      newPromptId: z
+        .string()
+        .min(1)
+        .describe('ID for your new custom prompt (e.g., "my-purple-style")'),
+      name: z.string().min(1).describe('Display name for your custom prompt'),
+      systemPrompt: z
+        .string()
+        .min(10)
+        .describe('The edited system prompt text (copy from preview and modify)'),
+      description: z.string().optional().describe('Brief description of your custom style'),
+      category: z
+        .enum(['illustration', 'realistic', 'abstract', 'minimalist', 'artistic', 'cinematic'])
+        .optional()
+        .describe('Category for your prompt'),
+      tags: z.array(z.string()).optional().describe('Tags for categorization'),
+      basePromptId: z
+        .string()
+        .optional()
+        .describe('Original prompt ID this was based on (for reference)'),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+      prompt: z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        systemPrompt: z.string(),
+      }),
+      useThisId: z.string().describe('Use this ID in promptPresetId parameter'),
+    }),
+    metadata: {
+      category: 'utility',
+      tags: ['prompt-save', 'text-to-image'],
+      hidden: false,
+    },
+  });
+
+// List all prompts (built-in + custom)
+textToImageAgent
+  .agent('/prompts/list', async ctx => {
+    const {
+      category,
+      tag,
+      search,
+      includeCustom = true,
+      userId,
+      clientId,
+    } = ctx.request.params as {
+      category?: string;
+      tag?: string;
+      search?: string;
+      includeCustom?: boolean;
+      userId?: string;
+      clientId?: string;
+    };
+
+    let presets;
+
+    if (includeCustom) {
+      // Get all prompts including custom ones
+      const allPrompts = await getAllPromptsWithCustom({ userId, clientId });
+      
+      // Apply filters
+      presets = allPrompts;
+      if (category) {
+        presets = presets.filter(p => p.category === category);
+      }
+      if (tag) {
+        presets = presets.filter(p => p.tags?.includes(tag));
+      }
+      if (search) {
+        const lowerSearch = search.toLowerCase();
+        presets = presets.filter(
+          p =>
+            p.name.toLowerCase().includes(lowerSearch) ||
+            p.description.toLowerCase().includes(lowerSearch) ||
+            p.tags?.some(t => t.toLowerCase().includes(lowerSearch))
+        );
+      }
+    } else {
+      // Only built-in presets
+      if (search) {
+        presets = searchPromptPresets(search);
+      } else if (category) {
+        presets = getPromptPresetsByCategory(category);
+      } else if (tag) {
+        presets = getPromptPresetsByTag(tag);
+      } else {
+        presets = getAllPromptPresets();
+      }
+    }
+
+    const builtInCount = presets.filter(p => !p.isCustom).length;
+    const customCount = presets.filter(p => p.isCustom).length;
+
+    return {
+      presets,
+      count: presets.length,
+      builtInCount,
+      customCount,
+      categories: ['illustration', 'realistic', 'abstract', 'minimalist', 'artistic', 'cinematic'],
+    };
+  })
+  .actAsTool('/prompts/list', {
+    id: 'listImagePromptPresets',
+    name: 'List Image Prompt Presets',
+    description:
+      'Lists all available image prompt presets (built-in + custom) for text-to-image generation. Can filter by category, tag, or search query. Returns the full system prompt for each preset so you can view and edit them.',
+    inputSchema: z.object({
+      category: z
+        .enum(['illustration', 'realistic', 'abstract', 'minimalist', 'artistic', 'cinematic'])
+        .optional()
+        .describe('Filter by category'),
+      tag: z.string().optional().describe('Filter by tag'),
+      search: z.string().optional().describe('Search in name, description, and tags'),
+      includeCustom: z.boolean().optional().describe('Include custom user-created prompts (default: true)'),
+      userId: z.string().optional().describe('Filter by user ID'),
+      clientId: z.string().optional().describe('Filter by client ID'),
+    }),
+    outputSchema: z.object({
+      presets: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        systemPrompt: z.string(),
+        category: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        isCustom: z.boolean().optional(),
+      })),
+      count: z.number(),
+      builtInCount: z.number(),
+      customCount: z.number(),
+      categories: z.array(z.string()),
+    }),
+    metadata: {
+      category: 'utility',
+      tags: ['prompt-presets', 'list', 'discovery', 'text-to-image'],
+      hidden: false,
+    },
+  });
+
+// Get specific prompt details
+textToImageAgent
+  .agent('/prompts/get/:id', async ctx => {
+    const { id, userId, clientId } = ctx.request.params as {
+      id: string;
+      userId?: string;
+      clientId?: string;
+    };
+
+    if (!id) {
+      throw new Error('Preset ID is required');
+    }
+
+    const preset = await getPromptPresetWithCustom(id, { userId, clientId });
+
+    if (!preset) {
+      throw new Error(`Prompt preset '${id}' not found`);
+    }
+
+    return { preset };
+  })
+  .actAsTool('/prompts/get/:id', {
+    id: 'getImagePromptPreset',
+    name: 'Get Image Prompt Preset Details',
+    description:
+      'Gets detailed information about a specific image prompt preset by ID, including the FULL system prompt text. Use this to view the complete prompt before using or editing it. Shows custom prompts if they exist, otherwise falls back to built-in.',
+    inputSchema: z.object({
+      id: z.string().describe('The preset ID to retrieve (e.g., "graphic-novel", "cinematic-realism")'),
+      userId: z.string().optional().describe('User ID for filtering custom prompts'),
+      clientId: z.string().optional().describe('Client ID for filtering custom prompts'),
+    }),
+    outputSchema: z.object({
+      preset: z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        systemPrompt: z.string().describe('The full system prompt text'),
+        category: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        isCustom: z.boolean().optional(),
+      }),
+    }),
+    metadata: {
+      category: 'utility',
+      tags: ['prompt-presets', 'details', 'text-to-image'],
+      hidden: false,
+    },
+  });
+
+// Save/Create custom prompt
+textToImageAgent
+  .agent('/prompts/save', async ctx => {
+    const data = ctx.request.params as any;
+
+    // Validate input
+    const validatedData = CustomImagePromptSchema.parse(data);
+
+    const db = await getDatabase();
+    const collection = db.collection<CustomImagePromptDocument>('customImagePrompts');
+
+    // Check if exists
+    const existing = await collection.findOne({ id: validatedData.id });
+
+    if (existing) {
+      // Update existing
+      const result = await collection.findOneAndUpdate(
+        { id: validatedData.id },
+        {
+          $set: {
+            ...validatedData,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      return {
+        success: true,
+        message: 'Prompt updated successfully',
+        prompt: customPromptDocumentToResponse(result!),
+      };
+    } else {
+      // Create new
+      const now = new Date();
+      const document: CustomImagePromptDocument = {
+        ...validatedData,
+        isCustom: true,
+        isBuiltInOverride: validatedData.isBuiltInOverride ?? false,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const result = await collection.insertOne(document);
+
+      return {
+        success: true,
+        message: 'Prompt saved successfully',
+        prompt: customPromptDocumentToResponse({ ...document, _id: result.insertedId }),
+      };
+    }
+  })
+  .actAsTool('/prompts/save', {
+    id: 'saveImagePromptPreset',
+    name: 'Save Custom Image Prompt Preset',
+    description:
+      'Save a new custom image prompt preset or update an existing one. After viewing a preset with /prompts/get, you can edit the systemPrompt and save it with a new name. You can also override built-in presets by using the same ID with isBuiltInOverride: true.',
+    inputSchema: CustomImagePromptSchema,
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+      prompt: z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        systemPrompt: z.string(),
+        category: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        isCustom: z.boolean().optional(),
+      }),
+    }),
+    metadata: {
+      category: 'utility',
+      tags: ['prompt-presets', 'save', 'create', 'text-to-image'],
+      hidden: false,
+    },
+  });
+
+// Delete custom prompt
+textToImageAgent
+  .agent('/prompts/delete/:id', async ctx => {
+    const { id } = ctx.request.params as { id: string };
+
+    if (!id) {
+      throw new Error('Preset ID is required');
+    }
+
+    // Check if this is a built-in preset
+    const builtInPreset = getPromptPreset(id);
+    const db = await getDatabase();
+    const collection = db.collection<CustomImagePromptDocument>('customImagePrompts');
+    const customOverride = await collection.findOne({ id });
+    
+    if (builtInPreset && !customOverride) {
+      throw new Error('Cannot delete built-in presets. You can only delete custom prompts or overrides.');
+    }
+
+    const result = await collection.deleteOne({ id });
+
+    if (result.deletedCount === 0) {
+      throw new Error(`Custom prompt '${id}' not found`);
+    }
+
+    return {
+      success: true,
+      message: `Prompt '${id}' deleted successfully`,
+    };
+  })
+  .actAsTool('/prompts/delete/:id', {
+    id: 'deleteImagePromptPreset',
+    name: 'Delete Custom Image Prompt Preset',
+    description: 
+      'Delete a custom image prompt preset. Cannot delete built-in presets (graphic-novel, cinematic-realism, etc.), but can delete custom overrides of them.',
+    inputSchema: z.object({
+      id: z.string().describe('The preset ID to delete'),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    metadata: {
+      category: 'utility',
+      tags: ['prompt-presets', 'delete', 'text-to-image'],
       hidden: false,
     },
   });

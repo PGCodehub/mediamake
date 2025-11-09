@@ -69,7 +69,7 @@ async function uploadAudioAndUpdateDB(
 
   // Update transcription with S3 URL
   const updateResponse = await fetch(`/api/transcriptions/${transcriptionId}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },

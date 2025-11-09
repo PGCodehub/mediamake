@@ -32,6 +32,16 @@ export async function initializeDatabase() {
     await mediaFilesCollection.createIndex({ updatedAt: -1 });
     await mediaFilesCollection.createIndex({ contentSubType: 1 });
 
+    // Initialize custom image prompts collection
+    const customImagePromptsCollection = db.collection('customImagePrompts');
+    await customImagePromptsCollection.createIndex({ id: 1 }, { unique: true });
+    await customImagePromptsCollection.createIndex({ userId: 1 });
+    await customImagePromptsCollection.createIndex({ clientId: 1 });
+    await customImagePromptsCollection.createIndex({ category: 1 });
+    await customImagePromptsCollection.createIndex({ tags: 1 });
+    await customImagePromptsCollection.createIndex({ createdAt: -1 });
+    await customImagePromptsCollection.createIndex({ isBuiltInOverride: 1 });
+
     console.log('Database indexes created successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
