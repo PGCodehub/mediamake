@@ -4,7 +4,7 @@ import {
   DatabasePreset,
   PresetMetadata,
 } from '@/components/editor/presets/types';
-import { getPredefinedPresetById } from '@/components/editor/presets/registry/presets-registry';
+import { getPredefinedPresetById } from '@/components/editor/presets/registry/registry/presets-registry';
 
 // POST /api/presets/push - Push a preset from private registry to database
 export async function POST(req: NextRequest) {

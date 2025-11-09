@@ -28,7 +28,7 @@ export interface TTSGenerationResult {
 async function uploadAudioAndUpdateDB(
   audioBase64: string,
   transcriptionId: string,
-  clientId?: string
+  clientId?: string,
 ): Promise<Transcription> {
   // Convert base64 to blob
   const binaryString = atob(audioBase64);
@@ -47,7 +47,7 @@ async function uploadAudioAndUpdateDB(
   formData.append('file', file);
   formData.append(
     'folderName',
-    `mediamake/${clientId?.replaceAll(' ', '') || 'tts'}`
+    `mediamake/${clientId?.replaceAll(' ', '') || 'tts'}`,
   );
 
   const response = await fetch('/api/db/files', {
@@ -69,7 +69,7 @@ async function uploadAudioAndUpdateDB(
 
   // Update transcription with S3 URL
   const updateResponse = await fetch(`/api/transcriptions/${transcriptionId}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -96,7 +96,7 @@ async function uploadAudioAndUpdateDB(
  * Complete TTS workflow: Generate speech (saves to DB) -> Upload to S3 -> Update DB with S3 URL
  */
 export async function generateTextToSpeech(
-  options: TTSGenerationOptions
+  options: TTSGenerationOptions,
 ): Promise<TTSGenerationResult> {
   const {
     text,
@@ -145,7 +145,7 @@ export async function generateTextToSpeech(
     const updatedTranscription = await uploadAudioAndUpdateDB(
       result.audioBase64,
       result.transcription._id,
-      clientId
+      clientId,
     );
 
     console.log('✅ Audio uploaded to S3, transcription updated with URL');
@@ -213,7 +213,7 @@ export const AVAILABLE_MODELS = [
   {
     id: 'eleven_v3',
     name: 'v3 (Alpha - Experimental)',
-    description: 'Most expressive with emotion control - ⚠️ May timeout with longer texts',
+    description:
+      'Most expressive with emotion control - ⚠️ May timeout with longer texts',
   },
 ] as const;
-

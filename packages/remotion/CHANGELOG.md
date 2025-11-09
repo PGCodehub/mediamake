@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+### Patch Changes
+
+- 253b532: Changes from PR #23: pg_textatoms_3010
+
 ## 1.2.1
 
 ### Patch Changes

@@ -19,7 +19,9 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
+  IconLogout,
 } from "@tabler/icons-react"
+import { useRouter } from "next/navigation"
 
 import { NavAgents } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -35,7 +37,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { StudioConfig } from "@/microfox.config"
-import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon, FolderOpenIcon, TvIcon } from "lucide-react"
+import { MagnetIcon, LayoutDashboardIcon, ListIcon, KeyIcon, AudioLinesIcon, FolderOpenIcon, TvIcon, TextIcon, TypeIcon } from "lucide-react"
 import { aiRouterRegistry } from "@/app/ai"
 
 const aiagents = Object.entries(aiRouterRegistry.map).map(([path, value]) => {
@@ -87,6 +89,11 @@ const data = {
       title: "Media",
       url: "/media",
       icon: <FolderOpenIcon />,
+    },
+    {
+      title: "Font Base",
+      url: "/fontbase",
+      icon: <TypeIcon />,
     }
     // {
     //   title: "Analytics",
@@ -178,6 +185,22 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+      });
+      // Redirect to login page after successful logout
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to logout:', error);
+      // Optionally, show an error message to the user
+    }
+  };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -201,6 +224,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout}>
+                <IconLogout className="w-5 h-5" />
+                Logout
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         {/* <NavUser user={data.user} /> */}
       </SidebarFooter>
     </Sidebar>

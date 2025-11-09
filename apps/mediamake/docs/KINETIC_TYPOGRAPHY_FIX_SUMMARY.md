@@ -261,5 +261,3 @@ Your kinetic typography system should now work exactly as documented! 🎉
 
 
 
-
-

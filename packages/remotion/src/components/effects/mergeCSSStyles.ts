@@ -9,6 +9,7 @@ type MergeableProperties =
   | 'backgroundColor';
 
 // Parses a string of CSS functions (e.g., "scale(1.2) rotate(10deg)") into a map.
+// Handles nested functions like drop-shadow(0 0 864px rgba(255,68,15,0.65))
 const parseFunctionsString = (
   functions: string | undefined
 ): Map<string, string> => {
@@ -16,14 +17,62 @@ const parseFunctionsString = (
   if (!functions) {
     return result;
   }
-  // Regex to match CSS functions like `scale(1.5)` or `translateX(10px)`
-  const regex = /(\w+)\(([^)]*)\)/g;
-  let match;
-  while ((match = regex.exec(functions)) !== null) {
-    // match[1] is the function name (e.g., 'scale')
-    // match[0] is the full function call (e.g., 'scale(1.5)')
-    result.set(match[1], match[0]);
+
+  // Handle nested parentheses by counting them
+  let i = 0;
+  while (i < functions.length) {
+    // Skip whitespace
+    while (i < functions.length && /\s/.test(functions[i])) {
+      i++;
+    }
+    if (i >= functions.length) break;
+
+    // Match function name (word characters, hyphens, underscores)
+    const nameStart = i;
+    while (i < functions.length && /[\w-]/.test(functions[i])) {
+      i++;
+    }
+    if (i === nameStart) break; // No function name found
+
+    const functionName = functions.substring(nameStart, i);
+
+    // Skip whitespace
+    while (i < functions.length && /\s/.test(functions[i])) {
+      i++;
+    }
+
+    // Expect opening parenthesis
+    if (i >= functions.length || functions[i] !== '(') {
+      break; // Invalid syntax, skip
+    }
+    i++; // Skip '('
+
+    // Find matching closing parenthesis, handling nested parentheses
+    let depth = 1;
+    const contentStart = i;
+    while (i < functions.length && depth > 0) {
+      if (functions[i] === '(') {
+        depth++;
+      } else if (functions[i] === ')') {
+        depth--;
+      }
+      if (depth > 0) {
+        i++;
+      }
+    }
+
+    if (depth === 0) {
+      // Found matching closing parenthesis
+      const content = functions.substring(contentStart, i);
+      const fullFunction = `${functionName}(${content})`;
+      result.set(functionName, fullFunction);
+      i++; // Skip ')'
+    } else {
+      // Unmatched parentheses, skip this function
+      break;
+    }
   }
+
   return result;
 };
 

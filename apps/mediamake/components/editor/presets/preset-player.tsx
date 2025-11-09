@@ -171,11 +171,9 @@ export function PresetPlayer({ }: PresetPlayerProps) {
                         </div>
                     )}
                 </div>
-                {(process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEV_CLIENT_ID != undefined) && (
-                    <div className="absolute bottom-4 right-4">
-                        <RenderButton />
-                    </div>
-                )}
+                <div className="absolute bottom-4 right-4">
+                    <RenderButton />
+                </div>
             </TabsContent>
         </Tabs>
     );
