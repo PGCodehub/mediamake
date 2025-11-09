@@ -27,7 +27,10 @@ import { brollPreset } from './broll';
 import { quotePresentPreset } from './quote-present';
 import { htmlBlockAtomPreset } from './htmlBlockAtom';
 // New dependency injection examples
-import { burnRevealPreset } from './burn-reveal';
+import { wipeRevealPreset } from './wipe-reveal';
+import { contentAwarePreset } from './content-aware-reveal';
+import { particleEffectPreset } from './particle-effect';
+import { glitchEffectPreset } from './glitch-effect';
 
 export const predefinedPresets: Preset[] = [
   baseScenePreset,
@@ -57,7 +60,10 @@ export const predefinedPresets: Preset[] = [
   quotePresentPreset,
   htmlBlockAtomPreset,
   // New dependency injection examples
-  burnRevealPreset,
+  wipeRevealPreset,
+  contentAwarePreset,
+  particleEffectPreset,
+  glitchEffectPreset,
   // beatstitchWithCaptionsPreset, - not working for now
   // Add more predefined presets here
 ];
