@@ -1,15 +1,38 @@
 'use server';
 
 import ffmpeg from 'fluent-ffmpeg';
-import { path as ffmpegPath } from '@ffmpeg-installer/ffmpeg';
-import { path as ffprobePath } from '@ffprobe-installer/ffprobe';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-// Configure ffmpeg paths
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+// Safely configure ffmpeg paths (optional in serverless environments)
+let ffmpegConfigured = false;
+
+function configureFfmpegPaths() {
+  if (ffmpegConfigured) return;
+
+  try {
+    // Dynamic import with try-catch to handle missing binaries in serverless
+    const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+    const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
+
+    if (ffmpegInstaller?.path) {
+      ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    }
+    if (ffprobeInstaller?.path) {
+      ffmpeg.setFfprobePath(ffprobeInstaller.path);
+    }
+    ffmpegConfigured = true;
+  } catch (error) {
+    // Silently ignore if ffmpeg/ffprobe installers are not available
+    // This is expected in some serverless environments
+    console.warn(
+      'ffmpeg/ffprobe installers not available, using system binaries if available:',
+      error instanceof Error ? error.message : String(error),
+    );
+    ffmpegConfigured = true; // Mark as configured to avoid repeated warnings
+  }
+}
 
 export interface AudioMetadata {
   duration: number;
@@ -33,6 +56,8 @@ export interface AudioAnalysisOptions {
 export async function getAudioMetadata(
   audioUrl: string,
 ): Promise<AudioMetadata> {
+  configureFfmpegPaths();
+
   return new Promise<AudioMetadata>((resolve, reject) => {
     // Add timeout and better error handling
     const timeout = setTimeout(() => {
@@ -118,6 +143,8 @@ export async function getAudioMetadata(
  * Download audio file to temporary location
  */
 export async function downloadAudioFile(audioUrl: string): Promise<string> {
+  configureFfmpegPaths();
+
   const tempAudioPath = path.join(
     os.tmpdir(),
     `audio-${Date.now()}.${getFileExtension(audioUrl)}`,
@@ -227,6 +254,8 @@ export async function analyzeAudioContent(
   beats?: number[];
   analysis: string;
 }> {
+  configureFfmpegPaths();
+
   const tempAudioPath = await downloadAudioFile(audioUrl);
 
   try {

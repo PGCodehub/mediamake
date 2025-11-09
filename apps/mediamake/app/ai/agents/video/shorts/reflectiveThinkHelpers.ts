@@ -1,15 +1,38 @@
 'use server';
 
 import ffmpeg from 'fluent-ffmpeg';
-import { path as ffmpegPath } from '@ffmpeg-installer/ffmpeg';
-import { path as ffprobePath } from '@ffprobe-installer/ffprobe';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-// Configure ffmpeg paths
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+// Safely configure ffmpeg paths (optional in serverless environments)
+let ffmpegConfigured = false;
+
+function configureFfmpegPaths() {
+  if (ffmpegConfigured) return;
+
+  try {
+    // Dynamic import with try-catch to handle missing binaries in serverless
+    const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+    const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
+
+    if (ffmpegInstaller?.path) {
+      ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    }
+    if (ffprobeInstaller?.path) {
+      ffmpeg.setFfprobePath(ffprobeInstaller.path);
+    }
+    ffmpegConfigured = true;
+  } catch (error) {
+    // Silently ignore if ffmpeg/ffprobe installers are not available
+    // This is expected in some serverless environments
+    console.warn(
+      'ffmpeg/ffprobe installers not available, using system binaries if available:',
+      error instanceof Error ? error.message : String(error),
+    );
+    ffmpegConfigured = true; // Mark as configured to avoid repeated warnings
+  }
+}
 
 export interface VideoMetadata {
   duration: number;
@@ -30,6 +53,8 @@ export interface FrameExtractionOptions {
 export async function getVideoMetadata(
   videoUrl: string,
 ): Promise<VideoMetadata> {
+  configureFfmpegPaths();
+
   return new Promise<VideoMetadata>((resolve, reject) => {
     // Add timeout and better error handling
     const timeout = setTimeout(() => {
@@ -116,6 +141,8 @@ export async function extractFrame(
   videoUrl: string,
   options: FrameExtractionOptions,
 ): Promise<string> {
+  configureFfmpegPaths();
+
   const { pickFrame, duration } = options;
 
   let frameTime = 0;

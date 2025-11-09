@@ -38,6 +38,7 @@ const MidjourneyPromptSchema = z.object({
 });
 
 const MidjourneyPromptsWithVariationsSchema = z.object({
+  shots: z.array(z.string().describe('Description of the shot')),
   prompts: z
     .array(
       z.object({
@@ -53,11 +54,32 @@ const MidjourneyPromptsWithVariationsSchema = z.object({
     .describe('Generated Midjourney prompts for each shot'),
 });
 
+// Schema for generating shot descriptions from a scene
+const ShotGenerationSchema = z.object({
+  shots: z
+    .array(
+      z.object({
+        shotDescription: z.string().describe('Simple description of the shot'),
+      }),
+    )
+    .describe('Array of shot descriptions generated from the scene'),
+});
+
 // Input schema for the agent
 const MidjourneyPromptingInputSchema = z.object({
+  scene: z
+    .object({
+      shotCount: z.number().describe('The number of shots to generate'),
+      description: z.string().describe('The scene to generate shots for'),
+    })
+    .optional()
+    .describe(
+      'Scene description and shot count (if shots array is not provided)',
+    ),
   shots: z
     .array(z.string().describe('Description of the shot'))
-    .describe('Array of shots to generate'),
+    .optional()
+    .describe('Array of shots to generate (if scene is not provided)'),
   mediaUrls: z
     .array(z.string())
     .optional()
@@ -86,7 +108,6 @@ const MidjourneyPromptingOutputSchema = z.object({
       shotIndex: z.number(),
       shotDescription: z.string(),
       prompt: z.string(),
-      variations: z.array(z.string()).optional(),
     }),
   ),
   processedShots: z.number().describe('Number of shots processed'),
@@ -117,7 +138,8 @@ export const midjourneySimpleAgent = aiRouter
       });
 
       const {
-        shots,
+        shots: providedShots,
+        scene,
         mediaUrls,
         variationCount = 0,
         userRequest,
@@ -125,14 +147,56 @@ export const midjourneySimpleAgent = aiRouter
         predefinedPreferences = [],
       } = ctx.request.params as z.infer<typeof MidjourneyPromptingInputSchema>;
 
-      if (!shots || shots.length === 0) {
-        throw new Error('No shots provided for analysis');
+      // Validate that either shots or scene is provided
+      if ((!providedShots || providedShots.length === 0) && !scene) {
+        throw new Error(
+          'Either shots array or scene description with shotCount must be provided',
+        );
+      }
+
+      let shots: string[] = [];
+
+      // Step 1: Generate shot descriptions from scene if shots are not provided
+      if ((!providedShots || providedShots.length === 0) && scene) {
+        ctx.response.writeMessageMetadata({
+          loader: `Generating ${scene.shotCount} shot descriptions from scene...`,
+        });
+
+        const shotGenerationResult = await generateObject({
+          model: google(model || 'gemini-2.5-flash'),
+          schema: ShotGenerationSchema,
+          prompt: dedent`
+            Generate ${scene.shotCount} shot descriptions based on the following scene:
+            
+            Scene: "${scene.description}"
+            
+            ${userRequest ? `User Request: "${userRequest}"` : ''}
+            
+            Generate simple, clear shot descriptions that break down the scene into ${scene.shotCount} distinct shots.
+            Each shot description should be concise and describe what should be shown in that specific shot.
+            The shots should work together to tell the story of the scene.
+          `,
+          maxRetries: 2,
+        });
+
+        shots =
+          shotGenerationResult.object.shots?.map(
+            (shot: { shotDescription: string }) => shot.shotDescription,
+          ) || [];
+
+        console.log('Shot Generation USAGE', shotGenerationResult.usage);
+
+        if (shots.length === 0) {
+          throw new Error('Failed to generate shot descriptions from scene');
+        }
+      } else if (providedShots && providedShots.length > 0) {
+        shots = providedShots;
       }
 
       let imageAnalysis = null;
       let imageBase64Data: string[] = [];
 
-      // First generateObject call: Analyze images if provided
+      // Step 2: Analyze images if provided
       if (mediaUrls && mediaUrls.length > 0) {
         ctx.response.writeMessageMetadata({
           loader: 'Downloading and analyzing reference images...',
@@ -174,7 +238,7 @@ export const midjourneySimpleAgent = aiRouter
         console.log('Image Analysis USAGE', imageAnalysisResult.usage);
       }
 
-      // Second generateObject call: Generate Midjourney prompts
+      // Step 3: Generate Midjourney prompts
       ctx.response.writeMessageMetadata({
         loader: 'Generating Midjourney prompts for shots...',
       });
@@ -226,14 +290,33 @@ export const midjourneySimpleAgent = aiRouter
         });
 
         console.log('Prompt Generation USAGE', promptGenerationResult.usage);
-        allPrompts =
-          promptGenerationResult.object.prompts?.map((prompt: any) => ({
-            ...prompt,
-            shotInfo:
-              prompt.shotIndex < shots.length
-                ? shots[prompt.shotIndex]
-                : undefined,
-          })) || [];
+
+        // Flatten prompts and variations into a single array
+        allPrompts = [];
+        promptGenerationResult.object.prompts?.forEach(
+          (promptObj: any, index: number) => {
+            const shotIndex = index;
+            const shotDescription = shots[shotIndex] || '';
+
+            // Add the main prompt
+            allPrompts.push({
+              shotIndex,
+              shotDescription,
+              prompt: promptObj.prompt,
+            });
+
+            // Add variations as separate entries if they exist
+            if (promptObj.variations && Array.isArray(promptObj.variations)) {
+              promptObj.variations.forEach((variation: string) => {
+                allPrompts.push({
+                  shotIndex,
+                  shotDescription,
+                  prompt: variation,
+                });
+              });
+            }
+          },
+        );
       } else {
         // Process in batches of 10
         const batchSize = 10;
@@ -257,7 +340,10 @@ export const midjourneySimpleAgent = aiRouter
           batches.map(async ({ batch, batchStartIndex, batchNumber }) => {
             const promptGenerationResult = await generateObject({
               model: google(model || 'gemini-2.5-flash'),
-              schema: MidjourneyPromptSchema,
+              schema:
+                variationCount === 0
+                  ? MidjourneyPromptSchema
+                  : MidjourneyPromptsWithVariationsSchema,
               prompt: dedent`
                 Generate Midjourney prompts for these shots based on the user's request: "${userRequest || 'Generate creative Midjourney prompts'}"
                 
@@ -300,7 +386,38 @@ export const midjourneySimpleAgent = aiRouter
               `Batch ${batchNumber} USAGE`,
               promptGenerationResult.usage,
             );
-            return promptGenerationResult.object.prompts;
+
+            // Flatten prompts and variations for this batch
+            const flattenedBatch: any[] = [];
+            promptGenerationResult.object.prompts?.forEach(
+              (promptObj: any, index: number) => {
+                const shotIndex = batchStartIndex + index;
+                const shotDescription = shots[shotIndex] || '';
+
+                // Add the main prompt
+                flattenedBatch.push({
+                  shotIndex,
+                  shotDescription,
+                  prompt: promptObj.prompt,
+                });
+
+                // Add variations as separate entries if they exist
+                if (
+                  promptObj.variations &&
+                  Array.isArray(promptObj.variations)
+                ) {
+                  promptObj.variations.forEach((variation: string) => {
+                    flattenedBatch.push({
+                      shotIndex,
+                      shotDescription,
+                      prompt: variation,
+                    });
+                  });
+                }
+              },
+            );
+
+            return flattenedBatch;
           }),
         );
 

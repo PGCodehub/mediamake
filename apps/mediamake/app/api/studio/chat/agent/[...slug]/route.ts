@@ -3,7 +3,7 @@ import { getClientId } from '@/lib/auth-utils';
 import { UIMessage } from 'ai';
 import { NextRequest } from 'next/server';
 
-export const maxDuration = 200;
+export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
   //const body = req.body;
