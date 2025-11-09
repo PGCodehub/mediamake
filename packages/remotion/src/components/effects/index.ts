@@ -13,6 +13,7 @@ import {
   config as UniversalEffectConfig,
   UniversalEffectData,
 } from './UniversalEffect';
+import { CanvasReveal } from './CanvasReveal';
 
 // Register all effect components
 registerEffect(BlurEffectConfig.displayName, BlurEffect, BlurEffectConfig);
@@ -27,6 +28,7 @@ registerEffect(
   StretchEffect,
   StretchEffectConfig
 );
+registerEffect('CanvasReveal', CanvasReveal);
 
 // Export effect components
 export { BlurEffect, config as BlurEffectConfig } from './BlurEffect';
@@ -74,3 +76,4 @@ export { GenericEffectData };
 
 // Export animation presets
 export * from './GenericPresets';
+export { CanvasReveal } from './CanvasReveal';
