@@ -128,6 +128,11 @@ const presetParams = z.object({
       .describe(
         'global impact multiplier for all animations (0.1 = very subtle, 2.0 = very intense)',
       ),
+    isGlowEnabled: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe('enable glow effects for words'),
   }),
   fontChoices: z
     .array(
@@ -1016,6 +1021,7 @@ const presetExecution = (
     selectedColorChoice: any,
     impact: number,
     globalImpact: number = 1.0,
+    isGlowEnabled: boolean = false,
   ): GenericEffectData => {
     const rippleDelay = wordIndex * 0.04; // Reduced delay
     const accentRgb = hexToRgb(selectedColorChoice.accent) || {
@@ -1024,18 +1030,17 @@ const presetExecution = (
       b: 107,
     };
 
-    return {
-      type: 'ease-out',
-      start: word.start + rippleDelay,
-      duration: 0.5, // Much faster
-      mode: 'provider',
-      targetIds: [wordId],
-      ranges: [
-        { key: 'scale', val: 0.9, prog: 0 },
-        { key: 'scale', val: 1 + 0.03 * impact * globalImpact, prog: 0.5 },
-        { key: 'scale', val: 1, prog: 1 },
-        { key: 'opacity', val: 0, prog: 0 },
-        { key: 'opacity', val: 1, prog: 0.4 },
+    const ranges: any[] = [
+      { key: 'scale', val: 0.9, prog: 0 },
+      { key: 'scale', val: 1 + 0.03 * impact * globalImpact, prog: 0.5 },
+      { key: 'scale', val: 1, prog: 1 },
+      { key: 'opacity', val: 0, prog: 0 },
+      { key: 'opacity', val: 1, prog: 0.4 },
+    ];
+
+    // Add glow effects only if enabled
+    if (isGlowEnabled) {
+      ranges.push(
         {
           key: 'filter',
           val: `drop-shadow(0 0 0px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0))` as any,
@@ -1051,7 +1056,16 @@ const presetExecution = (
           val: `drop-shadow(0 0 ${2 * impact * globalImpact}px rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0.4))` as any,
           prog: 1,
         },
-      ],
+      );
+    }
+
+    return {
+      type: 'ease-out',
+      start: word.start + rippleDelay,
+      duration: 0.5, // Much faster
+      mode: 'provider',
+      targetIds: [wordId],
+      ranges,
     };
   };
 
@@ -1099,6 +1113,7 @@ const presetExecution = (
     animationStyle?: string,
     fontScaling?: { highlighted?: number; normal?: number },
     globalImpact?: number,
+    isGlowEnabled?: boolean,
   ) => {
     const isAllWordsHighlighted = words.every(
       word => word.metadata?.isHighlight,
@@ -1139,6 +1154,30 @@ const presetExecution = (
             ),
           });
 
+          if (isGlowEnabled) {
+            effects.push({
+              id: `glow-${wordId}`,
+              componentId: 'generic',
+              data: createGlowEffect(
+                wordId,
+                word,
+                selectedColorChoice,
+                syncDuration,
+                shouldAnimate,
+              ),
+            });
+          }
+        }
+      } else if (animationStyle === 'scentence-highlight-letterspace-float') {
+        // ALL words get opacity effect (0.7 to 1)
+        effects.push({
+          id: `opacity-${wordId}`,
+          componentId: 'generic',
+          data: createSentenceOpacityEffect(wordId, word, caption),
+        });
+
+        // ALL words get glow effect when they start (if enabled)
+        if (isGlowEnabled) {
           effects.push({
             id: `glow-${wordId}`,
             componentId: 'generic',
@@ -1151,26 +1190,6 @@ const presetExecution = (
             ),
           });
         }
-      } else if (animationStyle === 'scentence-highlight-letterspace-float') {
-        // ALL words get opacity effect (0.7 to 1)
-        effects.push({
-          id: `opacity-${wordId}`,
-          componentId: 'generic',
-          data: createSentenceOpacityEffect(wordId, word, caption),
-        });
-
-        // ALL words get glow effect when they start
-        effects.push({
-          id: `glow-${wordId}`,
-          componentId: 'generic',
-          data: createGlowEffect(
-            wordId,
-            word,
-            selectedColorChoice,
-            syncDuration,
-            shouldAnimate,
-          ),
-        });
 
         // Normal words get spring scale effect (scale-press) + letter spacing
         if (!isHighlight) {
@@ -1334,17 +1353,19 @@ const presetExecution = (
           ),
         });
 
-        // Soft glow for ambiance
-        effects.push({
-          id: `melodic-glow-${wordId}`,
-          componentId: 'generic',
-          data: createMelodicGlowEffect(
-            wordId,
-            word,
-            selectedColorChoice,
-            impact,
-          ),
-        });
+        // Soft glow for ambiance (if enabled)
+        if (isGlowEnabled) {
+          effects.push({
+            id: `melodic-glow-${wordId}`,
+            componentId: 'generic',
+            data: createMelodicGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              impact,
+            ),
+          });
+        }
       } else if (animationStyle === 'melodic-wave-breathing') {
         // Gentle wave-like floating with soft breathing
         const impact = isHighlight ? 1.1 : 0.9;
@@ -1375,17 +1396,19 @@ const presetExecution = (
           data: createMelodicBreathingEffect(wordId, word, impact),
         });
 
-        // Gentle glow
-        effects.push({
-          id: `melodic-glow-${wordId}`,
-          componentId: 'generic',
-          data: createMelodicGlowEffect(
-            wordId,
-            word,
-            selectedColorChoice,
-            impact,
-          ),
-        });
+        // Gentle glow (if enabled)
+        if (isGlowEnabled) {
+          effects.push({
+            id: `melodic-glow-${wordId}`,
+            componentId: 'generic',
+            data: createMelodicGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              impact,
+            ),
+          });
+        }
       } else if (animationStyle === 'melodic-color-flow') {
         // Smooth color transitions with gentle drift
         const impact = isHighlight ? 1.3 : 1.0;
@@ -1421,17 +1444,19 @@ const presetExecution = (
           data: createMelodicDriftEffect(wordId, word, impact),
         });
 
-        // Soft glow
-        effects.push({
-          id: `melodic-glow-${wordId}`,
-          componentId: 'generic',
-          data: createMelodicGlowEffect(
-            wordId,
-            word,
-            selectedColorChoice,
-            impact,
-          ),
-        });
+        // Soft glow (if enabled)
+        if (isGlowEnabled) {
+          effects.push({
+            id: `melodic-glow-${wordId}`,
+            componentId: 'generic',
+            data: createMelodicGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              impact,
+            ),
+          });
+        }
       } else if (animationStyle === 'melodic-gentle-drift') {
         // Subtle position and scale drift with soft fade
         const impact = isHighlight ? 1.1 : 0.8;
@@ -1462,17 +1487,19 @@ const presetExecution = (
           data: createMelodicBreathingEffect(wordId, word, impact),
         });
 
-        // Gentle glow
-        effects.push({
-          id: `melodic-glow-${wordId}`,
-          componentId: 'generic',
-          data: createMelodicGlowEffect(
-            wordId,
-            word,
-            selectedColorChoice,
-            impact,
-          ),
-        });
+        // Gentle glow (if enabled)
+        if (isGlowEnabled) {
+          effects.push({
+            id: `melodic-glow-${wordId}`,
+            componentId: 'generic',
+            data: createMelodicGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              impact,
+            ),
+          });
+        }
       } else if (animationStyle === 'horizontal-slide-reveal') {
         // Words slide in from left to right, perfect for horizontal layouts
         const impact = isHighlight ? 1.1 : 1.0;
@@ -1489,8 +1516,8 @@ const presetExecution = (
           ),
         });
 
-        // Add glow effect for highlighted words
-        if (isHighlight) {
+        // Add glow effect for highlighted words (if enabled)
+        if (isHighlight && isGlowEnabled) {
           effects.push({
             id: `glow-${wordId}`,
             componentId: 'generic',
@@ -1550,8 +1577,8 @@ const presetExecution = (
           ),
         });
 
-        // Add glow effect for highlighted words
-        if (isHighlight) {
+        // Add glow effect for highlighted words (if enabled)
+        if (isHighlight && isGlowEnabled) {
           effects.push({
             id: `glow-${wordId}`,
             componentId: 'generic',
@@ -1579,6 +1606,7 @@ const presetExecution = (
             selectedColorChoice,
             impact,
             globalImpact || 1.0,
+            isGlowEnabled || false,
           ),
         });
       } else if (animationStyle === 'horizontal-zoom-cascade') {
@@ -1598,8 +1626,8 @@ const presetExecution = (
           ),
         });
 
-        // Add glow effect for highlighted words
-        if (isHighlight) {
+        // Add glow effect for highlighted words (if enabled)
+        if (isHighlight && isGlowEnabled) {
           effects.push({
             id: `glow-${wordId}`,
             componentId: 'generic',
@@ -1646,7 +1674,7 @@ const presetExecution = (
       // Set text colors based on highlight status
       const textColor = isHighlight
         ? selectedColorChoice.accent
-        : selectedColorChoice.primary;
+        : selectedColorChoice.secondary;
       const textShadowColor = isHighlight
         ? selectedColorChoice.accent
         : selectedColorChoice.secondary;
@@ -1933,6 +1961,7 @@ const presetExecution = (
     layout?: string,
     fontScaling?: { highlighted?: number; normal?: number },
     globalImpact?: number,
+    isGlowEnabled?: boolean,
   ) => {
     const wordsData = generateWordsData(
       partWords,
@@ -1946,6 +1975,7 @@ const presetExecution = (
       animationStyle,
       fontScaling,
       globalImpact,
+      isGlowEnabled,
     );
 
     // Calculate displacement based on character count or floatThreshold
@@ -2071,6 +2101,7 @@ const presetExecution = (
     layout?: string,
     fontScaling?: { highlighted?: number; normal?: number },
     globalImpact?: number,
+    isGlowEnabled?: boolean,
   ) => {
     // Pre-process captions to split combined words
     const preprocessedCaptions = preprocessCaptions(inputCaptions);
@@ -2312,6 +2343,7 @@ const presetExecution = (
             layout,
             fontScaling,
             globalImpact,
+            isGlowEnabled,
           );
         });
 
@@ -2414,6 +2446,7 @@ const presetExecution = (
     subtitleSync?.layout,
     subtitleSync?.fontScaling,
     subtitleSync?.impact,
+    subtitleSync?.isGlowEnabled,
   );
 
   // Generate final composition structure
@@ -2521,6 +2554,7 @@ const presetMetadata: PresetMetadata = {
         normal: 0.85,
       },
       impact: 0.3,
+      isGlowEnabled: false,
     },
     position: {
       align: 'left',
