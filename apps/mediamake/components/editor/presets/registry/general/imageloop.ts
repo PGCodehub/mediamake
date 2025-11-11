@@ -32,6 +32,14 @@ import { PresetMetadata, PresetOutput } from '../../types';
 const imageSourceSchema = z.object({
   src: z.string().describe('Image source URL'),
   duration: z.number().optional().describe('Duration in seconds (default: 5)'),
+  durationString: z
+    .string()
+    .optional()
+    .describe('Duration in MM:SS format like 01:00'),
+  rangeString: z
+    .string()
+    .optional()
+    .describe('Range in MM:SS-MM:SS format like 01:00-02:00'),
   fit: z
     .enum(['cover', 'contain', 'fill', 'none', 'scale-down'])
     .optional()
@@ -219,6 +227,44 @@ const presetExecution = (
     };
   };
 
+  // Helper function to parse duration string (MM:SS format) to seconds
+  const parseDurationString = (
+    durationString: string | undefined,
+  ): number | null => {
+    if (!durationString) return null;
+
+    const match = durationString.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+
+    const minutes = parseInt(match[1], 10);
+    const seconds = parseInt(match[2], 10);
+
+    return minutes * 60 + seconds;
+  };
+
+  // Helper function to parse range string (MM:SS-MM:SS format) and return start and duration
+  const parseRangeString = (
+    rangeString: string | undefined,
+  ): { start: number; duration: number } | null => {
+    if (!rangeString) return null;
+
+    const match = rangeString.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+
+    const startMinutes = parseInt(match[1], 10);
+    const startSeconds = parseInt(match[2], 10);
+    const endMinutes = parseInt(match[3], 10);
+    const endSeconds = parseInt(match[4], 10);
+
+    const start = startMinutes * 60 + startSeconds;
+    const end = endMinutes * 60 + endSeconds;
+    const duration = end - start;
+
+    if (duration <= 0) return null; // Invalid range if end <= start
+
+    return { start, duration };
+  };
+
   // Helper function to generate CSS filter styles
   const generateFilterStyle = (filter: string): string => {
     switch (filter) {
@@ -371,7 +417,27 @@ const presetExecution = (
     const _panEffectData = imageEffects.find(
       effect => effect.componentId === 'pan',
     )?.data as PanEffectData;
-    const isDuration = image.duration && image.duration > 0;
+
+    // Parse rangeString if provided (takes priority over duration/durationString)
+    const imageRange = parseRangeString(image.rangeString);
+
+    // Get duration and start time
+    // Priority: rangeString > durationString > duration > default
+    let imageStart: number | undefined;
+    let imageDuration: number;
+
+    if (imageRange) {
+      // Use rangeString for both start and duration
+      imageStart = imageRange.start;
+      imageDuration = imageRange.duration;
+    } else {
+      // Fall back to durationString or duration
+      const parsedDuration = parseDurationString(image.durationString);
+      imageDuration = parsedDuration ?? image.duration ?? 5; // Default to 5 seconds if neither is provided
+      imageStart = undefined; // No start time if not using rangeString
+    }
+
+    const isDuration = imageDuration > 0;
 
     return {
       id: `${params.trackName ?? 'imageloop'}-image-${imageIndex}`,
@@ -405,7 +471,8 @@ const presetExecution = (
       context: {
         timing: isDuration
           ? {
-              duration: image.duration,
+              ...(imageStart !== undefined ? { start: imageStart } : {}),
+              duration: imageDuration,
             }
           : {},
       },

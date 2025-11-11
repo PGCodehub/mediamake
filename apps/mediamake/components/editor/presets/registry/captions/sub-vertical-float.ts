@@ -73,6 +73,7 @@ const presetParams = z.object({
       .enum([
         'word-fade-letterspace-float', // each word fades in exact time from 0 to 1 opacity, with letterspace aniamtion for imapctful words, and all liens floating.
         'scentence-highlight-letterspace-float', // each word is already at 1 opacity, it jsuts highlighted with deeper glow at exact wor time, with letterspace animation for imapctful words, and all liens floating.
+        'scentence-highlight-float', // same as above, but no letter spacing.
         'aggressive-pulse-shake-float', // aggressive rock-style animation with pulse, shake, and distortion effects for fast beat energy
         'melodic-fade-blur-float', // smooth fade with gentle blur effects, perfect for melodic content with longer sentences
         'melodic-wave-breathing', // gentle wave-like floating with soft breathing effects for melodic rhythm
@@ -1229,6 +1230,29 @@ const presetExecution = (
               syncDuration,
               shouldAnimate,
               1.25,
+            ),
+          });
+        }
+      } else if (animationStyle === 'scentence-highlight-float') {
+        // Same as scentence-highlight-letterspace-float but without letter spacing
+        // ALL words get opacity effect (0.7 to 1)
+        effects.push({
+          id: `opacity-${wordId}`,
+          componentId: 'generic',
+          data: createSentenceOpacityEffect(wordId, word, caption),
+        });
+
+        // ALL words get glow effect when they start (if enabled)
+        if (isGlowEnabled) {
+          effects.push({
+            id: `glow-${wordId}`,
+            componentId: 'generic',
+            data: createGlowEffect(
+              wordId,
+              word,
+              selectedColorChoice,
+              syncDuration,
+              shouldAnimate,
             ),
           });
         }
